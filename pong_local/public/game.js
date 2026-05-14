@@ -8,13 +8,24 @@ const rightPlayersEl = document.getElementById('rightPlayers');
 let myId = null;
 let mySide = null;
 let gameState = null;
+let lastGameState = null;
 let inGame = false;
 let paddleY = 150;
 const keys = {};
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext = null;
+
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+}
 
 function playSound(frequency, duration, type = 'square') {
+    if (!audioContext) return;
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     oscillator.connect(gainNode);
@@ -69,13 +80,27 @@ function challengePlayer(playerId) {
 }
 
 socket.on('gameStart', (data) => {
+    initAudio();
     mySide = data.side;
     inGame = true;
+    lastGameState = null;
     statusEl.textContent = `Game started! You are on the ${mySide} side`;
 });
 
 socket.on('gameState', (state) => {
     gameState = state;
+    
+    if (lastGameState && inGame) {
+        if (state.sound === 'paddle') {
+            playPaddleHit();
+        } else if (state.sound === 'wall') {
+            playWallHit();
+        } else if (state.sound === 'score') {
+            playScore();
+        }
+    }
+    
+    lastGameState = {...state};
     render();
 });
 

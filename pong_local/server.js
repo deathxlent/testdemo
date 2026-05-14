@@ -61,9 +61,12 @@ io.on('connection', (socket) => {
             challenger.inGame = true;
             target.inGame = true;
             
+            challenger.side = 'left';
+            target.side = 'right';
+            
             const gameId = `game_${Date.now()}`;
-            const leftPlayer = challenger.side === 'left' ? socket.id : targetId;
-            const rightPlayer = challenger.side === 'right' ? socket.id : targetId;
+            const leftPlayer = socket.id;
+            const rightPlayer = targetId;
             
             activeGames.set(gameId, {
                 id: gameId,
@@ -75,7 +78,8 @@ io.on('connection', (socket) => {
                 leftPaddle: 150,
                 rightPaddle: 150,
                 gameTime: 0,
-                running: true
+                running: true,
+                sound: null
             });
             
             io.to(leftPlayer).emit('gameStart', { side: 'left', gameId });
@@ -121,6 +125,7 @@ setInterval(() => {
         if (!game.running) return;
         
         game.gameTime++;
+        game.sound = null;
         
         game.ball.x += game.ball.vx;
         game.ball.y += game.ball.vy;
@@ -128,8 +133,10 @@ setInterval(() => {
         if (game.ball.y <= 5 || game.ball.y >= 395) {
             game.ball.vy = -game.ball.vy;
             game.ball.y = game.ball.y <= 5 ? 5 : 395;
+            game.sound = 'wall';
         }
         
+        let paddleHit = false;
         if (game.ball.x <= 35 && game.ball.x >= 25) {
             const paddleTop = game.leftPaddle;
             const paddleBottom = game.leftPaddle + 100;
@@ -138,6 +145,7 @@ setInterval(() => {
                 const hitPos = (game.ball.y - paddleTop) / 100;
                 game.ball.vy = (hitPos - 0.5) * 10;
                 game.ball.x = 36;
+                paddleHit = true;
             }
         }
         
@@ -149,14 +157,21 @@ setInterval(() => {
                 const hitPos = (game.ball.y - paddleTop) / 100;
                 game.ball.vy = (hitPos - 0.5) * 10;
                 game.ball.x = 564;
+                paddleHit = true;
             }
+        }
+        
+        if (paddleHit) {
+            game.sound = 'paddle';
         }
         
         if (game.ball.x < 0) {
             game.rightScore++;
+            game.sound = 'score';
             resetBall(game, 'right');
         } else if (game.ball.x > 600) {
             game.leftScore++;
+            game.sound = 'score';
             resetBall(game, 'left');
         }
         
