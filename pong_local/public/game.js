@@ -12,6 +12,7 @@ let lastGameState = null;
 let inGame = false;
 let paddleY = 150;
 const keys = {};
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let audioContext = null;
 
@@ -52,6 +53,11 @@ function playScore() {
 
 socket.on('connect', () => {
     myId = socket.id;
+    
+    const controlsEl = document.getElementById('controls');
+    if (isTouchDevice) {
+        controlsEl.textContent = 'Touch and drag on screen to move paddle';
+    }
 });
 
 socket.on('playerListUpdate', (data) => {
@@ -139,6 +145,26 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
+
+function handleTouch(e) {
+    if (!inGame) return;
+    e.preventDefault();
+    
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const touchY = touch.clientY - rect.top;
+    const scaleY = canvas.height / rect.height;
+    paddleY = Math.max(0, Math.min(300, (touchY * scaleY) - 50));
+}
+
+if (isTouchDevice) {
+    canvas.addEventListener('touchstart', (e) => {
+        initAudio();
+        handleTouch(e);
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', handleTouch, { passive: false });
+}
 
 function updatePaddle() {
     if (!inGame) return;

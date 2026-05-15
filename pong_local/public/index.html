@@ -77,6 +77,31 @@
             color: #888;
             text-align: center;
         }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                flex-direction: column;
+            }
+            .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .player-list {
+                width: 100%;
+                max-height: 120px;
+                overflow-y: auto;
+            }
+            .player-list h3 {
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+            #gameCanvas {
+                width: 100%;
+                max-width: 600px;
+                height: auto;
+                touch-action: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -88,7 +113,7 @@
         <div class="game-container">
             <canvas id="gameCanvas" width="600" height="400"></canvas>
             <div class="status" id="status">Waiting for opponent...</div>
-            <div class="controls">Use W/S or Up/Down arrows to move paddle</div>
+            <div class="controls" id="controls">Use W/S or Up/Down arrows to move paddle</div>
         </div>
         <div class="player-list">
             <h3>RIGHT PLAYERS</h3>
