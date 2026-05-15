@@ -97,42 +97,64 @@ class EbookParser:
             cover_item = None
             cover_id = None
             
-            for item in book.get_metadata('OPF', 'cover'):
-                if item and len(item) > 1 and 'content' in item[1]:
-                    cover_id = item[1]['content']
-                    break
+            try:
+                for item in book.get_metadata('OPF', 'cover'):
+                    if item and len(item) > 1 and 'content' in item[1]:
+                        cover_id = item[1]['content']
+                        break
+            except:
+                pass
             
             if cover_id:
                 for item in book.get_items():
-                    if item.get_id() == cover_id:
-                        cover_item = item
-                        break
+                    try:
+                        if item.get_id() == cover_id:
+                            cover_item = item
+                            break
+                    except:
+                        pass
             
             if not cover_item:
                 for item in book.get_items():
-                    if hasattr(item, 'get_type') and item.get_type() == 9:
-                        cover_item = item
-                        break
+                    try:
+                        if hasattr(item, 'get_type') and item.get_type() == 9:
+                            cover_item = item
+                            break
+                    except:
+                        pass
             
             if not cover_item:
                 for item in book.get_items():
-                    fname = item.get_name().lower()
-                    if 'cover' in fname and fname.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-                        cover_item = item
-                        break
+                    try:
+                        fname = item.get_name().lower()
+                        if 'cover' in fname and fname.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                            cover_item = item
+                            break
+                    except:
+                        pass
             
             if not cover_item:
-                image_items = [item for item in book.get_items() if item.get_type() == 9 or item.get_name().lower().endswith(('.jpg', '.jpeg', '.png'))]
-                if image_items:
-                    max_size = 0
-                    for item in image_items:
+                try:
+                    image_items = []
+                    for item in book.get_items():
                         try:
-                            content = item.get_content()
-                            if content and len(content) > max_size:
-                                max_size = len(content)
-                                cover_item = item
+                            if (hasattr(item, 'get_type') and item.get_type() == 9) or \
+                               item.get_name().lower().endswith(('.jpg', '.jpeg', '.png')):
+                                image_items.append(item)
                         except:
                             pass
+                    if image_items:
+                        max_size = 0
+                        for item in image_items:
+                            try:
+                                content = item.get_content()
+                                if content and len(content) > max_size:
+                                    max_size = len(content)
+                                    cover_item = item
+                            except:
+                                pass
+                except:
+                    pass
             
             if cover_item:
                 file_hash = abs(hash(filepath))
@@ -140,13 +162,28 @@ class EbookParser:
                 cover_path = os.path.join(self.covers_dir, cover_filename)
                 
                 if not os.path.exists(cover_path):
-                    img_data = cover_item.get_content()
-                    if img_data:
-                        img = Image.open(io.BytesIO(img_data))
-                        if img.mode in ('RGBA', 'P'):
-                            img = img.convert('RGB')
-                        img.thumbnail((200, 300))
-                        img.save(cover_path, 'JPEG', quality=85)
+                    try:
+                        img_data = cover_item.get_content()
+                        if img_data and len(img_data) > 0:
+                            try:
+                                img = Image.open(io.BytesIO(img_data))
+                                if img.mode in ('RGBA', 'P', 'LA'):
+                                    background = Image.new('RGB', img.size, (255, 255, 255))
+                                    if img.mode == 'RGBA':
+                                        background.paste(img, mask=img.split()[3])
+                                    else:
+                                        background.paste(img, mask=img.split()[1])
+                                    img = background
+                                elif img.mode != 'RGB':
+                                    img = img.convert('RGB')
+                                img.thumbnail((200, 300))
+                                img.save(cover_path, 'JPEG', quality=85)
+                            except Exception as img_error:
+                                print(f"Image processing error for {filepath}: {img_error}")
+                                return None
+                    except Exception as content_error:
+                        print(f"Cannot get cover content for {filepath}: {content_error}")
+                        return None
                 
                 return cover_path
         except Exception as e:

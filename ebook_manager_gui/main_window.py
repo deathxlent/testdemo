@@ -30,12 +30,13 @@ class MainWindow(QMainWindow):
         self.sort_column = 1
         self.sort_order = "ASC"
         self.current_search = ""
+        self.books_data = []
         self.init_ui()
         self.refresh_books()
     
     def init_ui(self):
         self.setWindowTitle("电子书管理器")
-        self.setMinimumSize(1300, 800)
+        self.setMinimumSize(1400, 850)
         
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -49,6 +50,29 @@ class MainWindow(QMainWindow):
         self.search_input.setPlaceholderText("标题、作者、分类、ISBN...")
         self.search_input.textChanged.connect(self.on_search)
         top_layout.addWidget(self.search_input, 1)
+        
+        self.batch_delete_btn = QPushButton("🗑️ 批量删除选中")
+        self.batch_delete_btn.setMinimumHeight(35)
+        self.batch_delete_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #d32f2f;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+            }
+        """)
+        self.batch_delete_btn.clicked.connect(self.batch_delete)
+        self.batch_delete_btn.setEnabled(False)
+        top_layout.addWidget(self.batch_delete_btn)
+        
         main_layout.addLayout(top_layout)
         
         self.table = QTableWidget()
@@ -59,7 +83,7 @@ class MainWindow(QMainWindow):
         ])
         
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         
         header = self.table.horizontalHeader()
@@ -68,11 +92,13 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(11, QHeaderView.ResizeMode.Fixed)
-        self.table.setColumnWidth(11, 100)
+        self.table.setColumnWidth(11, 150)
         
         self.table.verticalHeader().setDefaultSectionSize(100)
         
         self.table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
+        self.table.cellClicked.connect(self.on_cell_clicked)
+        self.table.itemSelectionChanged.connect(self.on_selection_changed)
         
         main_layout.addWidget(self.table)
         
@@ -97,18 +123,19 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
     
     def refresh_books(self):
-        books = self.db.get_all_books(
+        self.books_data = self.db.get_all_books(
             sort_by=self.get_sort_column_name(self.sort_column),
             order=self.sort_order,
             search=self.current_search
         )
         
-        self.table.setRowCount(len(books))
+        self.table.setRowCount(len(self.books_data))
         
-        for row, book in enumerate(books):
+        for row, book in enumerate(self.books_data):
             self.set_book_row(row, book)
         
-        self.status_label.setText(f"共 {len(books)} 本书")
+        self.status_label.setText(f"共 {len(self.books_data)} 本书")
+        self.on_selection_changed()
     
     def set_book_row(self, row, book):
         cover_label = QLabel()
@@ -146,8 +173,10 @@ class MainWindow(QMainWindow):
         btn_widget = QWidget()
         btn_layout = QHBoxLayout(btn_widget)
         btn_layout.setContentsMargins(5, 0, 5, 0)
+        btn_layout.setSpacing(8)
         
         open_btn = QPushButton("📖 打开")
+        open_btn.setMinimumWidth(70)
         open_btn.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50;
@@ -169,6 +198,7 @@ class MainWindow(QMainWindow):
         
         detail_btn = QPushButton("✏️")
         detail_btn.setToolTip("查看/编辑详情")
+        detail_btn.setMinimumWidth(40)
         detail_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2196F3;
@@ -222,6 +252,46 @@ class MainWindow(QMainWindow):
     def on_search(self):
         self.current_search = self.search_input.text()
         self.refresh_books()
+    
+    def on_cell_clicked(self, row, col):
+        item = self.table.item(row, 1)
+        if item:
+            book = item.data(Qt.ItemDataRole.UserRole)
+            if book:
+                self.open_detail_window(book)
+    
+    def on_selection_changed(self):
+        selected_rows = self.table.selectedItems()
+        count = len(set(item.row() for item in selected_rows))
+        self.batch_delete_btn.setEnabled(count > 0)
+        if count > 0:
+            self.status_label.setText(f"共 {len(self.books_data)} 本书，已选中 {count} 本")
+        else:
+            self.status_label.setText(f"共 {len(self.books_data)} 本书")
+    
+    def batch_delete(self):
+        selected_rows = set(item.row() for item in self.table.selectedItems())
+        if not selected_rows:
+            return
+        
+        count = len(selected_rows)
+        reply = QMessageBox.question(
+            self, "确认批量删除", 
+            f"确定要删除选中的 {count} 本书吗？\n（只会删除记录，不会删除文件）",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            deleted_count = 0
+            for row in sorted(selected_rows, reverse=True):
+                item = self.table.item(row, 1)
+                if item:
+                    book = item.data(Qt.ItemDataRole.UserRole)
+                    if book and self.db.delete_book(book['id']):
+                        deleted_count += 1
+            
+            QMessageBox.information(self, "成功", f"已成功删除 {deleted_count} 本书！")
+            self.refresh_books()
     
     def open_book(self, book):
         filepath = book.get('physical_path')
