@@ -13,6 +13,15 @@ from import_window import ImportWindow
 from detail_window import DetailWindow
 
 
+def safe_str(value):
+    if value is None:
+        return ''
+    s = str(value).strip()
+    if s.lower() in ['none', 'null', 'nan', '']:
+        return ''
+    return s
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -26,7 +35,7 @@ class MainWindow(QMainWindow):
     
     def init_ui(self):
         self.setWindowTitle("电子书管理器")
-        self.setMinimumSize(1200, 800)
+        self.setMinimumSize(1300, 800)
         
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -34,19 +43,19 @@ class MainWindow(QMainWindow):
         
         self.create_menu_bar()
         
-        search_layout = QHBoxLayout()
-        search_layout.addWidget(QLabel("搜索:"))
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(QLabel("搜索:"))
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("标题、作者、分类、ISBN...")
         self.search_input.textChanged.connect(self.on_search)
-        search_layout.addWidget(self.search_input)
-        main_layout.addLayout(search_layout)
+        top_layout.addWidget(self.search_input, 1)
+        main_layout.addLayout(top_layout)
         
         self.table = QTableWidget()
-        self.table.setColumnCount(11)
+        self.table.setColumnCount(12)
         self.table.setHorizontalHeaderLabels([
             "封面", "标题", "副标题", "作者", "分类", 
-            "文件大小", "物理位置", "扩展名", "ISBN", "评分", "豆瓣地址"
+            "文件大小", "物理位置", "扩展名", "ISBN", "评分", "豆瓣地址", "操作"
         ])
         
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -58,12 +67,12 @@ class MainWindow(QMainWindow):
         self.table.setColumnWidth(0, 80)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(11, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(11, 100)
         
         self.table.verticalHeader().setDefaultSectionSize(100)
         
         self.table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
-        self.table.cellClicked.connect(self.on_cell_clicked)
-        self.table.cellDoubleClicked.connect(self.on_cell_double_clicked)
         
         main_layout.addWidget(self.table)
         
@@ -113,29 +122,74 @@ class MainWindow(QMainWindow):
                 Qt.TransformationMode.SmoothTransformation
             ))
         else:
-            cover_label.setText("无")
+            cover_label.setText("")
         self.table.setCellWidget(row, 0, cover_label)
         
-        self.table.setItem(row, 1, QTableWidgetItem(str(book.get('title', ''))))
-        self.table.setItem(row, 2, QTableWidgetItem(str(book.get('subtitle', ''))))
-        self.table.setItem(row, 3, QTableWidgetItem(str(book.get('author', ''))))
-        self.table.setItem(row, 4, QTableWidgetItem(str(book.get('category', ''))))
+        self.table.setItem(row, 1, QTableWidgetItem(safe_str(book.get('title'))))
+        self.table.setItem(row, 2, QTableWidgetItem(safe_str(book.get('subtitle'))))
+        self.table.setItem(row, 3, QTableWidgetItem(safe_str(book.get('author'))))
+        self.table.setItem(row, 4, QTableWidgetItem(safe_str(book.get('category'))))
         
         file_size = book.get('file_size', 0)
         size_str = self.parser.format_file_size(file_size) if file_size else ''
         self.table.setItem(row, 5, QTableWidgetItem(size_str))
         
-        self.table.setItem(row, 6, QTableWidgetItem(str(book.get('physical_path', ''))))
-        self.table.setItem(row, 7, QTableWidgetItem(str(book.get('extension', ''))))
-        self.table.setItem(row, 8, QTableWidgetItem(str(book.get('isbn', ''))))
+        self.table.setItem(row, 6, QTableWidgetItem(safe_str(book.get('physical_path'))))
+        self.table.setItem(row, 7, QTableWidgetItem(safe_str(book.get('extension'))))
+        self.table.setItem(row, 8, QTableWidgetItem(safe_str(book.get('isbn'))))
         
         rating = book.get('rating', 0) or 0
         self.table.setItem(row, 9, QTableWidgetItem(str(rating) if rating > 0 else ''))
         
-        self.table.setItem(row, 10, QTableWidgetItem(str(book.get('douban_url', ''))))
+        self.table.setItem(row, 10, QTableWidgetItem(safe_str(book.get('douban_url'))))
         
-        self.table.item(row, 5).setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.table.item(row, 9).setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn_widget = QWidget()
+        btn_layout = QHBoxLayout(btn_widget)
+        btn_layout.setContentsMargins(5, 0, 5, 0)
+        
+        open_btn = QPushButton("📖 打开")
+        open_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:pressed {
+                background-color: #3d8b40;
+            }
+        """)
+        open_btn.clicked.connect(lambda checked, b=book: self.open_book(b))
+        btn_layout.addWidget(open_btn)
+        
+        detail_btn = QPushButton("✏️")
+        detail_btn.setToolTip("查看/编辑详情")
+        detail_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+        """)
+        detail_btn.clicked.connect(lambda checked, b=book: self.open_detail_window(b))
+        btn_layout.addWidget(detail_btn)
+        
+        self.table.setCellWidget(row, 11, btn_widget)
+        
+        if self.table.item(row, 5):
+            self.table.item(row, 5).setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        if self.table.item(row, 9):
+            self.table.item(row, 9).setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.table.item(row, 1).setData(Qt.ItemDataRole.UserRole, book)
     
@@ -154,7 +208,7 @@ class MainWindow(QMainWindow):
         return column_map.get(col, 'title')
     
     def on_header_clicked(self, col):
-        if col == 0:
+        if col in [0, 11]:
             return
         
         if self.sort_column == col:
@@ -168,20 +222,6 @@ class MainWindow(QMainWindow):
     def on_search(self):
         self.current_search = self.search_input.text()
         self.refresh_books()
-    
-    def on_cell_clicked(self, row, col):
-        item = self.table.item(row, 1)
-        if item:
-            book = item.data(Qt.ItemDataRole.UserRole)
-            if book:
-                self.open_detail_window(book)
-    
-    def on_cell_double_clicked(self, row, col):
-        item = self.table.item(row, 1)
-        if item:
-            book = item.data(Qt.ItemDataRole.UserRole)
-            if book:
-                self.open_book(book)
     
     def open_book(self, book):
         filepath = book.get('physical_path')

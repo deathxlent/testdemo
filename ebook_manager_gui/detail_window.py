@@ -2,8 +2,17 @@ import os
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, 
                              QLabel, QLineEdit, QTextEdit, QSpinBox, QPushButton,
                              QMessageBox, QScrollArea, QWidget)
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QDesktopServices
+from PyQt6.QtCore import Qt, QUrl
+
+
+def safe_str(value):
+    if value is None:
+        return ''
+    s = str(value).strip()
+    if s.lower() in ['none', 'null', 'nan', '']:
+        return ''
+    return s
 
 
 class DetailWindow(QDialog):
@@ -16,7 +25,7 @@ class DetailWindow(QDialog):
     
     def init_ui(self):
         self.setWindowTitle("书籍详情")
-        self.setMinimumSize(700, 600)
+        self.setMinimumSize(750, 650)
         
         main_layout = QVBoxLayout(self)
         
@@ -34,6 +43,29 @@ class DetailWindow(QDialog):
         self.cover_label.setStyleSheet("border: 1px solid #ccc; background-color: #f5f5f5;")
         self.load_cover()
         left_layout.addWidget(self.cover_label)
+        
+        self.open_btn = QPushButton("📖 打开书籍")
+        self.open_btn.setMinimumHeight(45)
+        self.open_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:pressed {
+                background-color: #3d8b40;
+            }
+        """)
+        self.open_btn.clicked.connect(self.open_book)
+        left_layout.addWidget(self.open_btn)
+        
         left_layout.addStretch()
         content_layout.addLayout(left_layout)
         
@@ -75,20 +107,76 @@ class DetailWindow(QDialog):
         
         button_layout = QHBoxLayout()
         
-        self.edit_btn = QPushButton("修改")
+        self.edit_btn = QPushButton("✏️ 修改")
+        self.edit_btn.setMinimumHeight(35)
+        self.edit_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+        """)
         self.edit_btn.clicked.connect(self.toggle_edit)
         button_layout.addWidget(self.edit_btn)
         
-        self.delete_btn = QPushButton("删除")
+        self.delete_btn = QPushButton("🗑️ 删除")
+        self.delete_btn.setMinimumHeight(35)
+        self.delete_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #d32f2f;
+            }
+        """)
         self.delete_btn.clicked.connect(self.delete_book)
         button_layout.addWidget(self.delete_btn)
         
-        self.save_btn = QPushButton("保存")
+        self.save_btn = QPushButton("💾 保存")
+        self.save_btn.setMinimumHeight(35)
+        self.save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
         self.save_btn.clicked.connect(self.save_changes)
         self.save_btn.hide()
         button_layout.addWidget(self.save_btn)
         
-        self.cancel_btn = QPushButton("取消")
+        self.cancel_btn = QPushButton("❌ 取消")
+        self.cancel_btn.setMinimumHeight(35)
+        self.cancel_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #9E9E9E;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #757575;
+            }
+        """)
         self.cancel_btn.clicked.connect(self.cancel_edit)
         self.cancel_btn.hide()
         button_layout.addWidget(self.cancel_btn)
@@ -96,6 +184,7 @@ class DetailWindow(QDialog):
         button_layout.addStretch()
         
         close_btn = QPushButton("关闭")
+        close_btn.setMinimumHeight(35)
         close_btn.clicked.connect(self.accept)
         button_layout.addWidget(close_btn)
         
@@ -117,10 +206,10 @@ class DetailWindow(QDialog):
             self.cover_label.setText("无封面")
     
     def load_data(self):
-        self.title_edit.setText(self.book_data.get('title', ''))
-        self.subtitle_edit.setText(self.book_data.get('subtitle', ''))
-        self.author_edit.setText(self.book_data.get('author', ''))
-        self.category_edit.setText(self.book_data.get('category', ''))
+        self.title_edit.setText(safe_str(self.book_data.get('title')))
+        self.subtitle_edit.setText(safe_str(self.book_data.get('subtitle')))
+        self.author_edit.setText(safe_str(self.book_data.get('author')))
+        self.category_edit.setText(safe_str(self.book_data.get('category')))
         
         file_size = self.book_data.get('file_size', 0)
         if file_size:
@@ -130,12 +219,12 @@ class DetailWindow(QDialog):
         else:
             self.file_size_edit.setText('')
         
-        self.physical_path_edit.setText(self.book_data.get('physical_path', ''))
-        self.extension_edit.setText(self.book_data.get('extension', ''))
-        self.isbn_edit.setText(self.book_data.get('isbn', ''))
+        self.physical_path_edit.setText(safe_str(self.book_data.get('physical_path')))
+        self.extension_edit.setText(safe_str(self.book_data.get('extension')))
+        self.isbn_edit.setText(safe_str(self.book_data.get('isbn')))
         self.rating_edit.setValue(self.book_data.get('rating', 0) or 0)
-        self.douban_url_edit.setText(self.book_data.get('douban_url', ''))
-        self.notes_edit.setText(self.book_data.get('notes', ''))
+        self.douban_url_edit.setText(safe_str(self.book_data.get('douban_url')))
+        self.notes_edit.setText(safe_str(self.book_data.get('notes')))
     
     def set_read_only(self, read_only: bool):
         self.title_edit.setReadOnly(read_only)
@@ -186,7 +275,8 @@ class DetailWindow(QDialog):
             QMessageBox.information(self, "成功", "保存成功！")
             self.book_data.update(new_data)
             self.toggle_edit()
-            self.parent().refresh_books()
+            if self.parent():
+                self.parent().refresh_books()
         else:
             QMessageBox.warning(self, "失败", "保存失败！")
     
@@ -200,7 +290,15 @@ class DetailWindow(QDialog):
         if reply == QMessageBox.StandardButton.Yes:
             if self.db.delete_book(self.book_data['id']):
                 QMessageBox.information(self, "成功", "删除成功！")
-                self.parent().refresh_books()
+                if self.parent():
+                    self.parent().refresh_books()
                 self.accept()
             else:
                 QMessageBox.warning(self, "失败", "删除失败！")
+    
+    def open_book(self):
+        filepath = self.book_data.get('physical_path')
+        if filepath and os.path.exists(filepath):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(filepath))
+        else:
+            QMessageBox.warning(self, "错误", "文件不存在！")
