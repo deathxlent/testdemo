@@ -97,19 +97,47 @@ class EbookParser:
             cover_item = None
             cover_id = None
             
+            print(f"\n=== 开始提取封面: {os.path.basename(filepath)} ===")
+            
+            try:
+                items_info = []
+                for item in book.get_items():
+                    try:
+                        t = item.get_type() if hasattr(item, 'get_type') else 'N/A'
+                        n = item.get_name() if hasattr(item, 'get_name') else 'N/A'
+                        i = item.get_id() if hasattr(item, 'get_id') else 'N/A'
+                        items_info.append(f"  id={i}, type={t}, name={n}")
+                    except:
+                        pass
+                print(f"  ebooklib items ({len(items_info)}个):")
+                for info in items_info[:15]:
+                    print(info)
+                if len(items_info) > 15:
+                    print(f"  ... 还有 {len(items_info) - 15} 个")
+            except Exception as e:
+                print(f"  打印调试信息失败: {e}")
+            
             try:
                 for item in book.get_metadata('OPF', 'cover'):
-                    if item and len(item) > 1 and 'content' in item[1]:
-                        cover_id = item[1]['content']
+                    print(f"  OPF cover 元数据: {item}")
+                    cover_id = None
+                    if isinstance(item, tuple) and len(item) > 1:
+                        for k, v in item[1].items():
+                            if k.endswith('content'):
+                                cover_id = v
+                                print(f"  找到 cover_id: {cover_id}")
+                                break
+                    if cover_id:
                         break
-            except:
-                pass
+            except Exception as e:
+                print(f"  从OPF元数据获取cover_id失败: {e}")
             
             if cover_id:
                 for item in book.get_items():
                     try:
                         if item.get_id() == cover_id:
                             cover_item = item
+                            print(f"  ✅ 通过cover_id找到封面: {item.get_name()}")
                             break
                     except:
                         pass
@@ -117,9 +145,24 @@ class EbookParser:
             if not cover_item:
                 for item in book.get_items():
                     try:
-                        if hasattr(item, 'get_type') and item.get_type() == 9:
+                        item_type = item.get_type() if hasattr(item, 'get_type') else None
+                        if item_type == 10:
                             cover_item = item
+                            print(f"  ✅ 通过ITEM_COVER(10)找到封面: {item.get_name()}")
                             break
+                    except:
+                        pass
+            
+            if not cover_item:
+                for item in book.get_items():
+                    try:
+                        item_type = item.get_type() if hasattr(item, 'get_type') else None
+                        if item_type == 8:
+                            fname = item.get_name().lower()
+                            if 'cover' in fname or 'jacket' in fname:
+                                cover_item = item
+                                print(f"  ✅ 通过ITEM_IMAGE(8)+文件名找到封面: {item.get_name()}")
+                                break
                     except:
                         pass
             
@@ -127,8 +170,9 @@ class EbookParser:
                 for item in book.get_items():
                     try:
                         fname = item.get_name().lower()
-                        if 'cover' in fname and fname.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                        if ('cover' in fname or 'jacket' in fname) and fname.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
                             cover_item = item
+                            print(f"  ✅ 通过文件名匹配找到封面: {item.get_name()}")
                             break
                     except:
                         pass
@@ -138,23 +182,27 @@ class EbookParser:
                     image_items = []
                     for item in book.get_items():
                         try:
-                            if (hasattr(item, 'get_type') and item.get_type() == 9) or \
-                               item.get_name().lower().endswith(('.jpg', '.jpeg', '.png')):
+                            item_type = item.get_type() if hasattr(item, 'get_type') else None
+                            if item_type == 8 or item.get_name().lower().endswith(('.jpg', '.jpeg', '.png')):
                                 image_items.append(item)
                         except:
                             pass
                     if image_items:
-                        max_size = 0
-                        for item in image_items:
+                        print(f"  找到 {len(image_items)} 个图片文件，按大小排序...")
+                        valid_images = []
+                        for img_item in image_items:
                             try:
-                                content = item.get_content()
-                                if content and len(content) > max_size:
-                                    max_size = len(content)
-                                    cover_item = item
+                                content = img_item.get_content()
+                                if content:
+                                    valid_images.append((len(content), img_item))
                             except:
                                 pass
-                except:
-                    pass
+                        if valid_images:
+                            valid_images.sort(reverse=True, key=lambda x: x[0])
+                            cover_item = valid_images[0][1]
+                            print(f"  ✅ 选择最大的图片作为封面: {cover_item.get_name()} ({valid_images[0][0]} bytes)")
+                except Exception as e:
+                    print(f"  按大小选择图片失败: {e}")
             
             if cover_item:
                 file_hash = abs(hash(filepath))
@@ -167,6 +215,7 @@ class EbookParser:
                         if img_data and len(img_data) > 0:
                             try:
                                 img = Image.open(io.BytesIO(img_data))
+                                print(f"  图片模式: {img.mode}, 尺寸: {img.size}")
                                 if img.mode in ('RGBA', 'P', 'LA'):
                                     background = Image.new('RGB', img.size, (255, 255, 255))
                                     if img.mode == 'RGBA':
@@ -176,47 +225,68 @@ class EbookParser:
                                     img = background
                                 elif img.mode != 'RGB':
                                     img = img.convert('RGB')
-                                img.thumbnail((200, 300))
+                                img.thumbnail((400, 600))
                                 img.save(cover_path, 'JPEG', quality=85)
+                                print(f"  ✅ 封面已保存: {cover_path}")
                             except Exception as img_error:
-                                print(f"Image processing error for {filepath}: {img_error}")
+                                print(f"❌ 图片处理错误: {img_error}")
+                                import traceback
+                                traceback.print_exc()
                                 return None
                     except Exception as content_error:
-                        print(f"Cannot get cover content for {filepath}: {content_error}")
+                        print(f"❌ 获取图片内容错误: {content_error}")
                         return None
+                else:
+                    print(f"  封面已存在，跳过: {cover_path}")
                 
                 return cover_path
+            else:
+                print("❌ 未找到任何封面图片!")
         except Exception as e:
-            print(f"Error extracting cover from {filepath}: {e}")
+            print(f"❌ 提取封面异常: {e}")
+            import traceback
+            traceback.print_exc()
         
         return None
     
     def _parse_mobi_azw3(self, filepath: str) -> Dict[str, Any]:
         data = {}
+        print(f"\n=== 开始解析MOBI/AZW3: {os.path.basename(filepath)} ===")
+        print("  提示: 对于MOBI/AZW3文件，建议安装kindleunpack库来提取内容")
+        print("  安装命令: pip install kindleunpack")
+        
         try:
-            with open(filepath, 'rb') as f:
-                content = f.read(10000)
+            try:
+                from kindleunpack import mobi_book
+                print("  ✅ 检测到kindleunpack库，尝试解析...")
+            except ImportError:
+                print("  ⚠️ kindleunpack未安装，使用基础解析方式")
                 
-                title_match = re.search(b'(?:title|Title|TITLE)\x00+([^\x00]{2,100})', content)
-                if title_match:
-                    try:
-                        title = title_match.group(1).decode('utf-8', errors='ignore').strip()
-                        if title:
-                            data['title'] = title
-                    except:
-                        pass
-                
-                author_match = re.search(b'(?:creator|Creator|CREATOR|author|Author|AUTHOR)\x00+([^\x00]{2,100})', content)
-                if author_match:
-                    try:
-                        author = author_match.group(1).decode('utf-8', errors='ignore').strip()
-                        if author:
-                            data['author'] = author
-                    except:
-                        pass
+                with open(filepath, 'rb') as f:
+                    content = f.read(50000)
+                    
+                    title_match = re.search(b'(?:title|Title|TITLE)\x00+([^\x00]{2,100})', content)
+                    if title_match:
+                        try:
+                            title = title_match.group(1).decode('utf-8', errors='ignore').strip()
+                            if title:
+                                data['title'] = title
+                                print(f"  找到标题: {title}")
+                        except:
+                            pass
+                    
+                    author_match = re.search(b'(?:creator|Creator|CREATOR|author|Author|AUTHOR)\x00+([^\x00]{2,100})', content)
+                    if author_match:
+                        try:
+                            author = author_match.group(1).decode('utf-8', errors='ignore').strip()
+                            if author:
+                                data['author'] = author
+                                print(f"  找到作者: {author}")
+                        except:
+                            pass
                 
         except Exception as e:
-            print(f"Error parsing MOBI/AZW3 {filepath}: {e}")
+            print(f"❌ 解析MOBI/AZW3错误: {e}")
         
         return data
     
