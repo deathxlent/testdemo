@@ -11,6 +11,8 @@ from database import Database
 from ebook_parser import EbookParser
 from import_window import ImportWindow
 from detail_window import DetailWindow
+from settings_window import SettingsWindow
+from douban_parser import DoubanParser
 
 
 def safe_str(value):
@@ -27,12 +29,14 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.db = Database()
         self.parser = EbookParser()
+        self.douban_parser = DoubanParser()
         self.sort_column = 2
         self.sort_order = "ASC"
         self.current_search = ""
         self.books_data = []
         self.init_ui()
         self.refresh_books()
+        self.setup_douban_callbacks()
     
     def init_ui(self):
         self.setWindowTitle("电子书管理器")
@@ -55,6 +59,27 @@ class MainWindow(QMainWindow):
         self.select_all_btn.setMinimumHeight(35)
         self.select_all_btn.clicked.connect(self.toggle_select_all)
         top_layout.addWidget(self.select_all_btn)
+        
+        self.batch_parse_btn = QPushButton("🔍 批量解析豆瓣")
+        self.batch_parse_btn.setMinimumHeight(35)
+        self.batch_parse_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #F57C00;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+            }
+        """)
+        self.batch_parse_btn.clicked.connect(self.batch_parse_douban)
+        top_layout.addWidget(self.batch_parse_btn)
         
         self.batch_delete_btn = QPushButton("🗑️ 批量删除选中")
         self.batch_delete_btn.setMinimumHeight(35)
@@ -111,6 +136,20 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("就绪")
         main_layout.addWidget(self.status_label)
     
+    def setup_douban_callbacks(self):
+        self.douban_parser.status_callback = self.on_parse_status
+        self.douban_parser.progress_callback = self.on_parse_progress
+    
+    def on_parse_status(self, message):
+        self.status_label.setText(message)
+    
+    def on_parse_progress(self):
+        queue_size = self.douban_parser.queue_size()
+        if queue_size > 0:
+            self.status_label.setText(f"解析队列剩余: {queue_size} 本书")
+        else:
+            self.refresh_books()
+    
     def create_menu_bar(self):
         menubar = self.menuBar()
         
@@ -124,9 +163,22 @@ class MainWindow(QMainWindow):
         exit_action = file_menu.addAction("退出")
         exit_action.triggered.connect(self.close)
         
+        settings_menu = menubar.addMenu("设置")
+        
+        douban_settings_action = settings_menu.addAction("豆瓣配置")
+        douban_settings_action.triggered.connect(self.open_settings_window)
+        
         help_menu = menubar.addMenu("帮助")
         about_action = help_menu.addAction("关于")
         about_action.triggered.connect(self.show_about)
+    
+    def open_settings_window(self):
+        current_cookie = self.douban_parser.cookie
+        dialog = SettingsWindow(self, current_cookie)
+        if dialog.exec():
+            new_cookie = dialog.get_cookie()
+            self.douban_parser.save_config(new_cookie)
+            QMessageBox.information(self, "成功", "配置已保存！")
     
     def refresh_books(self):
         self.books_data = self.db.get_all_books(
@@ -140,8 +192,18 @@ class MainWindow(QMainWindow):
         for row, book in enumerate(self.books_data):
             self.set_book_row(row, book)
         
-        self.status_label.setText(f"共 {len(self.books_data)} 本书")
+        self.update_status()
         self.update_delete_button_state()
+    
+    def update_status(self):
+        total = len(self.books_data)
+        parsed = sum(1 for b in self.books_data if b.get('parse_status') == 'success')
+        queue_size = self.douban_parser.queue_size()
+        
+        if queue_size > 0:
+            self.status_label.setText(f"共 {total} 本书，已解析 {parsed} 本，队列中 {queue_size} 本")
+        else:
+            self.status_label.setText(f"共 {total} 本书，已解析 {parsed} 本")
     
     def set_book_row(self, row, book):
         checkbox_widget = QWidget()
@@ -167,7 +229,15 @@ class MainWindow(QMainWindow):
                 Qt.TransformationMode.SmoothTransformation
             ))
         else:
-            cover_label.setText("")
+            parse_status = book.get('parse_status', '')
+            status_text = ''
+            if parse_status == 'parsing':
+                status_text = '⏳'
+            elif parse_status == 'success':
+                status_text = '✓'
+            elif parse_status == 'failed':
+                status_text = '✗'
+            cover_label.setText(status_text)
         self.table.setCellWidget(row, 1, cover_label)
         
         self.table.setItem(row, 2, QTableWidgetItem(safe_str(book.get('title'))))
@@ -296,10 +366,7 @@ class MainWindow(QMainWindow):
     def update_delete_button_state(self):
         checked_count = len(self.get_checked_rows())
         self.batch_delete_btn.setEnabled(checked_count > 0)
-        if checked_count > 0:
-            self.status_label.setText(f"共 {len(self.books_data)} 本书，已选中 {checked_count} 本")
-        else:
-            self.status_label.setText(f"共 {len(self.books_data)} 本书")
+        self.update_status()
     
     def toggle_select_all(self):
         checked_rows = self.get_checked_rows()
@@ -313,6 +380,77 @@ class MainWindow(QMainWindow):
                     checkbox.setChecked(not all_checked)
         
         self.update_delete_button_state()
+    
+    def batch_parse_douban(self):
+        if not self.douban_parser.has_cookie():
+            QMessageBox.warning(self, "提示", "请先在设置中配置豆瓣 Cookie！")
+            self.open_settings_window()
+            return
+        
+        checked_rows = self.get_checked_rows()
+        if not checked_rows:
+            QMessageBox.warning(self, "提示", "请先选择要解析的书籍！")
+            return
+        
+        count = len(checked_rows)
+        reply = QMessageBox.question(
+            self, "确认批量解析",
+            f"确定要解析选中的 {count} 本书吗？\n（每次解析间隔至少 7 秒，请耐心等待）",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            for row in checked_rows:
+                item = self.table.item(row, 2)
+                if item:
+                    book = item.data(Qt.ItemDataRole.UserRole)
+                    if book:
+                        self.db.update_book(book['id'], {'parse_status': 'parsing'})
+                        self.douban_parser.add_to_queue(
+                            book['id'],
+                            book,
+                            self.on_parse_complete
+                        )
+            
+            self.refresh_books()
+    
+    def on_parse_complete(self, result, error):
+        if result and 'book_id' in result:
+            book_id = result['book_id']
+            update_data = {
+                'parse_status': 'success',
+                'last_parsed_at': 'CURRENT_TIMESTAMP'
+            }
+            
+            if 'title' in result:
+                update_data['title'] = result['title']
+            if 'subtitle' in result:
+                update_data['subtitle'] = result['subtitle']
+            if 'author' in result:
+                update_data['author'] = result['author']
+            if 'isbn' in result:
+                update_data['isbn'] = result['isbn']
+            if 'rating' in result:
+                update_data['rating'] = result['rating']
+            if 'douban_url' in result:
+                update_data['douban_url'] = result['douban_url']
+            if 'douban_id' in result:
+                update_data['douban_id'] = result['douban_id']
+            if 'publisher' in result:
+                update_data['publisher'] = result['publisher']
+            if 'pubdate' in result:
+                update_data['pubdate'] = result['pubdate']
+            if 'summary' in result:
+                update_data['summary'] = result['summary']
+            if 'cover_path' in result:
+                update_data['cover_path'] = result['cover_path']
+            
+            self.db.update_book(book_id, update_data)
+            print(f"书籍解析完成: {result.get('title', '未知')}")
+        elif error:
+            print(f"解析失败: {error}")
+            if result and 'book_id' in result:
+                self.db.update_book(result['book_id'], {'parse_status': 'failed'})
     
     def batch_delete(self):
         checked_rows = self.get_checked_rows()
@@ -350,7 +488,7 @@ class MainWindow(QMainWindow):
         dialog.exec()
     
     def open_detail_window(self, book):
-        dialog = DetailWindow(self.db, book, self)
+        dialog = DetailWindow(self.db, book, self.douban_parser, self)
         dialog.exec()
     
     def show_about(self):
@@ -358,6 +496,7 @@ class MainWindow(QMainWindow):
             self, "关于电子书管理器",
             "电子书管理器 v1.0\n\n"
             "支持 EPUB、MOBI、AZW3 格式\n"
+            "集成豆瓣书籍信息解析\n"
             "跨平台支持 Windows、Linux、Mac"
         )
 

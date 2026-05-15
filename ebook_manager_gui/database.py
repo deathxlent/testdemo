@@ -28,17 +28,48 @@ class Database:
                 physical_path TEXT UNIQUE,
                 extension TEXT,
                 isbn TEXT,
-                rating INTEGER,
+                rating REAL,
                 douban_url TEXT,
+                douban_id TEXT,
+                publisher TEXT,
+                pubdate TEXT,
+                summary TEXT,
                 notes TEXT,
                 cover_path TEXT,
+                parse_status TEXT DEFAULT 'pending',
+                last_parsed_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
+        self._migrate_database(conn)
+        
         conn.commit()
         conn.close()
+    
+    def _migrate_database(self, conn):
+        cursor = conn.cursor()
+        
+        cursor.execute("PRAGMA table_info(books)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        new_columns = {
+            'douban_id': 'TEXT',
+            'publisher': 'TEXT',
+            'pubdate': 'TEXT',
+            'summary': 'TEXT',
+            'parse_status': "TEXT DEFAULT 'pending'",
+            'last_parsed_at': 'TIMESTAMP'
+        }
+        
+        for col_name, col_def in new_columns.items():
+            if col_name not in columns:
+                try:
+                    cursor.execute(f"ALTER TABLE books ADD COLUMN {col_name} {col_def}")
+                    print(f"添加字段: {col_name}")
+                except Exception as e:
+                    print(f"添加字段 {col_name} 失败: {e}")
 
     def add_book(self, book_data: Dict[str, Any]) -> int:
         conn = self.get_connection()
