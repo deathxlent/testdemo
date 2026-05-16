@@ -12,7 +12,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     background: white;
     border-radius: 20px;
@@ -188,21 +188,25 @@ h1 {
 
 .preview-container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
 }
 
 .preview-box {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
 }
 
-.preview-box h3 {
+.preview-title {
     color: #333;
     margin-bottom: 15px;
     font-size: 18px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 10px;
+    text-align: left;
+    min-height: 40px;
+    line-height: 1.2;
 }
 
 .size-info {
@@ -212,10 +216,14 @@ h1 {
     background: #f0f0f0;
     padding: 4px 10px;
     border-radius: 12px;
+    white-space: nowrap;
 }
 
 .preview-box canvas {
     position: relative;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
 }
 
 canvas {
@@ -292,12 +300,14 @@ canvas {
     border-radius: 8px;
 }
 
-#colorTable {
+#colorTable,
+#beadColorTable {
     width: 100%;
     border-collapse: collapse;
 }
 
-#colorTable thead {
+#colorTable thead,
+#beadColorTable thead {
     position: sticky;
     top: 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -305,17 +315,21 @@ canvas {
 }
 
 #colorTable th,
-#colorTable td {
+#colorTable td,
+#beadColorTable th,
+#beadColorTable td {
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid #eee;
 }
 
-#colorTable th {
+#colorTable th,
+#beadColorTable th {
     font-weight: bold;
 }
 
-#colorTable tbody tr:hover {
+#colorTable tbody tr:hover,
+#beadColorTable tbody tr:hover {
     background: #f5f5ff;
 }
 
@@ -327,6 +341,12 @@ canvas {
 .color-cell .color-swatch {
     width: 24px;
     height: 24px;
+}
+
+@media (max-width: 1024px) {
+    .preview-container {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 768px) {
@@ -349,7 +369,9 @@ canvas {
     }
     
     #colorTable th,
-    #colorTable td {
+    #colorTable td,
+    #beadColorTable th,
+    #beadColorTable td {
         padding: 8px 4px;
         font-size: 12px;
     }

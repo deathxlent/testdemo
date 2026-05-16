@@ -37,19 +37,23 @@
         <div class="preview-section" id="previewSection" style="display: none;">
             <div class="preview-container">
                 <div class="preview-box">
-                    <h3>原图</h3>
+                    <h3 class="preview-title">原图</h3>
                     <canvas id="originalCanvas"></canvas>
                 </div>
                 <div class="preview-box">
-                    <h3>像素化后 <span id="pixelSizeInfo" class="size-info"></span></h3>
+                    <h3 class="preview-title">像素化后 <span id="pixelSizeInfo" class="size-info"></span></h3>
                     <canvas id="pixelatedCanvas"></canvas>
+                </div>
+                <div class="preview-box">
+                    <h3 class="preview-title">拼豆图 <span id="beadSizeInfo" class="size-info"></span></h3>
+                    <canvas id="beadCanvas"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="color-stats-section" id="colorStatsSection" style="display: none;">
             <div class="stats-header">
-                <h3>色彩统计</h3>
+                <h3>像素化色彩统计</h3>
                 <p>不重复色彩数: <span id="colorCount" class="count-badge">0</span></p>
             </div>
             
@@ -67,6 +71,32 @@
                         </tr>
                     </thead>
                     <tbody id="colorTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="color-stats-section" id="beadStatsSection" style="display: none;">
+            <div class="stats-header">
+                <h3>拼豆色彩统计</h3>
+                <p>不重复色彩数: <span id="beadColorCount" class="count-badge">0</span></p>
+            </div>
+            
+            <div class="color-palette" id="beadColorPalette">
+            </div>
+            
+            <div class="color-table-container">
+                <table id="beadColorTable">
+                    <thead>
+                        <tr>
+                            <th>颜色</th>
+                            <th>色号</th>
+                            <th>RGB值</th>
+                            <th>数量</th>
+                            <th>占比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="beadColorTableBody">
                     </tbody>
                 </table>
             </div>
