@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "图片像素化工具",
+  "version": "1.0.0",
+  "description": "将图片转换为像素画和拼豆画",
+  "permissions": [
+    "contextMenus",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "图片像素化工具"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

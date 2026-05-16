@@ -1,0 +1,235 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-width: 900px;
+    min-height: 600px;
+    padding: 15px;
+}
+
+.container {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 22px;
+}
+
+.upload-section {
+    margin-bottom: 20px;
+}
+
+.drop-area {
+    border: 3px dashed #667eea;
+    border-radius: 12px;
+    padding: 30px 15px;
+    text-align: center;
+    background: #f8f9ff;
+    transition: all 0.3s ease;
+}
+
+.drop-area.dragover {
+    border-color: #764ba2;
+    background: #f0f2ff;
+    transform: scale(1.01);
+}
+
+.drop-area p {
+    color: #666;
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+#fileInput {
+    display: none;
+}
+
+.file-label {
+    display: inline-block;
+    padding: 10px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform 0.2s;
+    margin-top: 8px;
+}
+
+.file-label:hover {
+    transform: scale(1.05);
+}
+
+.controls-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9ff;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-group.width-control {
+    flex: 1;
+    min-width: 200px;
+    max-width: 350px;
+}
+
+.slider-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.slider-input-group input[type="range"] {
+    flex: 1;
+    width: auto;
+    padding: 0;
+    height: 5px;
+    -webkit-appearance: none;
+    background: #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.slider-input-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-input-group input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.slider-input-group input[type="number"] {
+    width: 60px;
+    padding: 5px 7px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    cursor: pointer;
+}
+
+.control-group label {
+    color: #333;
+    font-weight: bold;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.control-group input {
+    padding: 6px 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.control-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+#startBtn {
+    padding: 10px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+#startBtn:hover {
+    transform: scale(1.05);
+}
+
+.preview-section {
+    margin-top: 20px;
+}
+
+.preview-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.preview-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-title {
+    color: #333;
+    margin-bottom: 12px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    min-height: 35px;
+    line-height: 1.2;
+}
+
+.size-info {
+    font-size: 12px;
+    font-weight: normal;
+    color: #666;
+    background: #f0f0f0;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.preview-box canvas {
+    position: relative;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+canvas {
+    max-width: 100%;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}

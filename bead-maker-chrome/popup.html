@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片像素化工具</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h1>图片像素化工具</h1>
+        
+        <div class="upload-section">
+            <div id="dropArea" class="drop-area">
+                <p>拖拽图片到此处</p>
+                <p>或</p>
+                <input type="file" id="fileInput" accept="image/jpeg,image/png">
+                <label for="fileInput" class="file-label">选择图片</label>
+            </div>
+        </div>
+
+        <div class="controls-section" id="controlsSection" style="display: none;">
+            <div class="control-group width-control">
+                <label for="pixelWidth">像素化宽度:</label>
+                <div class="slider-input-group">
+                    <input type="range" id="pixelWidthSlider" min="8" max="200" value="32">
+                    <input type="number" id="pixelWidth" min="8" max="200" value="32">
+                </div>
+            </div>
+            <div class="control-group checkbox-group">
+                <input type="checkbox" id="showGrid" checked>
+                <label for="showGrid">显示网格</label>
+            </div>
+            <button id="startBtn">开始像素化</button>
+        </div>
+
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <div class="preview-container">
+                <div class="preview-box">
+                    <h3 class="preview-title">原图</h3>
+                    <canvas id="originalCanvas"></canvas>
+                </div>
+                <div class="preview-box">
+                    <h3 class="preview-title">像素化后 <span id="pixelSizeInfo" class="size-info"></span></h3>
+                    <canvas id="pixelatedCanvas"></canvas>
+                </div>
+                <div class="preview-box">
+                    <h3 class="preview-title">拼豆图 <span id="beadSizeInfo" class="size-info"></span></h3>
+                    <canvas id="beadCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
