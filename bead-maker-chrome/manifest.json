@@ -5,7 +5,9 @@
   "description": "将图片转换为像素画和拼豆画",
   "permissions": [
     "contextMenus",
-    "storage"
+    "storage",
+    "scripting",
+    "activeTab"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -13,5 +15,10 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
   }
 }

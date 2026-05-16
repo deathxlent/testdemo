@@ -11,17 +11,38 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         try {
             const imageUrl = info.srcUrl;
             
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64data = reader.result;
-                
-                chrome.storage.local.set({ pixelateImage: base64data }, () => {
-                    chrome.action.openPopup();
-                });
-            };
-            reader.readAsDataURL(blob);
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (url) => {
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            resolve(canvas.toDataURL('image/png'));
+                        };
+                        img.onerror = () => {
+                            resolve(null);
+                        };
+                        img.src = url;
+                    });
+                },
+                args: [imageUrl]
+            }).then((results) => {
+                if (results[0].result) {
+                    chrome.storage.local.set({ pixelateImage: results[0].result }, () => {
+                        chrome.action.openPopup();
+                    });
+                } else {
+                    console.error('无法获取图片数据');
+                }
+            }).catch((error) => {
+                console.error('处理图片失败:', error);
+            });
         } catch (error) {
             console.error('处理图片失败:', error);
         }
