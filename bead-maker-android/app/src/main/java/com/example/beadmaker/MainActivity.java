@@ -1,45 +1,61 @@
 package com.example.beadmaker;
 
 import android.Manifest;
-import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
+import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
-    private ValueCallback<Uri> uploadMessage;
-    private final ActivityResultLauncher<String[]> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
-                Boolean cameraGranted = result.getOrDefault(Manifest.permission.CAMERA, false);
-                if (cameraGranted != null && cameraGranted) {
-                    Toast.makeText(this, "权限已授予", Toast.LENGTH_SHORT).show();
-                }
-            });
 
     private final ActivityResultLauncher<String> pickImage = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
                 if (uri != null) {
-                    webView.evaluateJavascript(
-                            "javascript:handleImagePick('" + uri.toString() + "')", null);
+                    try {
+                        InputStream inputStream = getContentResolver().openInputStream(uri);
+                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                        
+                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream);
+                        byte[] byteArray = byteArrayOutputStream.toByteArray();
+                        String base64Image = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                        
+                        String javascript = "javascript:handleImageData('" + base64Image + "')";
+                        webView.evaluateJavascript(javascript, null);
+                        
+                        if (inputStream != null) {
+                            inputStream.close();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(this, "加载图片失败", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
     );
 
     @Override
-    protected void onCreate(android.os.Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -52,33 +68,9 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDomStorageEnabled(true);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
 
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-            }
-        });
+        webView.setWebViewClient(new WebViewClient());
 
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
-                                             FileChooserParams fileChooserParams) {
-                if (uploadMessage != null) {
-                    uploadMessage.onReceiveValue(null);
-                }
-                uploadMessage = new ValueCallback<Uri>() {
-                    @Override
-                    public void onReceiveValue(Uri value) {
-                        if (value != null) {
-                            webView.evaluateJavascript(
-                                    "javascript:handleImagePick('" + value.toString() + "')", null);
-                        }
-                    }
-                };
-                pickImage.launch("image/*");
-                return true;
-            }
-        });
+        webView.setWebChromeClient(new WebChromeClient());
 
         webView.addJavascriptInterface(new WebAppInterface(), "Android");
 
@@ -88,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     public class WebAppInterface {
         @android.webkit.JavascriptInterface
         public void pickImage() {
-            runOnUiThread(() -> pickImage.launch("image/*"));
+            runOnUiThread(() -> MainActivity.this.pickImage.launch("image/*"));
         }
 
         @android.webkit.JavascriptInterface

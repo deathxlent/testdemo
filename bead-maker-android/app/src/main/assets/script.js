@@ -18,6 +18,7 @@ let currentPixelData = null;
 let currentTargetWidth = 0;
 let currentTargetHeight = 0;
 let beadColors = [];
+let isBeadColorsLoaded = false;
 
 async function loadBeadColors() {
     try {
@@ -29,15 +30,21 @@ async function loadBeadColors() {
             const b = parseInt(hex.slice(5, 7), 16);
             return { name, r, g, b, hex };
         });
+        isBeadColorsLoaded = true;
         console.log(`已加载 ${beadColors.length} 种拼豆颜色`);
     } catch (error) {
         console.error('加载拼豆颜色失败:', error);
+        alert('加载颜色数据失败，请检查网络连接');
     }
 }
 
 loadBeadColors();
 
 function findClosestBeadColor(r, g, b) {
+    if (beadColors.length === 0) {
+        return { r: r, g: g, b: b, hex: `rgb(${r},${g},${b})` };
+    }
+    
     let closestColor = null;
     let minDistance = Infinity;
 
@@ -103,7 +110,13 @@ fileInput.addEventListener('change', (e) => {
     }
 });
 
-function handleImagePick(imageUri) {
+function handleImageData(base64Data) {
+    if (!isBeadColorsLoaded) {
+        alert('颜色数据正在加载中，请稍候...');
+        setTimeout(() => handleImageData(base64Data), 500);
+        return;
+    }
+
     const img = new Image();
     img.onload = () => {
         originalImage = img;
@@ -121,13 +134,65 @@ function handleImagePick(imageUri) {
         beadCanvas.height = displayHeight;
 
         originalCtx.drawImage(img, 0, 0, displayWidth, displayHeight);
+        beadCtx.fillStyle = '#fafafa';
+        beadCtx.fillRect(0, 0, beadCanvas.width, beadCanvas.height);
     };
-    img.src = imageUri;
+    img.onerror = () => {
+        alert('加载图片失败，请重试');
+    };
+    img.src = 'data:image/jpeg;base64,' + base64Data;
+}
+
+function handleImagePick(imageUri) {
+    if (!isBeadColorsLoaded) {
+        alert('颜色数据正在加载中，请稍候...');
+        setTimeout(() => handleImagePick(imageUri), 500);
+        return;
+    }
+
+    fetch(imageUri)
+        .then(response => response.blob())
+        .then(blob => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    controlsSection.style.display = 'flex';
+                    previewSection.style.display = 'block';
+
+                    const maxWidth = 400;
+                    const ratio = Math.min(maxWidth / img.width, 1);
+                    const displayWidth = img.width * ratio;
+                    const displayHeight = img.height * ratio;
+
+                    originalCanvas.width = displayWidth;
+                    originalCanvas.height = displayHeight;
+                    beadCanvas.width = displayWidth;
+                    beadCanvas.height = displayHeight;
+
+                    originalCtx.drawImage(img, 0, 0, displayWidth, displayHeight);
+                    beadCtx.fillStyle = '#fafafa';
+                    beadCtx.fillRect(0, 0, beadCanvas.width, beadCanvas.height);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(blob);
+        })
+        .catch(error => {
+            console.error('加载图片失败:', error);
+            alert('加载图片失败，请重试');
+        });
 }
 
 function handleFile(file) {
     if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
         alert('请上传JPG或PNG格式的图片');
+        return;
+    }
+
+    if (!isBeadColorsLoaded) {
+        alert('颜色数据正在加载中，请稍候...');
         return;
     }
 
@@ -150,6 +215,8 @@ function handleFile(file) {
             beadCanvas.height = displayHeight;
 
             originalCtx.drawImage(img, 0, 0, displayWidth, displayHeight);
+            beadCtx.fillStyle = '#fafafa';
+            beadCtx.fillRect(0, 0, beadCanvas.width, beadCanvas.height);
         };
         img.src = e.target.result;
     };
@@ -163,7 +230,15 @@ showGridCheckbox.addEventListener('change', () => {
 });
 
 startBtn.addEventListener('click', () => {
-    if (!originalImage) return;
+    if (!originalImage) {
+        alert('请先选择图片');
+        return;
+    }
+
+    if (!isBeadColorsLoaded) {
+        alert('颜色数据正在加载中，请稍候...');
+        return;
+    }
 
     const pixelWidth = parseInt(pixelWidthInput.value);
     if (pixelWidth < 8 || pixelWidth > 200) {
@@ -171,7 +246,12 @@ startBtn.addEventListener('click', () => {
         return;
     }
 
-    pixelateImage(pixelWidth);
+    try {
+        pixelateImage(pixelWidth);
+    } catch (error) {
+        console.error('生成拼豆图失败:', error);
+        alert('生成拼豆图失败，请重试');
+    }
 });
 
 function pixelateImage(targetWidth) {
