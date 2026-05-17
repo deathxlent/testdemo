@@ -18,7 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.nio.charset.Charsets
+import kotlin.text.Charsets
 
 class MainActivity : AppCompatActivity() {
 

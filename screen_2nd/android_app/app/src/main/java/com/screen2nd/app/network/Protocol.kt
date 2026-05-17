@@ -7,6 +7,7 @@ import java.nio.ByteOrder
 import java.util.zip.CRC32
 import java.util.zip.Deflater
 import java.util.zip.Inflater
+import kotlin.text.Charsets
 
 object Protocol {
     const val UDP_DISCOVERY_PORT = 45678
