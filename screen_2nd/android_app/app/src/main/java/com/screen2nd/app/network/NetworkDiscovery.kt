@@ -130,7 +130,7 @@ class NetworkDiscovery(
     }
 
     private suspend fun broadcastLoop() {
-        while (isActive) {
+        while (scope.isActive) {
             try {
                 val msg = DiscoveryMessage(msgType = "announce", device = getDeviceInfo())
                 val data = msg.toBytes()
@@ -150,7 +150,7 @@ class NetworkDiscovery(
 
     private suspend fun listenForDiscovery() {
         val buffer = ByteArray(4096)
-        while (isActive) {
+        while (scope.isActive) {
             try {
                 val packet = DatagramPacket(buffer, buffer.size)
                 udpSocket?.receive(packet)

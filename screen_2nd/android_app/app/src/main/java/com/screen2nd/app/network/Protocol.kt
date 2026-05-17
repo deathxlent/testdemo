@@ -32,7 +32,7 @@ object Protocol {
     const val HEARTBEAT_INTERVAL = 5000L
     const val TIMEOUT = 15000L
 
-    private const val COMPRESSION_THRESHOLD = 10240
+    const val COMPRESSION_THRESHOLD = 10240
 }
 
 data class DeviceInfo(

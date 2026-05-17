@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.nio.charset.Charsets
 
 class MainActivity : AppCompatActivity() {
 
@@ -108,7 +109,7 @@ class MainActivity : AppCompatActivity() {
             disconnect()
         }
 
-        deviceList.onItemClickListener = { _, _, position, _ ->
+        deviceList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             selectedDevice = deviceListAdapter[position]
             if (!isServerMode) {
                 showPasswordDialog(false)

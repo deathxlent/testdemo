@@ -73,7 +73,7 @@ class TCPConnection(
 
     private suspend fun recvLoop() {
         val buffer = ByteArray(65536)
-        while (_isConnected.value && isActive) {
+        while (_isConnected.value && scope.isActive) {
             try {
                 val bytesRead = withContext(Dispatchers.IO) { inputStream.read(buffer) }
                 if (bytesRead == -1) break
@@ -153,7 +153,7 @@ class TCPServer(
     }
 
     private suspend fun acceptLoop() {
-        while (isActive) {
+        while (scope.isActive) {
             try {
                 val clientSocket = withContext(Dispatchers.IO) { serverSocket?.accept() } ?: continue
                 val conn = TCPConnection(
