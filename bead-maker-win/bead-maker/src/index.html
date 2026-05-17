@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼豆图生成器</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>拼豆图生成器</h1>
+
+        <div class="menu-section">
+            <button id="registerMenuBtn" class="menu-btn">注册右键菜单</button>
+            <button id="unregisterMenuBtn" class="menu-btn">移除右键菜单</button>
+        </div>
+
+        <div class="upload-section">
+            <div id="dropArea" class="drop-area">
+                <p>拖拽图片到此处</p>
+                <p>或</p>
+                <input type="file" id="fileInput" accept="image/jpeg,image/png">
+                <label for="fileInput" class="file-label">选择图片</label>
+            </div>
+        </div>
+
+        <div class="controls-section" id="controlsSection" style="display: none;">
+            <div class="control-group width-control">
+                <label for="pixelWidth">拼豆宽度:</label>
+                <div class="slider-input-group">
+                    <input type="range" id="pixelWidthSlider" min="8" max="200" value="32">
+                    <input type="number" id="pixelWidth" min="8" max="200" value="32">
+                </div>
+            </div>
+            <button id="startBtn">生成拼豆图</button>
+        </div>
+
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <div class="preview-container">
+                <div class="preview-box">
+                    <h3 class="preview-title">原图 <span id="originalSizeInfo" class="size-info"></span></h3>
+                    <img id="originalImage" class="preview-img">
+                </div>
+                <div class="preview-box">
+                    <h3 class="preview-title">拼豆图 <span id="beadSizeInfo" class="size-info"></span></h3>
+                    <img id="beadImage" class="preview-img">
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-section" id="statsSection" style="display: none;">
+            <div class="stats-header">
+                <h3>拼豆颜色统计</h3>
+                <p>不重复颜色数: <span id="colorCount" class="count-badge">0</span></p>
+            </div>
+            <div class="color-palette" id="colorPalette"></div>
+            <div class="button-group">
+                <button id="saveBtn" class="save-btn">保存图片和PDF</button>
+            </div>
+        </div>
+
+        <div id="messageArea" class="message-area"></div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
