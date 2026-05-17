@@ -311,3 +311,5 @@ cython_debug/
 */.gradle
 build/
 */build/
+node_modules
+package-lock.json

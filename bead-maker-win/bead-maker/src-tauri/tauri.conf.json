@@ -4,8 +4,7 @@
   "version": "1.0.0",
   "identifier": "com.beadmaker.app",
   "build": {
-    "frontendDist": "../src",
-    "devtools": true
+    "frontendDist": "../src"
   },
   "app": {
     "withGlobalTauri": true,
