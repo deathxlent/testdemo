@@ -6,14 +6,40 @@ import time
 import sys
 import threading
 import shutil
+from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from typing import List
 from datetime import datetime
 
 
+def extract_domain(url: str) -> str:
+    url = url.strip()
+    if not url:
+        return url
+
+    if not url.startswith(('http://', 'https://')):
+        url = 'http://' + url
+
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc
+        if domain:
+            domain = domain.split(':')[0]
+            return domain
+    except:
+        pass
+
+    match = re.match(r'^(?:https?://)?(?:www\.)?([^/\s:]+)', url)
+    if match:
+        return match.group(1)
+
+    return url.split('/')[0].split(':')[0]
+
+
 @dataclass
 class PingStats:
     target: str
+    display_target: str = ""
     ip: str = ""
     last: float = 0.0
     avg: float = 0.0
@@ -192,7 +218,8 @@ def render_box_lines(stats: PingStats, box_width: int) -> List[str]:
 
     lines.append('╔' + '═' * inner_width + '╗')
 
-    title = f' Target: {stats.target}'[:inner_width].ljust(inner_width)
+    display_name = stats.display_target if stats.display_target else stats.target
+    title = f' Target: {display_name}'[:inner_width].ljust(inner_width)
     lines.append(f'║{title}║')
 
     lines.append('╠' + '═' * inner_width + '╣')
@@ -306,12 +333,13 @@ def main():
     threads: List[threading.Thread] = []
 
     for target in args.targets:
-        stats = PingStats(target=target)
+        domain = extract_domain(target)
+        stats = PingStats(target=domain, display_target=target)
         stats_list.append(stats)
         stop_event = threading.Event()
         stop_events.append(stop_event)
 
-        thread = threading.Thread(target=ping_worker, args=(target, stats, stop_event), daemon=True)
+        thread = threading.Thread(target=ping_worker, args=(domain, stats, stop_event), daemon=True)
         thread.start()
         threads.append(thread)
 
@@ -347,7 +375,9 @@ def main():
         print('\nFinal Statistics:')
         print('=' * 80)
         for stats in stats_list:
-            print(f'\n{stats.target}:')
+            display_name = stats.display_target if stats.display_target else stats.target
+            print(f'\n{display_name}:')
+            print(f'  Domain: {stats.target}')
             print(f'  IP: {stats.ip}')
             print(f'  Last: {stats.last:.2f} ms' if stats.last > 0 else '  Last: N/A')
             print(f'  Avg: {stats.avg:.2f} ms' if stats.avg > 0 else '  Avg: N/A')
