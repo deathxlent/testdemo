@@ -1,16 +1,16 @@
 use base64::{engine::general_purpose, Engine as _};
-use image::{DynamicImage, GenericImageView, ImageFormat, Rgba};
+use ::image::{GenericImageView, ImageFormat, RgbaImage};
+use ::image::imageops::FilterType;
 use printpdf::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::BufWriter;
 use std::path::PathBuf;
-use tauri::Manager;
 use winreg::enums::*;
 use winreg::RegKey;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BeadColor {
     pub name: String,
     pub r: u8,
@@ -88,23 +88,19 @@ async fn process_image(
         return Err("No valid bead colors found".to_string());
     }
 
-    let img = image::open(&image_path).map_err(|e| e.to_string())?;
+    let img = ::image::open(&image_path).map_err(|e| e.to_string())?;
 
     let (orig_width, orig_height) = img.dimensions();
     let ratio = orig_height as f32 / orig_width as f32;
     let target_height = ((pixel_width as f32) * ratio) as u32;
 
-    let resized = img.resize_exact(
-        pixel_width,
-        target_height,
-        image::imageops::FilterType::Nearest,
-    );
+    let resized = ::image::imageops::resize(&img, pixel_width, target_height, FilterType::Nearest);
 
     let mut color_counts: HashMap<String, (BeadColor, usize)> = HashMap::new();
 
-    for (_x, _y, pixel) in resized.pixels() {
-        let Rgba([r, g, b, _a]) = pixel;
-        let closest = find_closest_bead_color(r, g, b, &bead_colors);
+    for pixel in resized.pixels() {
+        let rgba = pixel.0;
+        let closest = find_closest_bead_color(rgba[0], rgba[1], rgba[2], &bead_colors);
 
         color_counts
             .entry(closest.name.clone())
@@ -126,12 +122,12 @@ async fn process_image(
 
     stats.sort_by(|a, b| b.count.cmp(&a.count));
 
-    let mut output_img = DynamicImage::new_rgba8(pixel_width, target_height);
+    let mut output_img = RgbaImage::new(pixel_width, target_height);
 
-    for (x, y, pixel) in resized.pixels() {
-        let Rgba([r, g, b, _a]) = pixel;
-        let closest = find_closest_bead_color(r, g, b, &bead_colors);
-        output_img.put_pixel(x, y, Rgba([closest.r, closest.g, closest.b, 255]));
+    for (x, y, pixel) in resized.enumerate_pixels() {
+        let rgba = pixel.0;
+        let closest = find_closest_bead_color(rgba[0], rgba[1], rgba[2], &bead_colors);
+        output_img.put_pixel(x, y, ::image::Rgba([closest.r, closest.g, closest.b, 255]));
     }
 
     let mut buffer = Vec::new();
@@ -149,29 +145,13 @@ async fn process_image(
 async fn save_files(
     image_path: String,
     pixel_width: u32,
-    bead_colors_json: String,
+    _bead_colors_json: String,
     stats: Vec<BeadStats>,
     image_data: String,
 ) -> Result<String, String> {
     let input_path = PathBuf::from(&image_path);
     let parent_dir = input_path.parent().ok_or("Invalid path")?;
     let file_stem = input_path.file_stem().unwrap().to_string_lossy();
-
-    let bead_colors_map: HashMap<String, String> =
-        serde_json::from_str(&bead_colors_json).map_err(|e| e.to_string())?;
-
-    let bead_colors: Vec<BeadColor> = bead_colors_map
-        .iter()
-        .filter_map(|(name, hex)| {
-            parse_hex_color(hex).map(|(r, g, b)| BeadColor {
-                name: name.clone(),
-                r,
-                g,
-                b,
-                hex: hex.clone(),
-            })
-        })
-        .collect();
 
     let base64_data = image_data
         .strip_prefix("data:image/png;base64,")
@@ -184,7 +164,7 @@ async fn save_files(
     fs::write(&png_path, &image_bytes).map_err(|e| e.to_string())?;
 
     let pdf_path = parent_dir.join(format!("{}_bead.pdf", file_stem));
-    create_pdf(&pdf_path, &stats, pixel_width, &image_bytes, &input_path).map_err(|e| e.to_string())?;
+    create_pdf(&pdf_path, &stats, pixel_width, &input_path).map_err(|e| e.to_string())?;
 
     Ok(format!(
         "Files saved:\n1. {}\n2. {}",
@@ -197,7 +177,6 @@ fn create_pdf(
     pdf_path: &PathBuf,
     stats: &[BeadStats],
     pixel_width: u32,
-    image_bytes: &[u8],
     original_path: &PathBuf,
 ) -> Result<(), String> {
     let (doc, page1, layer1) =
@@ -229,10 +208,9 @@ fn create_pdf(
     current_layer.use_text("颜色统计 (按数量降序):", 14.0, Mm(20.0), Mm(210.0), &font_bold);
 
     let mut y_pos = 195.0;
-    let page_height_mm = 297.0;
     let row_height = 7.0;
 
-    for (i, stat) in stats.iter().take(30).enumerate() {
+    for (i, stat) in stats.iter().enumerate() {
         if y_pos - row_height < 20.0 {
             break;
         }
@@ -251,52 +229,9 @@ fn create_pdf(
         y_pos -= row_height;
     }
 
-    if stats.len() > 30 {
-        current_layer.use_text(
-            &format!("... 还有 {} 种颜色", stats.len() - 30),
-            10.0,
-            Mm(20.0),
-            Mm(y_pos),
-            &font,
-        );
-    }
-
-    let (doc2, page2, layer2) =
-        PdfDocument::new("拼豆图", Mm(210.0), Mm(297.0), "Image Layer");
-
-    let current_layer2 = doc2.get_page(page2).get_layer(layer2);
-
-    let img = image::load_from_memory(image_bytes).map_err(|e| e.to_string())?;
-    let (img_width, img_height) = img.dimensions();
-
-    let max_width_mm = 170.0;
-    let max_height_mm = 250.0;
-    let scale = (max_width_mm / (img_width as f32)).min(max_height_mm / (img_height as f32));
-
-    let scaled_width_mm = img_width as f32 * scale;
-    let scaled_height_mm = img_height as f32 * scale;
-
-    let x_offset = (210.0 - scaled_width_mm) / 2.0;
-    let y_offset = (297.0 - scaled_height_mm) / 2.0;
-
-    let img_buffer = img.to_rgba8();
-    let img_buffer = image::DynamicImage::ImageRgba8(img_buffer);
-
-    let img_data = img_buffer.into_bytes();
-
-    let image = PdfImage::from_rgba_bytes(doc2.get_page(page2).get_layer(layer2), &img_data, img_width, img_height)
-        .map_err(|e| e.to_string())?;
-
-    current_layer2.use_image(&image, Mm(x_offset), Mm(y_offset), scaled_width_mm)
-        .map_err(|e| e.to_string())?;
-
     let file = File::create(pdf_path).map_err(|e| e.to_string())?;
     let mut writer = BufWriter::new(file);
     doc.save(&mut writer).map_err(|e| e.to_string())?;
-
-    let file2 = File::open(pdf_path).map_err(|e| e.to_string())?;
-    let mut writer2 = BufWriter::new(file2);
-    doc2.save(&mut writer2).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -360,9 +295,6 @@ fn get_exe_path() -> Result<String, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             process_image,
             save_files,
