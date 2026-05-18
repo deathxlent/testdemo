@@ -292,6 +292,12 @@ fn get_exe_path() -> Result<String, String> {
         .ok_or_else(|| "Failed to get exe path".to_string())
 }
 
+#[tauri::command]
+fn read_file_as_base64(file_path: String) -> Result<String, String> {
+    let bytes = fs::read(&file_path).map_err(|e| e.to_string())?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -300,7 +306,8 @@ pub fn run() {
             save_files,
             register_context_menu,
             unregister_context_menu,
-            get_exe_path
+            get_exe_path,
+            read_file_as_base64
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

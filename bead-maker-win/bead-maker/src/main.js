@@ -80,30 +80,81 @@ dropArea.addEventListener('drop', (e) => {
     }
 });
 
-fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        handleFile(e.target.files[0]);
-    }
+fileInput.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await selectFile();
 });
 
+async function selectFile() {
+    try {
+        const selected = await open({
+            multiple: false,
+            filters: [
+                { name: '图片', extensions: ['jpg', 'jpeg', 'png'] }
+            ]
+        });
+        
+        if (selected) {
+            const fileName = selected.split(/[/\\]/).pop();
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+            const file = { 
+                path: selected, 
+                name: fileName,
+                type: `image/${fileExtension === 'jpg' || fileExtension === 'jpeg' ? 'jpeg' : 'png'}`
+            };
+            handleFile(file);
+        }
+    } catch (error) {
+        console.error('选择文件失败:', error);
+        showMessage('选择文件失败', 'error');
+    }
+}
+
+function readFileAsDataURL(filePath, callback) {
+    invoke('read_file_as_base64', { filePath })
+        .then(base64Data => {
+            callback(`data:image/${filePath.split('.').pop().toLowerCase() === 'jpg' ? 'jpeg' : 'png'};base64,${base64Data}`);
+        })
+        .catch(error => {
+            console.error('读取文件失败:', error);
+            callback(null);
+        });
+}
+
 async function handleFile(file) {
-    if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (fileExtension !== 'jpg' && fileExtension !== 'jpeg' && fileExtension !== 'png') {
         showMessage('请上传JPG或PNG格式的图片', 'error');
         return;
     }
 
-    const filePath = file.path || file.name;
-    currentImagePath = filePath;
+    currentImagePath = file.path || file.name;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        originalImage.src = e.target.result;
-        originalSizeInfo.textContent = `${file.type.includes('jpeg') ? 'JPG' : 'PNG'}`;
-        controlsSection.style.display = 'flex';
-        previewSection.style.display = 'block';
-        statsSection.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    if (file.path) {
+        readFileAsDataURL(file.path, (dataUrl) => {
+            if (dataUrl) {
+                originalImage.src = dataUrl;
+                originalSizeInfo.textContent = `${fileExtension === 'jpg' || fileExtension === 'jpeg' ? 'JPG' : 'PNG'}`;
+                controlsSection.style.display = 'flex';
+                previewSection.style.display = 'block';
+                statsSection.style.display = 'none';
+                showMessage(`已选择图片: ${file.name}`, 'success');
+            } else {
+                showMessage('读取图片失败', 'error');
+            }
+        });
+    } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            originalImage.src = e.target.result;
+            originalSizeInfo.textContent = `${file.type.includes('jpeg') ? 'JPG' : 'PNG'}`;
+            controlsSection.style.display = 'flex';
+            previewSection.style.display = 'block';
+            statsSection.style.display = 'none';
+            showMessage(`已选择图片: ${file.name}`, 'success');
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
 startBtn.addEventListener('click', async () => {
@@ -125,6 +176,8 @@ startBtn.addEventListener('click', async () => {
         const beadColorsJson = JSON.stringify(
             Object.fromEntries(beadColors.map(c => [c.name, c.hex]))
         );
+
+        showMessage('正在处理图片...', 'info');
 
         const result = await invoke('process_image', {
             imagePath: currentImagePath,
@@ -206,7 +259,7 @@ registerMenuBtn.addEventListener('click', async () => {
         showMessage(result, 'success');
     } catch (error) {
         console.error('注册右键菜单失败:', error);
-        showMessage(`注册失败: ${error}`, 'error');
+        showMessage(`注册失败: ${error}\n\n提示：可能需要以管理员身份运行此程序`, 'error');
     } finally {
         registerMenuBtn.disabled = false;
         registerMenuBtn.textContent = '注册右键菜单';
@@ -222,7 +275,7 @@ unregisterMenuBtn.addEventListener('click', async () => {
         showMessage(result, 'success');
     } catch (error) {
         console.error('移除右键菜单失败:', error);
-        showMessage(`移除失败: ${error}`, 'error');
+        showMessage(`移除失败: ${error}\n\n提示：可能需要以管理员身份运行此程序`, 'error');
     } finally {
         unregisterMenuBtn.disabled = false;
         unregisterMenuBtn.textContent = '移除右键菜单';
@@ -231,17 +284,27 @@ unregisterMenuBtn.addEventListener('click', async () => {
 
 loadBeadColors();
 
-const args = window.__TAURI__.invoke('core:window').label;
 window.addEventListener('DOMContentLoaded', async () => {
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     const win = getCurrentWindow();
 
     win.onDragDropEvent((event) => {
+        console.log('Drag drop event:', event);
         if (event.payload.type === 'drop') {
             const paths = event.payload.paths;
             if (paths && paths.length > 0) {
-                const file = { path: paths[0], name: paths[0].split(/[/\\]/).pop() };
-                handleFile(file);
+                const fileName = paths[0].split(/[/\\]/).pop();
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                if (fileExtension === 'jpg' || fileExtension === 'jpeg' || fileExtension === 'png') {
+                    const file = { 
+                        path: paths[0], 
+                        name: fileName,
+                        type: `image/${fileExtension === 'jpg' || fileExtension === 'jpeg' ? 'jpeg' : 'png'}`
+                    };
+                    handleFile(file);
+                } else {
+                    showMessage('请拖放JPG或PNG格式的图片', 'error');
+                }
             }
         }
     });
