@@ -1,0 +1,3 @@
+# Optional dependencies for enhanced functionality
+# readchar is optional - only needed for advanced keyboard interaction
+# readchar>=4.0.0
