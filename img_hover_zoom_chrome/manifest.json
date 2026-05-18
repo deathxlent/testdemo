@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "图片悬停缩放",
+  "version": "1.0.0",
+  "description": "鼠标悬停图片时自动放大或缩小显示，方便查看大图细节和小图全貌",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "图片悬停缩放"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
