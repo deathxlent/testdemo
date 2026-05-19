@@ -164,37 +164,48 @@ class CoreDetailWindow:
         self._frame = 0
         self.photo_refs = []
         
+        try:
+            import ctypes
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except:
+            pass
+        
         self.window = tk.Toplevel(parent)
-        self.window.overrideredirect(True)
+        self.window.title("CPU核心使用率")
         self.window.attributes('-topmost', True)
         self.window.configure(bg='#f0f0f0')
+        self.window.resizable(False, True)
         
         core_count = self.monitor.cpu_count
         cols = min(4, core_count)
         rows = (core_count + cols - 1) // cols
         
         cell_size = GRID_CELL_SIZE
+        cell_pad = 6
         padding = 10
         
-        max_display_rows = min(rows, 6)
-        content_height = max_display_rows * cell_size
-        window_height = content_height + padding * 2 + 60
-        window_width = cols * cell_size + padding * 2 + (20 if rows > max_display_rows else 0)
+        cell_total_width = cell_size + cell_pad
+        cell_total_height = cell_size + cell_pad
+        
+        content_width = cols * cell_total_width + padding * 2
+        max_display_rows = min(rows, 10)
+        content_height = max_display_rows * cell_total_height
+        
+        scrollbar_width = 24 if rows > max_display_rows else 0
+        window_width = content_width + scrollbar_width + 40
+        window_height = content_height + 100
         
         screen_height = self.window.winfo_screenheight()
-        window_height = min(window_height, screen_height - 100)
+        screen_width = self.window.winfo_screenwidth()
+        window_height = min(window_height, screen_height - 150)
+        window_width = min(window_width, screen_width - 50)
         
         self.window.geometry(f"{window_width}x{window_height}")
         
         title_frame = tk.Frame(self.window, bg='#f0f0f0')
         title_frame.pack(fill='x', padx=padding, pady=(padding, 5))
         tk.Label(title_frame, text=f"CPU核心使用率 ({core_count}核)", 
-                bg='#f0f0f0', font=('Arial', 9, 'bold')).pack(side='left')
-        
-        close_btn = tk.Label(title_frame, text="×", bg='#f0f0f0', 
-                            font=('Arial', 12, 'bold'), fg='gray', cursor='hand2')
-        close_btn.pack(side='right')
-        close_btn.bind('<Button-1>', lambda e: self.close())
+                bg='#f0f0f0', font=('Arial', 10, 'bold')).pack(side='left')
         
         container = tk.Frame(self.window, bg='#f0f0f0')
         container.pack(fill='both', expand=True, padx=padding, pady=(0, padding))
@@ -223,7 +234,10 @@ class CoreDetailWindow:
         canvas.bind_all("<MouseWheel>", on_mousewheel)
         
         grid_frame = tk.Frame(scrollable_frame, bg='#f0f0f0')
-        grid_frame.pack()
+        grid_frame.pack(fill='both', expand=True)
+        
+        for col in range(cols):
+            grid_frame.grid_columnconfigure(col, weight=1, minsize=cell_size + cell_pad)
         
         self.cell_labels = []
         
@@ -233,14 +247,17 @@ class CoreDetailWindow:
             
             frame = tk.Frame(grid_frame, bg='white', relief='solid', bd=1, 
                            width=cell_size, height=cell_size)
-            frame.grid(row=row, column=col, padx=2, pady=2)
+            frame.grid(row=row, column=col, padx=cell_pad//2, pady=cell_pad//2, sticky='nsew')
             frame.grid_propagate(False)
             
-            label = tk.Label(frame, bg='white')
-            label.pack(padx=2, pady=(2, 0))
+            inner_container = tk.Frame(frame, bg='white')
+            inner_container.pack(fill='both', expand=True, padx=2, pady=2)
             
-            usage_label = tk.Label(frame, text=f"CPU{i}: 0%", bg='white', font=('Arial', 7))
-            usage_label.pack(pady=(0, 2))
+            label = tk.Label(inner_container, bg='white')
+            label.pack(fill='x', pady=(0, 2))
+            
+            usage_label = tk.Label(inner_container, text=f"CPU{i}: 0%", bg='white', font=('Arial', 7))
+            usage_label.pack(fill='x')
             
             self.cell_labels.append((label, usage_label))
         
@@ -258,6 +275,7 @@ class CoreDetailWindow:
             pass
         
         self.window.focus_force()
+        self.window.protocol("WM_DELETE_WINDOW", self.close)
         self._update_grid()
     
     def _update_grid(self):
@@ -278,7 +296,7 @@ class CoreDetailWindow:
                 frame_idx = (self._frame * speed) % 8
                 img = self.generator.run_frames[frame_idx]
             
-            img = img.resize((GRID_CELL_SIZE - 12, GRID_CELL_SIZE - 12), Image.NEAREST)
+            img = img.resize((36, 36), Image.NEAREST)
             photo = ImageTk.PhotoImage(img)
             self.photo_refs.append(photo)
             
