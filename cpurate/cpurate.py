@@ -179,8 +179,14 @@ class HoverWindow:
         
         cell_size = GRID_CELL_SIZE
         padding = 10
-        window_width = cols * cell_size + padding * 2
-        window_height = rows * cell_size + padding * 2 + 30
+        content_width = cols * cell_size + padding * 2
+        
+        max_display_rows = min(rows, 6)
+        window_height = max_display_rows * cell_size + padding * 2 + 60
+        window_width = content_width + (20 if rows > max_display_rows else 0)
+        
+        screen_height = self.window.winfo_screenheight()
+        window_height = min(window_height, screen_height - 100)
         
         self.window.geometry(f"{window_width}x{window_height}")
         
@@ -189,8 +195,34 @@ class HoverWindow:
         tk.Label(title_frame, text=f"CPU核心使用率 ({core_count}核)", 
                 bg='#f0f0f0', font=('Arial', 9, 'bold')).pack(side='left')
         
-        grid_frame = tk.Frame(self.window, bg='#f0f0f0')
-        grid_frame.pack(padx=padding, pady=(0, padding))
+        container = tk.Frame(self.window, bg='#f0f0f0')
+        container.pack(fill='both', expand=True, padx=padding, pady=(0, padding))
+        
+        canvas = tk.Canvas(container, bg='#f0f0f0', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#f0f0f0')
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        if rows > max_display_rows:
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+        else:
+            canvas.pack(fill="both", expand=True)
+        
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+        
+        grid_frame = tk.Frame(scrollable_frame, bg='#f0f0f0')
+        grid_frame.pack()
         
         self.cell_labels = []
         self.photo_refs = []
@@ -199,10 +231,11 @@ class HoverWindow:
             row = i // cols
             col = i % cols
             
-            frame = tk.Frame(grid_frame, bg='white', relief='solid', bd=1)
+            frame = tk.Frame(grid_frame, bg='white', relief='solid', bd=1, width=cell_size, height=cell_size)
             frame.grid(row=row, column=col, padx=2, pady=2)
+            frame.grid_propagate(False)
             
-            label = tk.Label(frame, bg='white', width=cell_size//8, height=cell_size//12)
+            label = tk.Label(frame, bg='white')
             label.pack(padx=2, pady=(2, 0))
             
             usage_label = tk.Label(frame, text=f"CPU{i}: 0%", bg='white', font=('Arial', 7))
