@@ -1,7 +1,9 @@
 import threading
 import time
 import math
+import queue
 import tkinter as tk
+from tkinter import ttk
 from PIL import Image, ImageDraw, ImageTk
 import pystray
 import psutil
@@ -154,21 +156,15 @@ class CPUMonitor:
         return list(self.per_core_usage)
 
 
-class HoverWindow:
-    def __init__(self, monitor, generator):
+class CoreDetailWindow:
+    def __init__(self, parent, monitor, generator):
         self.monitor = monitor
         self.generator = generator
-        self.window = None
-        self._running = False
-        self._frame = 0
-    
-    def show(self):
-        if self.window is not None:
-            return
-        
         self._running = True
-        self.window = tk.Tk()
-        self.window.withdraw()
+        self._frame = 0
+        self.photo_refs = []
+        
+        self.window = tk.Toplevel(parent)
         self.window.overrideredirect(True)
         self.window.attributes('-topmost', True)
         self.window.configure(bg='#f0f0f0')
@@ -179,11 +175,11 @@ class HoverWindow:
         
         cell_size = GRID_CELL_SIZE
         padding = 10
-        content_width = cols * cell_size + padding * 2
         
         max_display_rows = min(rows, 6)
-        window_height = max_display_rows * cell_size + padding * 2 + 60
-        window_width = content_width + (20 if rows > max_display_rows else 0)
+        content_height = max_display_rows * cell_size
+        window_height = content_height + padding * 2 + 60
+        window_width = cols * cell_size + padding * 2 + (20 if rows > max_display_rows else 0)
         
         screen_height = self.window.winfo_screenheight()
         window_height = min(window_height, screen_height - 100)
@@ -194,6 +190,11 @@ class HoverWindow:
         title_frame.pack(fill='x', padx=padding, pady=(padding, 5))
         tk.Label(title_frame, text=f"CPU核心使用率 ({core_count}核)", 
                 bg='#f0f0f0', font=('Arial', 9, 'bold')).pack(side='left')
+        
+        close_btn = tk.Label(title_frame, text="×", bg='#f0f0f0', 
+                            font=('Arial', 12, 'bold'), fg='gray', cursor='hand2')
+        close_btn.pack(side='right')
+        close_btn.bind('<Button-1>', lambda e: self.close())
         
         container = tk.Frame(self.window, bg='#f0f0f0')
         container.pack(fill='both', expand=True, padx=padding, pady=(0, padding))
@@ -225,13 +226,13 @@ class HoverWindow:
         grid_frame.pack()
         
         self.cell_labels = []
-        self.photo_refs = []
         
         for i in range(core_count):
             row = i // cols
             col = i % cols
             
-            frame = tk.Frame(grid_frame, bg='white', relief='solid', bd=1, width=cell_size, height=cell_size)
+            frame = tk.Frame(grid_frame, bg='white', relief='solid', bd=1, 
+                           width=cell_size, height=cell_size)
             frame.grid(row=row, column=col, padx=2, pady=2)
             frame.grid_propagate(False)
             
@@ -256,15 +257,11 @@ class HoverWindow:
         except:
             pass
         
-        self.window.deiconify()
-        self.window.bind('<Leave>', self._on_leave)
         self.window.focus_force()
-        
         self._update_grid()
-        self.window.mainloop()
     
     def _update_grid(self):
-        if not self._running or self.window is None:
+        if not self._running:
             return
         
         self._frame += 1
@@ -290,18 +287,12 @@ class HoverWindow:
         
         self.window.after(125, self._update_grid)
     
-    def _on_leave(self, event):
+    def close(self):
         self._running = False
-        if self.window:
-            self.window.after(200, self._destroy)
-    
-    def _destroy(self):
-        if self.window:
-            try:
-                self.window.destroy()
-            except:
-                pass
-        self.window = None
+        try:
+            self.window.destroy()
+        except:
+            pass
 
 
 class CPUCatApp:
@@ -313,7 +304,9 @@ class CPUCatApp:
         self.frame = 0
         self.running = True
         self.icon = None
-        self.hover_window = None
+        self.detail_window = None
+        self.root = None
+        self.msg_queue = queue.Queue()
     
     def _get_icon(self):
         usage = self.monitor.get_overall()
@@ -333,27 +326,38 @@ class CPUCatApp:
                 pass
             time.sleep(1.0 / FPS)
     
+    def _show_detail_window(self):
+        if self.detail_window is None or not tk.Toplevel.winfo_exists(self.detail_window.window):
+            self.detail_window = CoreDetailWindow(self.root, self.monitor, self.generator)
+    
+    def _process_queue(self):
+        try:
+            while True:
+                msg = self.msg_queue.get_nowait()
+                if msg == 'show':
+                    self._show_detail_window()
+        except queue.Empty:
+            pass
+        
+        if self.running:
+            self.root.after(100, self._process_queue)
+    
     def _on_show_hover(self, icon, item):
-        if self.hover_window is None or self.hover_window.window is None:
-            self.hover_window = HoverWindow(self.monitor, self.generator)
-            t = threading.Thread(target=self.hover_window.show, daemon=True)
-            t.start()
+        self.msg_queue.put('show')
     
     def _on_quit(self, icon, item):
         self.running = False
         self.monitor.stop()
-        if self.hover_window:
-            self.hover_window._running = False
-            if self.hover_window.window:
-                try:
-                    self.hover_window.window.after(0, self.hover_window._destroy)
-                except:
-                    pass
+        if self.detail_window:
+            self.detail_window.close()
+        if self.root:
+            try:
+                self.root.after(0, self.root.destroy)
+            except:
+                pass
         icon.stop()
     
-    def run(self):
-        self.monitor.start()
-        
+    def _tray_thread(self):
         menu = pystray.Menu(
             pystray.MenuItem('查看核心状态', self._on_show_hover, default=True),
             pystray.Menu.SEPARATOR,
@@ -371,6 +375,18 @@ class CPUCatApp:
         update_thread.start()
         
         self.icon.run()
+    
+    def run(self):
+        self.monitor.start()
+        
+        self.root = tk.Tk()
+        self.root.withdraw()
+        
+        tray_thread = threading.Thread(target=self._tray_thread, daemon=True)
+        tray_thread.start()
+        
+        self.root.after(100, self._process_queue)
+        self.root.mainloop()
 
 
 if __name__ == '__main__':
