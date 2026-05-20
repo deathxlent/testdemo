@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
     captureFullPage(message.tabId)
-      .then(dataUrl => sendResponse({ success: true, dataUrl }))
+      .then(result => sendResponse({ success: true, ...result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
@@ -16,6 +16,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function captureFullPage(tabId) {
   isCapturing = true;
   try {
+    const tab = await chrome.tabs.get(tabId);
+    const windowId = tab.windowId;
+
     const [originalScrollX, originalScrollY, pageWidth, pageHeight, viewportWidth, viewportHeight] = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
@@ -67,7 +70,7 @@ async function captureFullPage(tabId) {
 
         await new Promise(resolve => setTimeout(resolve, 150));
 
-        const dataUrl = await chrome.tabs.captureVisibleTab(tabId, { format: 'png' });
+        const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
         captures.push({ scrollX, scrollY, dataUrl });
       }
     }
@@ -93,7 +96,16 @@ async function captureFullPage(tabId) {
       throw new Error(response.error || '图片合并失败');
     }
 
-    return response.dataUrl;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `screenshot-${timestamp}.png`;
+
+    const downloadId = await chrome.downloads.download({
+      url: response.dataUrl,
+      filename: filename,
+      saveAs: true
+    });
+
+    return { downloadId, filename };
   } finally {
     isCapturing = false;
   }

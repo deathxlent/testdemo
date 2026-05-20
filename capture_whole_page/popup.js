@@ -14,19 +14,8 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     });
 
     if (response.success) {
-      status.textContent = '截图完成，正在下载...';
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `screenshot-${timestamp}.png`;
-
-      await chrome.downloads.download({
-        url: response.dataUrl,
-        filename: filename,
-        saveAs: true
-      });
-
-      status.textContent = '✓ 截图保存成功！';
-      setTimeout(() => window.close(), 1500);
+      status.textContent = `✓ 截图已保存：${response.filename}`;
+      setTimeout(() => window.close(), 2000);
     } else {
       throw new Error(response.error || '截图失败');
     }
