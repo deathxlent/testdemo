@@ -68,7 +68,7 @@ async function captureFullPage(tabId) {
           args: [scrollX, scrollY]
         });
 
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
         captures.push({ scrollX, scrollY, dataUrl });
