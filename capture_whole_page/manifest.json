@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "整页截图",
+  "version": "1.0.0",
+  "description": "一键截取整个网页的完整截图并保存",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "整页截图"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

@@ -35,6 +35,7 @@
 ### 输出文件
 
 保存时会生成两个文件（与原图同目录）：
+
 - `原图名_bead.png` - 拼豆图图片
 - `原图名_bead.pdf` - 拼豆统计PDF（第一页为统计信息，第二页为拼豆图）
 
@@ -66,6 +67,7 @@ npm run tauri build
 ```
 
 打包完成后，exe文件位于：
+
 - `src-tauri/target/release/bundle/nsis/` (NSIS安装包)
 - `src-tauri/target/release/bundle/msi/` (MSI安装包)
 - `src-tauri/target/release/` (独立exe)
