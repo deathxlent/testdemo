@@ -25,31 +25,31 @@ class TomatoIcon:
         painter.rotate(rotation)
         painter.translate(-center_x, -center_y)
         
-        body_radius = radius * 0.7
+        body_radius = int(radius * 0.7)
         painter.setBrush(QBrush(QColor(255, 80, 80)))
         painter.setPen(Qt.NoPen)
         painter.drawEllipse(center_x - body_radius, center_y - body_radius + 2,
                            body_radius * 2, body_radius * 2)
         
-        leaf_width = radius * 0.35
-        leaf_height = radius * 0.25
+        leaf_width = int(radius * 0.35)
+        leaf_height = int(radius * 0.25)
         painter.setBrush(QBrush(QColor(76, 175, 80)))
         painter.drawEllipse(center_x - leaf_width // 2, 
                            center_y - body_radius - leaf_height // 2,
                            leaf_width, leaf_height)
         
-        stem_width = radius * 0.08
-        stem_height = radius * 0.2
+        stem_width = int(radius * 0.08)
+        stem_height = int(radius * 0.2)
         painter.setBrush(QBrush(QColor(121, 85, 72)))
         painter.drawRect(center_x - stem_width // 2, 
                         center_y - body_radius - stem_height,
                         stem_width, stem_height)
         
         painter.setPen(QPen(QColor(200, 50, 50), 2))
-        painter.drawLine(center_x - body_radius * 0.5, center_y, 
-                        center_x - body_radius * 0.2, center_y)
-        painter.drawLine(center_x + body_radius * 0.2, center_y, 
-                        center_x + body_radius * 0.5, center_y)
+        painter.drawLine(center_x - int(body_radius * 0.5), center_y, 
+                        center_x - int(body_radius * 0.2), center_y)
+        painter.drawLine(center_x + int(body_radius * 0.2), center_y, 
+                        center_x + int(body_radius * 0.5), center_y)
         
         painter.restore()
         painter.end()
@@ -127,6 +127,10 @@ class TomatoClock:
     def __init__(self):
         self.app = QApplication(sys.argv)
         self.app.setQuitOnLastWindowClosed(False)
+        
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            QMessageBox.critical(None, "错误", "系统托盘不可用！")
+            sys.exit(1)
         
         self.default_minutes = 25
         self.total_seconds = self.default_minutes * 60
