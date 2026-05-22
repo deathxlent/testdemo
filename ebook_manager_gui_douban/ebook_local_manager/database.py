@@ -50,6 +50,7 @@ class Database:
         ''')
 
         self._migrate_database(conn)
+        self._cleanup_duplicates(conn)
 
         conn.commit()
         conn.close()
@@ -84,6 +85,23 @@ class Database:
                     print(f"添加字段: {col_name}")
                 except Exception as e:
                     print(f"添加字段 {col_name} 失败: {e}")
+
+    def _cleanup_duplicates(self, conn):
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                DELETE FROM books 
+                WHERE id NOT IN (
+                    SELECT MIN(id) 
+                    FROM books 
+                    GROUP BY physical_path
+                )
+            ''')
+            deleted = cursor.rowcount
+            if deleted > 0:
+                print(f"清理了 {deleted} 条重复的书籍记录")
+        except Exception as e:
+            print(f"清理重复数据失败: {e}")
 
     def add_book(self, book_data: Dict[str, Any]) -> int:
         conn = self.get_connection()

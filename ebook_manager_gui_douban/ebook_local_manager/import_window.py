@@ -7,7 +7,7 @@ from PyQt6.QtGui import QDragEnterEvent, QDropEvent
 
 class ImportThread(QThread):
     progress_signal = pyqtSignal(int, int, str)
-    finished_signal = pyqtSignal(int, list)
+    finished_signal = pyqtSignal(int, int, int)
     error_signal = pyqtSignal(str)
 
     def __init__(self, db, parser, files):
@@ -18,40 +18,44 @@ class ImportThread(QThread):
 
     def run(self):
         total = len(self.files)
-        imported = []
-        skipped = []
+        imported_count = 0
+        skipped_duplicate = 0
+        skipped_other = 0
 
         for i, filepath in enumerate(self.files):
             try:
                 if not os.path.exists(filepath):
-                    skipped.append(filepath)
+                    skipped_other += 1
                     self.progress_signal.emit(i + 1, total, f"跳过不存在的文件: {filepath}")
                     continue
 
                 if not self.parser.is_supported_file(filepath):
-                    skipped.append(filepath)
+                    skipped_other += 1
                     self.progress_signal.emit(i + 1, total, f"跳过不支持的格式: {filepath}")
                     continue
 
                 if self.db.book_exists(filepath):
-                    skipped.append(filepath)
-                    self.progress_signal.emit(i + 1, total, f"跳过已存在的书籍: {filepath}")
+                    skipped_duplicate += 1
+                    self.progress_signal.emit(i + 1, total, f"跳过已存在的书籍: {os.path.basename(filepath)}")
                     continue
 
                 book_data = self.parser.parse_book(filepath)
                 if book_data:
                     book_id = self.db.add_book(book_data)
                     if book_id > 0:
-                        imported.append(book_data)
-                        self.progress_signal.emit(i + 1, total, f"已导入: {book_data.get('title', filepath)}")
+                        imported_count += 1
+                        self.progress_signal.emit(i + 1, total, f"已导入: {book_data.get('title', os.path.basename(filepath))}")
                     else:
-                        skipped.append(filepath)
-                        self.progress_signal.emit(i + 1, total, f"添加失败: {filepath}")
+                        skipped_duplicate += 1
+                        self.progress_signal.emit(i + 1, total, f"跳过已存在的书籍: {os.path.basename(filepath)}")
+                else:
+                    skipped_other += 1
+                    self.progress_signal.emit(i + 1, total, f"解析失败: {os.path.basename(filepath)}")
             except Exception as e:
-                skipped.append(filepath)
-                self.progress_signal.emit(i + 1, total, f"错误: {filepath} - {str(e)}")
+                skipped_other += 1
+                self.progress_signal.emit(i + 1, total, f"错误: {os.path.basename(filepath)} - {str(e)}")
 
-        self.finished_signal.emit(len(imported), imported)
+        self.finished_signal.emit(imported_count, skipped_duplicate, skipped_other)
 
 
 class ImportWindow(QDialog):
@@ -247,11 +251,10 @@ class ImportWindow(QDialog):
                         files.append(path)
 
             if files:
-                existing_files = set(self.files_to_import)
-                for f in files:
-                    if f not in existing_files:
-                        self.files_to_import.append(f)
+                added, skipped = self.add_files_unique(files)
                 self.update_file_list()
+                if skipped > 0:
+                    QMessageBox.information(self, "提示", f"已添加 {added} 个新文件，跳过 {skipped} 个重复/已存在的文件")
             else:
                 QMessageBox.warning(self, "提示", "拖拽的内容中没有找到支持的电子书文件！")
 
@@ -263,24 +266,41 @@ class ImportWindow(QDialog):
             "电子书文件 (*.epub *.pdf);;EPUB 文件 (*.epub);;PDF 文件 (*.pdf)"
         )
         if files:
-            existing_files = set(self.files_to_import)
-            for f in files:
-                if f not in existing_files:
-                    self.files_to_import.append(f)
+            added, skipped = self.add_files_unique(files)
             self.update_file_list()
+            if skipped > 0:
+                QMessageBox.information(self, "提示", f"已添加 {added} 个新文件，跳过 {skipped} 个重复/已存在的文件")
 
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "选择文件夹")
         if folder:
             books = self.parser.scan_directory(folder)
             if books:
-                existing_files = set(self.files_to_import)
-                for f in books:
-                    if f not in existing_files:
-                        self.files_to_import.append(f)
+                added, skipped = self.add_files_unique(books)
                 self.update_file_list()
+                if skipped > 0:
+                    QMessageBox.information(self, "提示", f"已添加 {added} 个新文件，跳过 {skipped} 个重复/已存在的文件")
             else:
                 QMessageBox.warning(self, "提示", "该文件夹中没有找到支持的电子书文件！")
+
+    def add_files_unique(self, files):
+        existing_in_list = set(self.files_to_import)
+        added_count = 0
+        skipped_count = 0
+
+        for f in files:
+            filepath = os.path.abspath(f)
+            if filepath in existing_in_list:
+                skipped_count += 1
+                continue
+            if self.db.book_exists(filepath):
+                skipped_count += 1
+                continue
+            self.files_to_import.append(filepath)
+            existing_in_list.add(filepath)
+            added_count += 1
+
+        return added_count, skipped_count
 
     def update_file_list(self):
         count = len(self.files_to_import)
@@ -316,12 +336,18 @@ class ImportWindow(QDialog):
         self.progress_bar.setFormat(f"{current}/{total}")
         self.log_text.append(message)
 
-    def import_finished(self, count, imported):
+    def import_finished(self, imported_count, skipped_duplicate, skipped_other):
         self.import_btn.setEnabled(True)
         self.select_files_btn.setEnabled(True)
         self.select_folder_btn.setEnabled(True)
 
-        QMessageBox.information(self, "导入完成", f"成功导入 {count} 本书！")
+        message_parts = [f"成功导入 {imported_count} 本书"]
+        if skipped_duplicate > 0:
+            message_parts.append(f"跳过重复 {skipped_duplicate} 本")
+        if skipped_other > 0:
+            message_parts.append(f"其他跳过 {skipped_other} 本")
+
+        QMessageBox.information(self, "导入完成", "，".join(message_parts) + "！")
         self.files_to_import = []
         self.file_list_label.setText("尚未选择文件")
         self.accept()
