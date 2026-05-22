@@ -6,12 +6,37 @@ from PyQt6.QtGui import QPixmap, QDesktopServices
 from PyQt6.QtCore import Qt, QUrl
 
 
+def safe_str(value):
+    if value is None:
+        return ''
+    if isinstance(value, list):
+        filtered = [str(v).strip() for v in value if v is not None and str(v).strip()]
+        return ', '.join(filtered)
+    if isinstance(value, (int, float)):
+        if value == 0:
+            return ''
+        return str(value)
+    s = str(value).strip()
+    if s.lower() in ['none', 'null', 'nan', '', '[]', '{}']:
+        return ''
+    return s
+
+
+def safe_list_str(value):
+    if value is None:
+        return ''
+    if isinstance(value, list):
+        filtered = [str(v).strip() for v in value if v is not None and str(v).strip()]
+        return ', '.join(filtered)
+    return safe_str(value)
+
+
 class DetailWindow(QDialog):
     def __init__(self, db, book, douban_parser, parent=None):
         super().__init__(parent)
         self.db = db
-        self.book_data = book.copy()
-        self.original_book = book.copy()
+        self.book_data = book.copy() if book else {}
+        self.original_book = book.copy() if book else {}
         self.douban_parser = douban_parser
         self.is_edit_mode = False
         self.init_ui()
@@ -71,8 +96,7 @@ class DetailWindow(QDialog):
         form_layout.addRow("副标题:", self.subtitle_edit)
 
         self.author_edit = QLineEdit()
-        self.author_edit.setText(self.book_data.get('authors', '') if isinstance(self.book_data.get('authors'), str) 
-                                  else ', '.join(self.book_data.get('authors', [])))
+        self.author_edit.setText(safe_list_str(self.book_data.get('authors', '')))
         self.author_edit.setPlaceholderText("多个作者用逗号分隔")
         form_layout.addRow("作者:", self.author_edit)
 
@@ -94,8 +118,7 @@ class DetailWindow(QDialog):
         form_layout.addRow("分类:", self.category_edit)
 
         self.tags_edit = QLineEdit()
-        self.tags_edit.setText(self.book_data.get('tags', '') if isinstance(self.book_data.get('tags'), str) 
-                               else ', '.join(self.book_data.get('tags', [])))
+        self.tags_edit.setText(safe_list_str(self.book_data.get('tags', '')))
         self.tags_edit.setPlaceholderText("多个标签用逗号分隔")
         form_layout.addRow("标签:", self.tags_edit)
 
@@ -124,7 +147,7 @@ class DetailWindow(QDialog):
         form_layout.addRow("豆瓣ID:", self.douban_id_edit)
 
         self.page_count_edit = QLineEdit()
-        self.page_count_edit.setText(str(self.book_data.get('page_count', '')))
+        self.page_count_edit.setText(safe_str(self.book_data.get('page_count', '')))
         form_layout.addRow("页数:", self.page_count_edit)
 
         info_label = QLabel("--- 文件信息 ---")

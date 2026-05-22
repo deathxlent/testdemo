@@ -19,9 +19,14 @@ def safe_str(value):
     if value is None:
         return ''
     if isinstance(value, list):
-        return ', '.join(str(v) for v in value)
+        filtered = [str(v).strip() for v in value if v is not None and str(v).strip()]
+        return ', '.join(filtered)
+    if isinstance(value, (int, float)):
+        if value == 0:
+            return ''
+        return str(value)
     s = str(value).strip()
-    if s.lower() in ['none', 'null', 'nan', '']:
+    if s.lower() in ['none', 'null', 'nan', '', '[]', '{}']:
         return ''
     return s
 
@@ -351,11 +356,13 @@ class MainWindow(QMainWindow):
     def on_cell_double_clicked(self, row, col):
         if col == 0:
             return
-        item = self.table.item(row, 2)
-        if item:
-            book = item.data(Qt.ItemDataRole.UserRole)
-            if book:
-                self.open_detail_window(book)
+        
+        if row < 0 or row >= len(self.books_data):
+            return
+        
+        book = self.books_data[row]
+        if book and book.get('id'):
+            self.open_detail_window(book)
 
     def on_checkbox_changed(self, row, state):
         self.update_delete_button_state()
@@ -408,10 +415,9 @@ class MainWindow(QMainWindow):
 
         if reply == QMessageBox.StandardButton.Yes:
             for row in checked_rows:
-                item = self.table.item(row, 2)
-                if item:
-                    book = item.data(Qt.ItemDataRole.UserRole)
-                    if book:
+                if 0 <= row < len(self.books_data):
+                    book = self.books_data[row]
+                    if book and book.get('id'):
                         self.db.update_book(book['id'], {'parse_status': 'parsing'})
                         self.douban_parser.add_to_queue(
                             book['id'],
@@ -479,10 +485,9 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.StandardButton.Yes:
             deleted_count = 0
             for row in sorted(checked_rows, reverse=True):
-                item = self.table.item(row, 2)
-                if item:
-                    book = item.data(Qt.ItemDataRole.UserRole)
-                    if book and self.db.delete_book(book['id']):
+                if 0 <= row < len(self.books_data):
+                    book = self.books_data[row]
+                    if book and book.get('id') and self.db.delete_book(book['id']):
                         deleted_count += 1
 
             QMessageBox.information(self, "成功", f"已成功删除 {deleted_count} 本书！")
@@ -497,7 +502,8 @@ class MainWindow(QMainWindow):
 
     def open_import_window(self):
         dialog = ImportWindow(self.db, self.parser, self)
-        dialog.exec()
+        if dialog.exec():
+            self.refresh_books()
 
     def open_detail_window(self, book):
         dialog = DetailWindow(self.db, book, self.douban_parser, self)
