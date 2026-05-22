@@ -3,11 +3,12 @@ import re
 import time
 import json
 import random
-import threading
 import queue
 import urllib.parse
 from datetime import datetime
-from typing import Dict, Any, Optional, Callable, List
+from typing import Dict, Any, Optional, List
+
+from PyQt6.QtCore import QObject, pyqtSignal
 
 import requests
 from lxml import etree
@@ -29,8 +30,13 @@ DEFAULT_HEADERS = {
 }
 
 
-class DoubanParser:
-    def __init__(self, config_path: str = None):
+class DoubanParser(QObject):
+    status_signal = pyqtSignal(str)
+    progress_signal = pyqtSignal()
+    parse_complete_signal = pyqtSignal(object, object)
+
+    def __init__(self, config_path: str = None, parent=None):
+        super().__init__(parent)
         self.cookie = ''
         self.config_path = config_path or os.path.join(os.path.dirname(__file__), 'config.json')
         self.load_config()
@@ -41,11 +47,8 @@ class DoubanParser:
         self.last_parse_time = 0
         self.min_interval = 5
 
-        self.progress_callback = None
-        self.status_callback = None
-        self.complete_callback = None
-
         self._book_cache = {}
+        self._task_callbacks = {}
 
     def load_config(self):
         try:
@@ -281,11 +284,14 @@ class DoubanParser:
             print(f"下载封面失败: {e}")
             return False
 
-    def add_to_queue(self, book_id: int, book_data: Dict[str, Any], callback: Callable = None):
+    def add_to_queue(self, book_id: int, book_data: Dict[str, Any], callback=None):
+        task_id = f"{book_id}_{int(time.time() * 1000)}"
+        self._task_callbacks[task_id] = callback
+
         self.parse_queue.put({
+            'task_id': task_id,
             'book_id': book_id,
             'book_data': book_data,
-            'callback': callback,
             'timestamp': time.time()
         })
 
@@ -322,13 +328,22 @@ class DoubanParser:
 
                 self.last_parse_time = time.time()
 
-                if self.status_callback:
-                    self.status_callback(f"正在解析: {task['book_data'].get('title', '未知')}")
+                self.status_signal.emit(f"正在解析: {task['book_data'].get('title', '未知')}")
+
+                authors = task['book_data'].get('authors', [])
+                if isinstance(authors, list):
+                    author_str = ', '.join(authors)
+                else:
+                    author_str = str(authors) if authors else ''
 
                 result = self.search_book(
                     task['book_data'].get('title', ''),
-                    task['book_data'].get('author', '')
+                    author_str
                 )
+
+                task_id = task['task_id']
+                callback = self._task_callbacks.get(task_id)
+                del self._task_callbacks[task_id]
 
                 if result and 'error' not in result:
                     result['book_id'] = task['book_id']
@@ -342,26 +357,33 @@ class DoubanParser:
                         if self.download_cover(result['cover_url'], cover_path):
                             result['cover_path'] = cover_path
 
-                    if task['callback']:
-                        task['callback'](result, None)
+                    if callback:
+                        self.parse_complete_signal.emit(result, None)
+                        callback(result, None)
+                    else:
+                        self.parse_complete_signal.emit(result, None)
                 else:
                     error_msg = result.get('error', '解析失败') if result else '解析失败'
-                    if task['callback']:
-                        task['callback'](None, error_msg)
+                    if callback:
+                        callback(None, error_msg)
+                    self.parse_complete_signal.emit(None, error_msg)
 
-                if self.progress_callback:
-                    self.progress_callback()
+                self.progress_signal.emit()
 
                 self.parse_queue.task_done()
 
             except queue.Empty:
                 if self.parse_queue.qsize() == 0:
                     self.is_running = False
-                    if self.status_callback:
-                        self.status_callback("解析队列已空闲")
+                    self.status_signal.emit("解析队列已空闲")
                     break
             except Exception as e:
                 print(f"解析队列错误: {e}")
+                import traceback
+                traceback.print_exc()
                 time.sleep(1)
 
         print("豆瓣解析队列已停止")
+
+
+import threading

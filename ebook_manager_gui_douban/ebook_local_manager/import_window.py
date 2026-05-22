@@ -2,6 +2,7 @@ import os
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                              QFileDialog, QProgressBar, QTextEdit, QMessageBox)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent
 
 
 class ImportThread(QThread):
@@ -67,10 +68,12 @@ class ImportWindow(QDialog):
         self.setMinimumSize(700, 550)
         self.setModal(True)
 
+        self.setAcceptDrops(True)
+
         layout = QVBoxLayout(self)
 
-        drop_label = QLabel("拖拽文件或文件夹到此处\n\n支持格式: EPUB, PDF")
-        drop_label.setStyleSheet("""
+        self.drop_label = QLabel("拖拽文件或文件夹到此处\n\n支持格式: EPUB, PDF")
+        self.drop_label.setStyleSheet("""
             QLabel {
                 border: 2px dashed #999;
                 border-radius: 10px;
@@ -80,9 +83,10 @@ class ImportWindow(QDialog):
                 color: #666;
             }
         """)
-        drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        drop_label.setMinimumHeight(150)
-        layout.addWidget(drop_label)
+        self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.drop_label.setMinimumHeight(150)
+        self.drop_label.setAcceptDrops(True)
+        layout.addWidget(self.drop_label)
 
         btn_layout = QHBoxLayout()
 
@@ -190,6 +194,67 @@ class ImportWindow(QDialog):
 
         layout.addLayout(action_layout)
 
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            self.drop_label.setStyleSheet("""
+                QLabel {
+                    border: 3px solid #4CAF50;
+                    border-radius: 10px;
+                    padding: 40px;
+                    background-color: #e8f5e9;
+                    font-size: 14px;
+                    color: #2E7D32;
+                    font-weight: bold;
+                }
+            """)
+
+    def dragLeaveEvent(self, event):
+        self.drop_label.setStyleSheet("""
+            QLabel {
+                border: 2px dashed #999;
+                border-radius: 10px;
+                padding: 40px;
+                background-color: #f9f9f9;
+                font-size: 14px;
+                color: #666;
+            }
+        """)
+
+    def dropEvent(self, event: QDropEvent):
+        event.acceptProposedAction()
+        self.drop_label.setStyleSheet("""
+            QLabel {
+                border: 2px dashed #999;
+                border-radius: 10px;
+                padding: 40px;
+                background-color: #f9f9f9;
+                font-size: 14px;
+                color: #666;
+            }
+        """)
+
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            files = []
+            for url in urls:
+                path = url.toLocalFile()
+                if os.path.isdir(path):
+                    books = self.parser.scan_directory(path)
+                    files.extend(books)
+                elif os.path.isfile(path):
+                    if self.parser.is_supported_file(path):
+                        files.append(path)
+
+            if files:
+                existing_files = set(self.files_to_import)
+                for f in files:
+                    if f not in existing_files:
+                        self.files_to_import.append(f)
+                self.update_file_list()
+            else:
+                QMessageBox.warning(self, "提示", "拖拽的内容中没有找到支持的电子书文件！")
+
     def select_files(self):
         files, _ = QFileDialog.getOpenFileNames(
             self,
@@ -198,7 +263,10 @@ class ImportWindow(QDialog):
             "电子书文件 (*.epub *.pdf);;EPUB 文件 (*.epub);;PDF 文件 (*.pdf)"
         )
         if files:
-            self.files_to_import = files
+            existing_files = set(self.files_to_import)
+            for f in files:
+                if f not in existing_files:
+                    self.files_to_import.append(f)
             self.update_file_list()
 
     def select_folder(self):
@@ -206,7 +274,10 @@ class ImportWindow(QDialog):
         if folder:
             books = self.parser.scan_directory(folder)
             if books:
-                self.files_to_import = books
+                existing_files = set(self.files_to_import)
+                for f in books:
+                    if f not in existing_files:
+                        self.files_to_import.append(f)
                 self.update_file_list()
             else:
                 QMessageBox.warning(self, "提示", "该文件夹中没有找到支持的电子书文件！")

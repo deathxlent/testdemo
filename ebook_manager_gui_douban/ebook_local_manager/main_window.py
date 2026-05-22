@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.db = Database()
         self.parser = EbookParser()
-        self.douban_parser = DoubanParser()
+        self.douban_parser = DoubanParser(parent=self)
         self.sort_column = 2
         self.sort_order = "ASC"
         self.current_search = ""
@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
         self.table.verticalHeader().setDefaultSectionSize(100)
 
         self.table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
-        self.table.cellClicked.connect(self.on_cell_clicked)
+        self.table.cellDoubleClicked.connect(self.on_cell_double_clicked)
 
         main_layout.addWidget(self.table)
 
@@ -139,8 +139,9 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.status_label)
 
     def setup_douban_callbacks(self):
-        self.douban_parser.status_callback = self.on_parse_status
-        self.douban_parser.progress_callback = self.on_parse_progress
+        self.douban_parser.status_signal.connect(self.on_parse_status)
+        self.douban_parser.progress_signal.connect(self.on_parse_progress)
+        self.douban_parser.parse_complete_signal.connect(self.on_parse_complete)
 
     def on_parse_status(self, message):
         self.status_label.setText(message)
@@ -347,7 +348,7 @@ class MainWindow(QMainWindow):
         self.current_search = self.search_input.text()
         self.refresh_books()
 
-    def on_cell_clicked(self, row, col):
+    def on_cell_double_clicked(self, row, col):
         if col == 0:
             return
         item = self.table.item(row, 2)
@@ -414,8 +415,7 @@ class MainWindow(QMainWindow):
                         self.db.update_book(book['id'], {'parse_status': 'parsing'})
                         self.douban_parser.add_to_queue(
                             book['id'],
-                            book,
-                            self.on_parse_complete
+                            book
                         )
 
             self.refresh_books()

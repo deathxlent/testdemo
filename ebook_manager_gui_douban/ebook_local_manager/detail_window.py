@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
                              QTextEdit, QPushButton, QFormLayout, QMessageBox,
-                             QDoubleSpinBox, QScrollArea, QWidget, QFrame)
+                             QDoubleSpinBox, QScrollArea, QWidget, QFrame, QApplication)
 from PyQt6.QtGui import QPixmap, QDesktopServices
 from PyQt6.QtCore import Qt, QUrl
 
@@ -451,6 +451,3 @@ class DetailWindow(QDialog):
                 self.accept()
             else:
                 QMessageBox.warning(self, "错误", "删除失败！")
-
-
-from PyQt6.QtWidgets import QApplication

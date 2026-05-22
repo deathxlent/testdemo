@@ -55,7 +55,7 @@ class EbookParser:
 
             creator = self._get_metadata(book, 'creator')
             if creator:
-                data['author'] = creator
+                data['authors'] = [creator]
 
             description = self._get_metadata(book, 'description')
             if description:
@@ -96,17 +96,35 @@ class EbookParser:
             if reader.metadata:
                 metadata = reader.metadata
 
-                if metadata.title:
-                    data['title'] = metadata.title
+                def get_meta(key, default=None):
+                    try:
+                        if hasattr(metadata, key):
+                            value = getattr(metadata, key)
+                            if value:
+                                return value
+                        if key in metadata:
+                            value = metadata[key]
+                            if value:
+                                return value
+                    except:
+                        pass
+                    return default
 
-                if metadata.author:
-                    data['author'] = metadata.author
+                title = get_meta('title')
+                if title:
+                    data['title'] = title
 
-                if metadata.subject:
-                    data['subtitle'] = metadata.subject[:200] if len(metadata.subject) > 200 else metadata.subject
+                author = get_meta('author')
+                if author:
+                    data['authors'] = [author]
 
-                if metadata.publisher:
-                    data['publisher'] = metadata.publisher
+                subject = get_meta('subject')
+                if subject:
+                    data['subtitle'] = subject[:200] if len(subject) > 200 else subject
+
+                publisher = get_meta('publisher')
+                if publisher:
+                    data['publisher'] = publisher
 
                 data['page_count'] = len(reader.pages)
 
