@@ -30,11 +30,18 @@ WhereIsMyMouse - Windows鼠标定位工具
 %APPDATA%\WhereIsMyMouse\config.json
 
 可调参数：
-- shake_threshold: 晃动检测阈值（像素）
-- shake_time: 晃动检测时间窗口（秒）
-- cursor_scale: 放大倍数
-- magnify_duration: 放大持续时间（秒）
-- hotkey: 快捷键设置
-- pulse_duration: 脉冲动画持续时间（秒）
-- pulse_min_scale: 脉冲最小倍数
-- pulse_max_scale: 脉冲最大倍数
+- shake_threshold: 晃动检测阈值（像素），默认500
+- shake_time: 晃动检测时间窗口（秒），默认1.0
+- cursor_scale: 放大倍数，默认3.0
+- magnify_duration: 放大持续时间（秒），默认1.5
+- hotkey: 快捷键设置，默认ctrl+shift+m
+- pulse_duration: 脉冲动画持续时间（秒），默认2.0
+- pulse_min_scale: 脉冲最小倍数，默认1.0
+- pulse_max_scale: 脉冲最大倍数，默认3.0
+- check_fullscreen: 是否检测全屏应用，默认true
+- autostart: 是否开机自启动，默认false
+
+注意：
+- 本工具使用tkinter实现透明窗口，是Python内置库，无需额外安装
+- 快速晃动鼠标大约1秒即可触发放大效果
+- 红色圆圈会自动跟随鼠标移动

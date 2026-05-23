@@ -4,177 +4,11 @@ import threading
 import math
 
 user32 = ctypes.windll.user32
-gdi32 = ctypes.windll.gdi32
-kernel32 = ctypes.windll.kernel32
-
-WS_EX_LAYERED = 0x00080000
-WS_EX_TRANSPARENT = 0x00000020
-WS_EX_TOOLWINDOW = 0x00000080
-WS_EX_TOPMOST = 0x00000008
-WS_POPUP = 0x80000000
-SW_SHOWNA = 8
-WM_PAINT = 0x000F
-WM_ERASEBKGND = 0x0014
-WM_DESTROY = 0x0002
-
-class POINT(ctypes.Structure):
-    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-
-class RECT(ctypes.Structure):
-    _fields_ = [
-        ("left", ctypes.c_long),
-        ("top", ctypes.c_long),
-        ("right", ctypes.c_long),
-        ("bottom", ctypes.c_long)
-    ]
-
-class PAINTSTRUCT(ctypes.Structure):
-    _fields_ = [
-        ("hdc", ctypes.c_void_p),
-        ("fErase", ctypes.c_int),
-        ("rcPaint", RECT),
-        ("fRestore", ctypes.c_int),
-        ("fIncUpdate", ctypes.c_int),
-        ("rgbReserved", ctypes.c_byte * 32)
-    ]
-
-class MSG(ctypes.Structure):
-    _fields_ = [
-        ("hwnd", ctypes.c_void_p),
-        ("message", ctypes.c_uint),
-        ("wParam", ctypes.c_size_t),
-        ("lParam", ctypes.c_long),
-        ("time", ctypes.c_ulong),
-        ("pt", POINT)
-    ]
 
 def get_cursor_pos():
-    pt = POINT()
+    pt = type('POINT', (ctypes.Structure,), {'_fields_': [('x', ctypes.c_long), ('y', ctypes.c_long)]})()
     user32.GetCursorPos(ctypes.byref(pt))
     return (pt.x, pt.y)
-
-_class_registered = False
-_class_name = "MouseHighlightClass"
-_wnd_proc_ref = None
-
-def _ensure_window_class():
-    global _class_registered, _wnd_proc_ref
-    
-    if _class_registered:
-        return
-    
-    WNDPROC = ctypes.WINFUNCTYPE(
-        ctypes.c_long,
-        ctypes.c_void_p,
-        ctypes.c_uint,
-        ctypes.c_size_t,
-        ctypes.c_long
-    )
-    
-    def wnd_proc(hwnd, msg, wparam, lparam):
-        if msg == WM_PAINT:
-            ps = PAINTSTRUCT()
-            hdc = user32.BeginPaint(hwnd, ctypes.byref(ps))
-            
-            rect = RECT()
-            user32.GetClientRect(hwnd, ctypes.byref(rect))
-            
-            pen = gdi32.CreatePen(0, 3, 0x0000FF)
-            old_pen = gdi32.SelectObject(hdc, pen)
-            
-            brush = gdi32.GetStockObject(5)
-            old_brush = gdi32.SelectObject(hdc, brush)
-            
-            gdi32.Ellipse(hdc, 2, 2, rect.right - 2, rect.bottom - 2)
-            
-            gdi32.SelectObject(hdc, old_pen)
-            gdi32.SelectObject(hdc, old_brush)
-            gdi32.DeleteObject(pen)
-            
-            user32.EndPaint(hwnd, ctypes.byref(ps))
-            return 0
-        elif msg == WM_ERASEBKGND:
-            return 1
-        return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
-    
-    _wnd_proc_ref = WNDPROC(wnd_proc)
-    
-    class WNDCLASSW(ctypes.Structure):
-        _fields_ = [
-            ("style", ctypes.c_uint),
-            ("lpfnWndProc", WNDPROC),
-            ("cbClsExtra", ctypes.c_int),
-            ("cbWndExtra", ctypes.c_int),
-            ("hInstance", ctypes.c_void_p),
-            ("hIcon", ctypes.c_void_p),
-            ("hCursor", ctypes.c_void_p),
-            ("hbrBackground", ctypes.c_void_p),
-            ("lpszMenuName", ctypes.c_wchar_p),
-            ("lpszClassName", ctypes.c_wchar_p)
-        ]
-    
-    hInstance = kernel32.GetModuleHandleW(None)
-    
-    wc = WNDCLASSW()
-    wc.style = 0
-    wc.lpfnWndProc = _wnd_proc_ref
-    wc.cbClsExtra = 0
-    wc.cbWndExtra = 0
-    wc.hInstance = hInstance
-    wc.hIcon = None
-    wc.hCursor = None
-    wc.hbrBackground = None
-    wc.lpszMenuName = None
-    wc.lpszClassName = _class_name
-    
-    user32.RegisterClassW(ctypes.byref(wc))
-    _class_registered = True
-
-class HighlightCircle:
-    def __init__(self):
-        self.hwnd = None
-        
-    def create(self):
-        _ensure_window_class()
-        
-        hInstance = kernel32.GetModuleHandleW(None)
-        
-        self.hwnd = user32.CreateWindowExW(
-            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-            _class_name,
-            "MouseHighlight",
-            WS_POPUP,
-            0, 0, 100, 100,
-            None, None, hInstance, None
-        )
-        
-        user32.SetLayeredWindowAttributes(self.hwnd, 0xFFFFFF, 200, 0x00000001)
-        user32.ShowWindow(self.hwnd, SW_SHOWNA)
-        
-    def update(self, cx, cy, scale):
-        if not self.hwnd:
-            return
-        
-        size = int(32 * scale)
-        
-        user32.SetWindowPos(
-            self.hwnd,
-            None,
-            cx - size, cy - size,
-            size * 2, size * 2,
-            0x0040
-        )
-        user32.InvalidateRect(self.hwnd, None, True)
-        
-        msg = MSG()
-        while user32.PeekMessageW(ctypes.byref(msg), self.hwnd, 0, 0, 1):
-            user32.TranslateMessage(ctypes.byref(msg))
-            user32.DispatchMessageW(ctypes.byref(msg))
-    
-    def destroy(self):
-        if self.hwnd:
-            user32.DestroyWindow(self.hwnd)
-            self.hwnd = None
 
 class MouseMagnifier:
     def __init__(self, config):
@@ -191,7 +25,7 @@ class MouseMagnifier:
         
         self.shake_positions.append((current_time, current_pos))
         
-        cutoff_time = current_time - self.config["shake_time"]
+        cutoff_time = current_time - self.config['shake_time']
         self.shake_positions = [(t, pos) for t, pos in self.shake_positions if t >= cutoff_time]
         
         if len(self.shake_positions) < 5:
@@ -203,31 +37,71 @@ class MouseMagnifier:
             dy = self.shake_positions[i][1][1] - self.shake_positions[i-1][1][1]
             total_distance += math.sqrt(dx*dx + dy*dy)
         
-        return total_distance > self.config["shake_threshold"]
+        return total_distance > self.config['shake_threshold']
+    
+    def _create_overlay(self, scale, duration, stop_event, pulse=False):
+        import tkinter as tk
+        
+        root = tk.Tk()
+        root.overrideredirect(True)
+        root.attributes('-topmost', True)
+        root.attributes('-alpha', 0.7)
+        root.attributes('-transparentcolor', 'white')
+        root.configure(bg='white')
+        
+        canvas = tk.Canvas(root, bg='white', highlightthickness=0)
+        canvas.pack(fill=tk.BOTH, expand=True)
+        
+        start_time = time.time()
+        
+        try:
+            while time.time() - start_time < duration:
+                if stop_event.is_set():
+                    break
+                
+                if pulse:
+                    elapsed = time.time() - start_time
+                    phase = (elapsed * 3) % 2
+                    if phase > 1:
+                        phase = 2 - phase
+                    current_scale = (self.config['pulse_min_scale'] + 
+                                   (self.config['pulse_max_scale'] - self.config['pulse_min_scale']) * phase)
+                else:
+                    current_scale = scale
+                
+                cx, cy = get_cursor_pos()
+                size = int(32 * current_scale)
+                
+                root.geometry(f'{size*2}x{size*2}+{cx-size}+{cy-size}')
+                canvas.delete('all')
+                canvas.create_oval(
+                    2, 2, size*2-2, size*2-2,
+                    outline='red',
+                    width=3
+                )
+                root.update()
+                time.sleep(0.03)
+        finally:
+            root.destroy()
     
     def temporary_magnify(self):
         if self.magnify_thread and self.magnify_thread.is_alive():
             return
         
         self.magnify_stop_event.clear()
-        stop_event = self.magnify_stop_event
         
-        def magnify_task():
-            highlight = HighlightCircle()
+        def task():
             try:
-                highlight.create()
-                start_time = time.time()
-                while time.time() - start_time < self.config["magnify_duration"]:
-                    if stop_event.is_set():
-                        break
-                    
-                    cx, cy = get_cursor_pos()
-                    highlight.update(cx, cy, self.config["cursor_scale"])
-                    time.sleep(0.03)
-            finally:
-                highlight.destroy()
+                self._create_overlay(
+                    self.config['cursor_scale'],
+                    self.config['magnify_duration'],
+                    self.magnify_stop_event,
+                    pulse=False
+                )
+            except Exception as e:
+                print(f'Magnify error: {e}')
         
-        self.magnify_thread = threading.Thread(target=magnify_task, daemon=True)
+        self.magnify_thread = threading.Thread(target=task, daemon=True)
         self.magnify_thread.start()
     
     def stop_temporary_magnify(self):
@@ -239,32 +113,19 @@ class MouseMagnifier:
             time.sleep(0.1)
         
         self.pulse_stop_event.clear()
-        stop_event = self.pulse_stop_event
         
-        def pulse_task():
-            highlight = HighlightCircle()
+        def task():
             try:
-                highlight.create()
-                start_time = time.time()
-                duration = self.config["pulse_duration"]
-                min_scale = self.config["pulse_min_scale"]
-                max_scale = self.config["pulse_max_scale"]
-                
-                while time.time() - start_time < duration and not stop_event.is_set():
-                    elapsed = time.time() - start_time
-                    phase = (elapsed * 3) % 2
-                    if phase > 1:
-                        phase = 2 - phase
-                    
-                    scale = min_scale + (max_scale - min_scale) * phase
-                    
-                    cx, cy = get_cursor_pos()
-                    highlight.update(cx, cy, scale)
-                    time.sleep(0.03)
-            finally:
-                highlight.destroy()
+                self._create_overlay(
+                    1.0,
+                    self.config['pulse_duration'],
+                    self.pulse_stop_event,
+                    pulse=True
+                )
+            except Exception as e:
+                print(f'Pulse error: {e}')
         
-        self.pulse_thread = threading.Thread(target=pulse_task, daemon=True)
+        self.pulse_thread = threading.Thread(target=task, daemon=True)
         self.pulse_thread.start()
     
     def stop_pulse_animation(self):
