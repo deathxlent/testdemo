@@ -260,12 +260,26 @@ class BrowserCS {
         });
         
         document.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyR'].includes(e.code)) {
+                e.preventDefault();
+            }
             this.keys[e.code] = true;
             if (e.code === 'KeyR') this.reload();
         });
         
         document.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
+        });
+        
+        window.addEventListener('blur', () => {
+            this.keys = {};
+        });
+        
+        document.addEventListener('pointerlockchange', () => {
+            this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
+            if (!this.isPointerLocked) {
+                this.keys = {};
+            }
         });
         
         document.addEventListener('mousemove', (e) => {
@@ -280,10 +294,6 @@ class BrowserCS {
             if (e.button === 0 && this.isPointerLocked) {
                 this.shoot();
             }
-        });
-        
-        document.addEventListener('pointerlockchange', () => {
-            this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
         });
         
         this.renderer.domElement.addEventListener('click', () => {
