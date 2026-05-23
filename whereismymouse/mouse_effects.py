@@ -2,7 +2,6 @@ import ctypes
 import time
 import threading
 import math
-from ctypes import wintypes, WINFUNCTYPE
 
 user32 = ctypes.windll.user32
 gdi32 = ctypes.windll.gdi32
@@ -16,6 +15,7 @@ WS_POPUP = 0x80000000
 SW_SHOWNA = 8
 WM_PAINT = 0x000F
 WM_ERASEBKGND = 0x0014
+WM_DESTROY = 0x0002
 
 class POINT(ctypes.Structure):
     _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
@@ -30,12 +30,22 @@ class RECT(ctypes.Structure):
 
 class PAINTSTRUCT(ctypes.Structure):
     _fields_ = [
-        ("hdc", wintypes.HDC),
-        ("fErase", wintypes.BOOL),
+        ("hdc", ctypes.c_void_p),
+        ("fErase", ctypes.c_int),
         ("rcPaint", RECT),
-        ("fRestore", wintypes.BOOL),
-        ("fIncUpdate", wintypes.BOOL),
-        ("rgbReserved", wintypes.BYTE * 32)
+        ("fRestore", ctypes.c_int),
+        ("fIncUpdate", ctypes.c_int),
+        ("rgbReserved", ctypes.c_byte * 32)
+    ]
+
+class MSG(ctypes.Structure):
+    _fields_ = [
+        ("hwnd", ctypes.c_void_p),
+        ("message", ctypes.c_uint),
+        ("wParam", ctypes.c_size_t),
+        ("lParam", ctypes.c_long),
+        ("time", ctypes.c_ulong),
+        ("pt", POINT)
     ]
 
 def get_cursor_pos():
@@ -43,83 +53,95 @@ def get_cursor_pos():
     user32.GetCursorPos(ctypes.byref(pt))
     return (pt.x, pt.y)
 
+_class_registered = False
+_class_name = "MouseHighlightClass"
+_wnd_proc_ref = None
+
+def _ensure_window_class():
+    global _class_registered, _wnd_proc_ref
+    
+    if _class_registered:
+        return
+    
+    WNDPROC = ctypes.WINFUNCTYPE(
+        ctypes.c_long,
+        ctypes.c_void_p,
+        ctypes.c_uint,
+        ctypes.c_size_t,
+        ctypes.c_long
+    )
+    
+    def wnd_proc(hwnd, msg, wparam, lparam):
+        if msg == WM_PAINT:
+            ps = PAINTSTRUCT()
+            hdc = user32.BeginPaint(hwnd, ctypes.byref(ps))
+            
+            rect = RECT()
+            user32.GetClientRect(hwnd, ctypes.byref(rect))
+            
+            pen = gdi32.CreatePen(0, 3, 0x0000FF)
+            old_pen = gdi32.SelectObject(hdc, pen)
+            
+            brush = gdi32.GetStockObject(5)
+            old_brush = gdi32.SelectObject(hdc, brush)
+            
+            gdi32.Ellipse(hdc, 2, 2, rect.right - 2, rect.bottom - 2)
+            
+            gdi32.SelectObject(hdc, old_pen)
+            gdi32.SelectObject(hdc, old_brush)
+            gdi32.DeleteObject(pen)
+            
+            user32.EndPaint(hwnd, ctypes.byref(ps))
+            return 0
+        elif msg == WM_ERASEBKGND:
+            return 1
+        return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+    
+    _wnd_proc_ref = WNDPROC(wnd_proc)
+    
+    class WNDCLASSW(ctypes.Structure):
+        _fields_ = [
+            ("style", ctypes.c_uint),
+            ("lpfnWndProc", WNDPROC),
+            ("cbClsExtra", ctypes.c_int),
+            ("cbWndExtra", ctypes.c_int),
+            ("hInstance", ctypes.c_void_p),
+            ("hIcon", ctypes.c_void_p),
+            ("hCursor", ctypes.c_void_p),
+            ("hbrBackground", ctypes.c_void_p),
+            ("lpszMenuName", ctypes.c_wchar_p),
+            ("lpszClassName", ctypes.c_wchar_p)
+        ]
+    
+    hInstance = kernel32.GetModuleHandleW(None)
+    
+    wc = WNDCLASSW()
+    wc.style = 0
+    wc.lpfnWndProc = _wnd_proc_ref
+    wc.cbClsExtra = 0
+    wc.cbWndExtra = 0
+    wc.hInstance = hInstance
+    wc.hIcon = None
+    wc.hCursor = None
+    wc.hbrBackground = None
+    wc.lpszMenuName = None
+    wc.lpszClassName = _class_name
+    
+    user32.RegisterClassW(ctypes.byref(wc))
+    _class_registered = True
+
 class HighlightCircle:
     def __init__(self):
         self.hwnd = None
-        self._wnd_proc_ref = None
-        self._class_name = None
         
-    def create(self, window_name):
-        WNDPROC = WINFUNCTYPE(
-            ctypes.c_long,
-            wintypes.HWND,
-            ctypes.c_uint,
-            wintypes.WPARAM,
-            wintypes.LPARAM
-        )
+    def create(self):
+        _ensure_window_class()
         
-        def wnd_proc(hwnd, msg, wparam, lparam):
-            if msg == WM_PAINT:
-                ps = PAINTSTRUCT()
-                hdc = user32.BeginPaint(hwnd, ctypes.byref(ps))
-                
-                rect = RECT()
-                user32.GetClientRect(hwnd, ctypes.byref(rect))
-                
-                pen = gdi32.CreatePen(0, 3, 0x0000FF)
-                old_pen = gdi32.SelectObject(hdc, pen)
-                
-                brush = gdi32.GetStockObject(5)
-                old_brush = gdi32.SelectObject(hdc, brush)
-                
-                gdi32.Ellipse(hdc, 2, 2, rect.right - 2, rect.bottom - 2)
-                
-                gdi32.SelectObject(hdc, old_pen)
-                gdi32.SelectObject(hdc, old_brush)
-                gdi32.DeleteObject(pen)
-                
-                user32.EndPaint(hwnd, ctypes.byref(ps))
-                return 0
-            elif msg == WM_ERASEBKGND:
-                return 1
-            return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
-        
-        self._wnd_proc_ref = WNDPROC(wnd_proc)
-        
-        class WNDCLASSW(ctypes.Structure):
-            _fields_ = [
-                ("style", ctypes.c_uint),
-                ("lpfnWndProc", WNDPROC),
-                ("cbClsExtra", ctypes.c_int),
-                ("cbWndExtra", ctypes.c_int),
-                ("hInstance", wintypes.HINSTANCE),
-                ("hIcon", wintypes.HICON),
-                ("hCursor", wintypes.HCURSOR),
-                ("hbrBackground", wintypes.HBRUSH),
-                ("lpszMenuName", wintypes.LPCWSTR),
-                ("lpszClassName", wintypes.LPCWSTR)
-            ]
-        
-        self._class_name = f"Highlight_{window_name}_{int(time.time()*1000)}"
         hInstance = kernel32.GetModuleHandleW(None)
-        
-        wc = WNDCLASSW()
-        wc.style = 0
-        wc.lpfnWndProc = self._wnd_proc_ref
-        wc.cbClsExtra = 0
-        wc.cbWndExtra = 0
-        wc.hInstance = hInstance
-        wc.hIcon = None
-        wc.hCursor = None
-        wc.hbrBackground = None
-        wc.lpszMenuName = None
-        wc.lpszClassName = self._class_name
-        
-        user32.RegisterClassW(ctypes.byref(wc))
         
         self.hwnd = user32.CreateWindowExW(
             WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-            self._class_name,
+            _class_name,
             "MouseHighlight",
             WS_POPUP,
             0, 0, 100, 100,
@@ -144,7 +166,7 @@ class HighlightCircle:
         )
         user32.InvalidateRect(self.hwnd, None, True)
         
-        msg = wintypes.MSG()
+        msg = MSG()
         while user32.PeekMessageW(ctypes.byref(msg), self.hwnd, 0, 0, 1):
             user32.TranslateMessage(ctypes.byref(msg))
             user32.DispatchMessageW(ctypes.byref(msg))
@@ -193,7 +215,7 @@ class MouseMagnifier:
         def magnify_task():
             highlight = HighlightCircle()
             try:
-                highlight.create("magnify")
+                highlight.create()
                 start_time = time.time()
                 while time.time() - start_time < self.config["magnify_duration"]:
                     if stop_event.is_set():
@@ -222,7 +244,7 @@ class MouseMagnifier:
         def pulse_task():
             highlight = HighlightCircle()
             try:
-                highlight.create("pulse")
+                highlight.create()
                 start_time = time.time()
                 duration = self.config["pulse_duration"]
                 min_scale = self.config["pulse_min_scale"]
