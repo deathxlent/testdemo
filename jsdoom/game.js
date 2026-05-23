@@ -98,7 +98,7 @@ class BrowserCS {
         this.socket.on('playerMoved', (data) => {
             if (data.id !== this.playerId && this.otherPlayers[data.id]) {
                 const player = this.otherPlayers[data.id];
-                player.mesh.position.set(data.x, data.y, data.z);
+                player.mesh.position.set(data.x, 0, data.z);
                 player.mesh.rotation.y = data.yaw;
                 player.pitch = data.pitch;
             }
@@ -194,7 +194,7 @@ class BrowserCS {
         playerGroup.add(weapon);
         
         playerGroup.position.set(playerData.x, 0, playerData.z);
-        playerGroup.userData = { id: playerData.id, name: playerData.name, team: playerData.team };
+        playerGroup.userData = { id: playerData.id, name: playerData.name, team: playerData.team, type: 'player' };
         this.scene.add(playerGroup);
         this.otherPlayers[playerData.id] = { mesh: playerGroup, pitch: 0 };
     }
@@ -510,6 +510,15 @@ class BrowserCS {
         fireBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.shoot();
+        });
+        
+        const jumpBtn = document.getElementById('jumpBtn');
+        jumpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (this.player.onGround) {
+                this.player.velocityY = 0.3;
+                this.player.onGround = false;
+            }
         });
     }
     
