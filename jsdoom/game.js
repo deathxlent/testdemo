@@ -8,6 +8,7 @@ class BrowserCS {
         this.colliders = [];
         this.bullets = [];
         this.enemies = [];
+        this.otherPlayers = {};
         this.ammo = 30;
         this.totalAmmo = 90;
         this.health = 100;
@@ -18,6 +19,11 @@ class BrowserCS {
         
         this.joystick = { active: false, x: 0, y: 0 };
         this.touchLook = { active: false, lastX: 0, lastY: 0 };
+        
+        this.socket = null;
+        this.playerId = null;
+        this.lastUpdateTime = 0;
+        this.updateRate = 50;
         
         this.init();
     }
@@ -41,10 +47,156 @@ class BrowserCS {
         this.setupLighting();
         this.createDust2Map();
         this.createWeapon();
-        this.spawnEnemies();
         this.setupEventListeners();
+        this.setupNetwork();
         
         this.animate();
+    }
+    
+    setupNetwork() {
+        this.socket = io();
+        
+        this.socket.on('init', (data) => {
+            console.log('已连接到服务器', data);
+            this.playerId = data.player.id;
+            this.player.x = data.player.x;
+            this.player.z = data.player.z;
+            this.health = data.player.health;
+            this.ammo = data.player.ammo;
+            this.totalAmmo = data.player.totalAmmo;
+            
+            data.players.forEach(p => {
+                if (p.id !== this.playerId) {
+                    this.createOtherPlayer(p);
+                }
+            });
+            
+            data.enemies.forEach(e => {
+                this.createEnemy(e.x, e.z, e.id);
+            });
+            
+            this.updatePlayerCount();
+        });
+        
+        this.socket.on('playerJoined', (player) => {
+            console.log('玩家加入:', player.name);
+            if (player.id !== this.playerId) {
+                this.createOtherPlayer(player);
+                this.updatePlayerCount();
+            }
+        });
+        
+        this.socket.on('playerLeft', (playerId) => {
+            console.log('玩家离开');
+            if (this.otherPlayers[playerId]) {
+                this.scene.remove(this.otherPlayers[playerId].mesh);
+                delete this.otherPlayers[playerId];
+                this.updatePlayerCount();
+            }
+        });
+        
+        this.socket.on('playerMoved', (data) => {
+            if (data.id !== this.playerId && this.otherPlayers[data.id]) {
+                const player = this.otherPlayers[data.id];
+                player.mesh.position.set(data.x, data.y, data.z);
+                player.mesh.rotation.y = data.yaw;
+                player.pitch = data.pitch;
+            }
+        });
+        
+        this.socket.on('playerShoot', (data) => {
+            if (data.id !== this.playerId) {
+                this.createBulletEffect(data.position, data.direction);
+            }
+        });
+        
+        this.socket.on('playerHit', (data) => {
+            if (data.targetId === this.playerId) {
+                this.health = data.health;
+                this.updateHUD();
+                if (data.health <= 0) {
+                    this.showDeathScreen();
+                }
+            }
+        });
+        
+        this.socket.on('playerRespawn', (data) => {
+            if (data.id === this.playerId) {
+                this.player.x = data.x;
+                this.player.z = data.z;
+                this.health = 100;
+                this.ammo = 30;
+                this.totalAmmo = 90;
+                this.updateHUD();
+                this.hideDeathScreen();
+            }
+        });
+        
+        this.socket.on('enemyHit', (data) => {
+            const enemy = this.enemies.find(e => e.userData.id === data.enemyId);
+            if (enemy) {
+                enemy.userData.health = data.health;
+                if (data.health <= 0) {
+                    enemy.visible = false;
+                }
+            }
+        });
+        
+        this.socket.on('enemyRespawn', (data) => {
+            const enemy = this.enemies.find(e => e.userData.id === data.enemyId);
+            if (enemy) {
+                enemy.position.x = data.x;
+                enemy.position.z = data.z;
+                enemy.userData.health = 100;
+                enemy.visible = true;
+            }
+        });
+        
+        this.socket.on('enemyUpdate', (data) => {
+            const enemy = this.enemies.find(e => e.userData.id === data.id);
+            if (enemy && enemy.visible) {
+                enemy.position.x = data.x;
+                enemy.position.z = data.z;
+                const dx = this.player.x - data.x;
+                const dz = this.player.z - data.z;
+                enemy.rotation.y = Math.atan2(dx, dz);
+            }
+        });
+    }
+    
+    updatePlayerCount() {
+        const count = Object.keys(this.otherPlayers).length + 1;
+        document.getElementById('playerCount').textContent = `在线玩家: ${count}`;
+    }
+    
+    createOtherPlayer(playerData) {
+        const playerGroup = new THREE.Group();
+        
+        const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.8, 16);
+        const bodyColor = playerData.team === 'CT' ? 0x4a90d9 : 0xcc6600;
+        const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.7 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 1.2;
+        body.castShadow = true;
+        playerGroup.add(body);
+        
+        const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.8 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 2.2;
+        head.castShadow = true;
+        playerGroup.add(head);
+        
+        const weaponGeo = new THREE.BoxGeometry(0.1, 0.1, 0.4);
+        const weaponMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const weapon = new THREE.Mesh(weaponGeo, weaponMat);
+        weapon.position.set(0.3, 1.5, 0);
+        playerGroup.add(weapon);
+        
+        playerGroup.position.set(playerData.x, 0, playerData.z);
+        playerGroup.userData = { id: playerData.id, name: playerData.name, team: playerData.team };
+        this.scene.add(playerGroup);
+        this.otherPlayers[playerData.id] = { mesh: playerGroup, pitch: 0 };
     }
     
     setupLighting() {
@@ -103,9 +255,6 @@ class BrowserCS {
         
         this.createTower(-35, 0, -30);
         this.createTower(35, 0, 30);
-        
-        this.player.x = 0;
-        this.player.z = 30;
     }
     
     createBuilding(x, y, z, w, h, d, color) {
@@ -203,26 +352,12 @@ class BrowserCS {
         this.scene.add(this.camera);
     }
     
-    spawnEnemies() {
-        const enemyPositions = [
-            { x: -25, z: -20 },
-            { x: 25, z: -20 },
-            { x: 0, z: -30 },
-            { x: -15, z: 5 },
-            { x: 15, z: 5 }
-        ];
-        
-        enemyPositions.forEach((pos, index) => {
-            this.createEnemy(pos.x, pos.z, index);
-        });
-    }
-    
     createEnemy(x, z, id) {
         const enemyGroup = new THREE.Group();
-        enemyGroup.userData = { type: 'enemy', health: 100, id, lastHit: 0 };
+        enemyGroup.userData = { type: 'enemy', health: 100, id };
         
         const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.8, 16);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 0.7 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 0.7 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.position.y = 1.2;
         body.castShadow = true;
@@ -234,15 +369,6 @@ class BrowserCS {
         head.position.y = 2.2;
         head.castShadow = true;
         enemyGroup.add(head);
-        
-        const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
-        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-        leftEye.position.set(-0.12, 2.25, 0.3);
-        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-        rightEye.position.set(0.12, 2.25, 0.3);
-        enemyGroup.add(leftEye);
-        enemyGroup.add(rightEye);
         
         enemyGroup.position.set(x, 0, z);
         this.scene.add(enemyGroup);
@@ -275,13 +401,6 @@ class BrowserCS {
             this.keys = {};
         });
         
-        document.addEventListener('pointerlockchange', () => {
-            this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
-            if (!this.isPointerLocked) {
-                this.keys = {};
-            }
-        });
-        
         document.addEventListener('mousemove', (e) => {
             if (this.isPointerLocked) {
                 this.player.yaw -= e.movementX * 0.002;
@@ -293,6 +412,13 @@ class BrowserCS {
         document.addEventListener('mousedown', (e) => {
             if (e.button === 0 && this.isPointerLocked) {
                 this.shoot();
+            }
+        });
+        
+        document.addEventListener('pointerlockchange', () => {
+            this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
+            if (!this.isPointerLocked) {
+                this.keys = {};
             }
         });
         
@@ -403,26 +529,37 @@ class BrowserCS {
         this.weaponGroup.position.z -= 0.1;
         setTimeout(() => this.weaponGroup.position.z = -0.5, 50);
         
+        const direction = new THREE.Vector3(0, 0, -1);
+        direction.applyQuaternion(this.camera.quaternion);
+        
+        this.socket.emit('shoot', {
+            position: { x: this.player.x, y: this.player.y, z: this.player.z },
+            direction: { x: direction.x, y: direction.y, z: direction.z }
+        });
+        
+        this.createBulletEffect(
+            { x: this.player.x, y: this.player.y - 0.2, z: this.player.z },
+            { x: direction.x, y: direction.y, z: direction.z }
+        );
+        
+        this.createMuzzleFlash();
+        this.raycastShoot();
+    }
+    
+    createBulletEffect(position, direction) {
         const bulletGeo = new THREE.SphereGeometry(0.05, 8, 8);
         const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
         const bullet = new THREE.Mesh(bulletGeo, bulletMat);
         
-        bullet.position.copy(this.camera.position);
-        bullet.position.y -= 0.2;
-        
-        const direction = new THREE.Vector3(0, 0, -1);
-        direction.applyQuaternion(this.camera.quaternion);
+        bullet.position.set(position.x, position.y, position.z);
         
         bullet.userData = {
-            velocity: direction.multiplyScalar(2),
+            velocity: new THREE.Vector3(direction.x, direction.y, direction.z).multiplyScalar(2),
             life: 100
         };
         
         this.scene.add(bullet);
         this.bullets.push(bullet);
-        
-        this.createMuzzleFlash();
-        this.raycastShoot();
     }
     
     createMuzzleFlash() {
@@ -443,22 +580,31 @@ class BrowserCS {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
         
-        const intersects = raycaster.intersectObjects(this.enemies, true);
+        const enemyMeshes = this.enemies.filter(e => e.visible !== false);
+        const playerMeshes = Object.values(this.otherPlayers).map(p => p.mesh);
+        const allTargets = [...enemyMeshes, ...playerMeshes];
+        
+        const intersects = raycaster.intersectObjects(allTargets, true);
         
         if (intersects.length > 0) {
-            let enemy = intersects[0].object;
-            while (enemy.parent && !enemy.userData.type) {
-                enemy = enemy.parent;
+            let target = intersects[0].object;
+            
+            while (target.parent && !target.userData.type && !target.userData.id) {
+                target = target.parent;
             }
             
-            if (enemy.userData.type === 'enemy') {
-                enemy.userData.health -= 25;
+            if (target.userData.type === 'enemy') {
+                this.socket.emit('hitEnemy', {
+                    enemyId: target.userData.id,
+                    damage: 25
+                });
                 this.showHitMarker();
-                
-                if (enemy.userData.health <= 0) {
-                    this.scene.remove(enemy);
-                    this.enemies = this.enemies.filter(e => e !== enemy);
-                }
+            } else if (target.userData.id) {
+                this.socket.emit('hitPlayer', {
+                    targetId: target.userData.id,
+                    damage: 25
+                });
+                this.showHitMarker();
             }
         }
     }
@@ -467,6 +613,19 @@ class BrowserCS {
         const marker = document.getElementById('hitMarker');
         marker.classList.add('active');
         setTimeout(() => marker.classList.remove('active'), 100);
+    }
+    
+    showDeathScreen() {
+        const deathScreen = document.createElement('div');
+        deathScreen.id = 'deathScreen';
+        deathScreen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);display:flex;justify-content:center;align-items:center;z-index:300;';
+        deathScreen.innerHTML = '<h1 style="color:white;font-size:48px;text-shadow:0 0 20px red;">你被击杀了！</h1><p style="color:white;font-size:24px;position:absolute;bottom:100px;">正在重生...</p>';
+        document.body.appendChild(deathScreen);
+    }
+    
+    hideDeathScreen() {
+        const deathScreen = document.getElementById('deathScreen');
+        if (deathScreen) deathScreen.remove();
     }
     
     reload() {
@@ -545,8 +704,22 @@ class BrowserCS {
         this.camera.rotation.y = this.player.yaw;
         this.camera.rotation.x = this.player.pitch;
         
+        const now = Date.now();
+        if (now - this.lastUpdateTime > this.updateRate) {
+            this.socket.emit('playerUpdate', {
+                x: this.player.x,
+                y: this.player.y,
+                z: this.player.z,
+                yaw: this.player.yaw,
+                pitch: this.player.pitch,
+                health: this.health,
+                ammo: this.ammo,
+                totalAmmo: this.totalAmmo
+            });
+            this.lastUpdateTime = now;
+        }
+        
         this.updateBullets();
-        this.updateEnemies();
     }
     
     updateBullets() {
@@ -560,29 +733,6 @@ class BrowserCS {
                 this.bullets.splice(i, 1);
             }
         }
-    }
-    
-    updateEnemies() {
-        this.enemies.forEach(enemy => {
-            const dx = this.player.x - enemy.position.x;
-            const dz = this.player.z - enemy.position.z;
-            const distance = Math.sqrt(dx * dx + dz * dz);
-            
-            if (distance > 5 && distance < 30) {
-                const speed = 0.02;
-                const newX = enemy.position.x + (dx / distance) * speed;
-                const newZ = enemy.position.z + (dz / distance) * speed;
-                
-                if (!this.checkCollision(newX, enemy.position.z)) {
-                    enemy.position.x = newX;
-                }
-                if (!this.checkCollision(enemy.position.x, newZ)) {
-                    enemy.position.z = newZ;
-                }
-            }
-            
-            enemy.rotation.y = Math.atan2(dx, dz);
-        });
     }
     
     animate() {

@@ -68,6 +68,22 @@
             z-index: 100;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
+        #playerList {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 16px;
+            z-index: 100;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+        #playerCount {
+            font-weight: bold;
+            color: #00ff00;
+        }
         #startScreen {
             position: fixed;
             top: 0;
@@ -215,6 +231,10 @@
     
     <div id="health">❤️ 100 HP</div>
     
+    <div id="playerList">
+        <div id="playerCount">在线玩家: 1</div>
+    </div>
+    
     <div id="mobileControls">
         <div id="joystick">
             <div id="joystickKnob"></div>
@@ -224,6 +244,7 @@
     <div id="lookArea"></div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
