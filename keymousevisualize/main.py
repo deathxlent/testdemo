@@ -32,6 +32,7 @@ class KeyMouseVisualizer:
         
         self.last_click_time = {}
         self.last_click_button = None
+        self.click_after_ids = {}
         
         self.setup_tray()
         self.setup_listeners()
@@ -131,19 +132,26 @@ class KeyMouseVisualizer:
         if button_str in self.last_click_time:
             time_diff = current_time - self.last_click_time[button_str]
             if time_diff < DOUBLE_CLICK_THRESHOLD:
+                if button_str in self.click_after_ids:
+                    self.root.after_cancel(self.click_after_ids[button_str])
+                    del self.click_after_ids[button_str]
+                
                 self.message_queue.put(('mouse_double_click', x, y, button))
                 del self.last_click_time[button_str]
                 return
         
         self.last_click_time[button_str] = current_time
-        self.root.after(int(DOUBLE_CLICK_THRESHOLD * 1000) + 50, 
-                       lambda: self.check_single_click(button_str, x, y, button))
+        after_id = self.root.after(int(DOUBLE_CLICK_THRESHOLD * 1000) + 50, 
+                       lambda bs=button_str, bx=x, by=y, b=button: self.check_single_click(bs, bx, by, b))
+        self.click_after_ids[button_str] = after_id
             
     def check_single_click(self, button_str, x, y, button):
         if button_str in self.last_click_time:
             del self.last_click_time[button_str]
-            if self.is_visible:
-                self.message_queue.put(('mouse_click', x, y, button))
+        if button_str in self.click_after_ids:
+            del self.click_after_ids[button_str]
+        if self.is_visible:
+            self.message_queue.put(('mouse_click', x, y, button))
             
     def on_key_press(self, key):
         try:
@@ -297,9 +305,11 @@ class KeyMouseVisualizer:
             win_data['target_y'] = target_y
             
     def animate_window(self, window_data):
+        window = window_data['window']
+        window.geometry(f"+{window_data['pos_x']}+{screen_height}")
+        
         def update():
             elapsed = time.time() - window_data['start_time']
-            window = window_data['window']
             
             if not window.winfo_exists():
                 if window_data in self.active_windows:
@@ -337,7 +347,6 @@ class KeyMouseVisualizer:
             
             window.after(30, update)
             
-        window.geometry(f"+{window_data['pos_x']}+{screen_height}")
         update()
         
     def quit_app(self):
