@@ -12,6 +12,11 @@ user32 = ctypes.windll.user32
 screen_width = user32.GetSystemMetrics(0)
 screen_height = user32.GetSystemMetrics(1)
 
+DOUBLE_CLICK_THRESHOLD = 0.3
+POPUP_HEIGHT = 50
+POPUP_SPACING = 5
+BASE_Y_OFFSET = 140
+
 class KeyMouseVisualizer:
     def __init__(self):
         self.root = tk.Tk()
@@ -24,6 +29,9 @@ class KeyMouseVisualizer:
         
         self.last_pause_time = 0
         self.pause_click_count = 0
+        
+        self.last_click_time = {}
+        self.last_click_button = None
         
         self.setup_tray()
         self.setup_listeners()
@@ -114,8 +122,28 @@ class KeyMouseVisualizer:
             self.message_queue.put(('mouse_move', x, y))
             
     def on_mouse_click(self, x, y, button, pressed):
-        if self.is_visible and pressed:
-            self.message_queue.put(('mouse_click', x, y, button))
+        if not self.is_visible or not pressed:
+            return
+            
+        current_time = time.time()
+        button_str = str(button)
+        
+        if button_str in self.last_click_time:
+            time_diff = current_time - self.last_click_time[button_str]
+            if time_diff < DOUBLE_CLICK_THRESHOLD:
+                self.message_queue.put(('mouse_double_click', x, y, button))
+                del self.last_click_time[button_str]
+                return
+        
+        self.last_click_time[button_str] = current_time
+        self.root.after(int(DOUBLE_CLICK_THRESHOLD * 1000) + 50, 
+                       lambda: self.check_single_click(button_str, x, y, button))
+            
+    def check_single_click(self, button_str, x, y, button):
+        if button_str in self.last_click_time:
+            del self.last_click_time[button_str]
+            if self.is_visible:
+                self.message_queue.put(('mouse_click', x, y, button))
             
     def on_key_press(self, key):
         try:
@@ -142,7 +170,9 @@ class KeyMouseVisualizer:
                 if msg[0] == 'mouse_move':
                     self.handle_mouse_move(msg[1], msg[2])
                 elif msg[0] == 'mouse_click':
-                    self.handle_mouse_click(msg[1], msg[2], msg[3])
+                    self.handle_mouse_click(msg[1], msg[2], msg[3], False)
+                elif msg[0] == 'mouse_double_click':
+                    self.handle_mouse_click(msg[1], msg[2], msg[3], True)
                 elif msg[0] == 'key_press':
                     self.handle_key_press(msg[1])
                 elif msg[0] == 'toggle':
@@ -162,11 +192,15 @@ class KeyMouseVisualizer:
             self.mouse_window.geometry(f"+{pos_x}+{pos_y}")
             self.mouse_window.deiconify()
             
-    def handle_mouse_click(self, x, y, button):
+    def handle_mouse_click(self, x, y, button, is_double):
         if self.mouse_window and self.mouse_window.winfo_exists():
             button_name = '左键' if button == mouse.Button.left else '右键' if button == mouse.Button.right else '中键'
-            self.click_label.config(text=f"{button_name} 点击!")
-            self.root.after(300, lambda: self.click_label.config(text=""))
+            click_type = '双击' if is_double else '点击'
+            self.click_label.config(text=f"{button_name} {click_type}!")
+            self.root.after(500, lambda: self.click_label.config(text=""))
+            
+            key_name = f"{button_name}{click_type}"
+            self.show_key_popup(key_name, is_mouse=True)
             
     def handle_key_press(self, key):
         key_name = self.get_key_name(key)
@@ -207,19 +241,22 @@ class KeyMouseVisualizer:
             }
             return key_map.get(key, str(key).replace('Key.', ''))
             
-    def show_key_popup(self, key_name):
+    def show_key_popup(self, key_name, is_mouse=False):
         popup = tk.Toplevel(self.root)
         popup.overrideredirect(True)
         popup.attributes('-topmost', True)
         popup.attributes('-alpha', 0.95)
-        popup.configure(bg='#1a1a2e')
+        
+        bg_color = '#2d1b4e' if is_mouse else '#1a1a2e'
+        fg_color = '#ffaa00' if is_mouse else '#00ff88'
+        popup.configure(bg=bg_color)
         
         label = tk.Label(
             popup,
             text=key_name,
             font=('Arial', 20, 'bold'),
-            fg='#00ff88',
-            bg='#1a1a2e',
+            fg=fg_color,
+            bg=bg_color,
             padx=15,
             pady=8,
             relief='raised',
@@ -232,21 +269,33 @@ class KeyMouseVisualizer:
         popup_height = popup.winfo_height()
         
         pos_x = screen_width - popup_width - 20
-        pos_y = screen_height - 140
-        
-        popup.geometry(f"+{pos_x}+{pos_y}")
         
         start_time = time.time()
         window_data = {
             'window': popup,
             'start_time': start_time,
-            'start_y': pos_y,
-            'opacity': 0.95
+            'popup_height': popup_height,
+            'opacity': 0.95,
+            'pos_x': pos_x
         }
         
         self.active_windows.append(window_data)
+        self.rearrange_windows()
         self.animate_window(window_data)
         
+    def rearrange_windows(self):
+        valid_windows = []
+        for win_data in self.active_windows:
+            if win_data['window'].winfo_exists():
+                valid_windows.append(win_data)
+        
+        self.active_windows = valid_windows
+        
+        base_y = screen_height - BASE_Y_OFFSET
+        for i, win_data in enumerate(reversed(self.active_windows)):
+            target_y = base_y - i * (POPUP_HEIGHT + POPUP_SPACING)
+            win_data['target_y'] = target_y
+            
     def animate_window(self, window_data):
         def update():
             elapsed = time.time() - window_data['start_time']
@@ -255,29 +304,40 @@ class KeyMouseVisualizer:
             if not window.winfo_exists():
                 if window_data in self.active_windows:
                     self.active_windows.remove(window_data)
+                    self.rearrange_windows()
                 return
                 
             if elapsed >= 2:
                 window.destroy()
                 if window_data in self.active_windows:
                     self.active_windows.remove(window_data)
+                    self.rearrange_windows()
                 return
                 
-            new_y = window_data['start_y'] - (elapsed * 60)
-            new_opacity = max(0, 0.95 - (elapsed * 0.475))
-            
-            if new_y < -100:
-                window.destroy()
-                if window_data in self.active_windows:
-                    self.active_windows.remove(window_data)
-                return
+            if 'target_y' in window_data:
+                try:
+                    current_geo = window.geometry()
+                    current_y = int(current_geo.split('+')[2])
+                    new_y = current_y + (window_data['target_y'] - current_y) * 0.2
+                except:
+                    new_y = window_data['target_y']
                 
-            window.geometry(f"+{screen_width - window.winfo_width() - 20}+{int(new_y)}")
-            window.attributes('-alpha', new_opacity)
-            window_data['opacity'] = new_opacity
+                if new_y < -100:
+                    window.destroy()
+                    if window_data in self.active_windows:
+                        self.active_windows.remove(window_data)
+                        self.rearrange_windows()
+                    return
+                    
+                new_opacity = max(0.3, 0.95 - (elapsed * 0.325))
+                
+                window.geometry(f"+{window_data['pos_x']}+{int(new_y)}")
+                window.attributes('-alpha', new_opacity)
+                window_data['opacity'] = new_opacity
             
             window.after(30, update)
             
+        window.geometry(f"+{window_data['pos_x']}+{screen_height}")
         update()
         
     def quit_app(self):
