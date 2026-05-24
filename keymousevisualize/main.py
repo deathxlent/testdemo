@@ -176,14 +176,30 @@ class KeyMouseVisualizer:
                 key_name = self.get_key_name(key)
                 if key_name not in self.pressed_keys:
                     self.pressed_keys.add(key_name)
-                    self.schedule_combo_display()
+                    
+                    modifier_keys = {'Ctrl', 'Alt', 'Shift', 'Win'}
+                    has_modifier = any(k in modifier_keys for k in self.pressed_keys)
+                    
+                    if key_name in modifier_keys or has_modifier:
+                        self.schedule_combo_display()
+                    else:
+                        self.message_queue.put(('key_press', key_name))
+                        self.pressed_keys.discard(key_name)
         except Exception as e:
             if self.is_visible:
                 try:
                     key_name = self.get_key_name(key)
                     if key_name not in self.pressed_keys:
                         self.pressed_keys.add(key_name)
-                        self.schedule_combo_display()
+                        
+                        modifier_keys = {'Ctrl', 'Alt', 'Shift', 'Win'}
+                        has_modifier = any(k in modifier_keys for k in self.pressed_keys)
+                        
+                        if key_name in modifier_keys or has_modifier:
+                            self.schedule_combo_display()
+                        else:
+                            self.message_queue.put(('key_press', key_name))
+                            self.pressed_keys.discard(key_name)
                 except:
                     pass
     
@@ -213,7 +229,7 @@ class KeyMouseVisualizer:
         modifiers = []
         normal_keys = []
         
-        for key in self.pressed_keys:
+        for key in list(self.pressed_keys):
             if key in modifier_order:
                 modifiers.append(key)
             else:
@@ -226,6 +242,7 @@ class KeyMouseVisualizer:
         combo_text = '+'.join(all_keys)
         
         self.message_queue.put(('combo_key', combo_text))
+        self.pressed_keys.clear()
                 
     def process_queue(self):
         try:
@@ -265,14 +282,10 @@ class KeyMouseVisualizer:
             self.click_label.config(text=f"{button_name} {click_type}!")
             self.root.after(500, lambda: self.click_label.config(text=""))
             
-            key_name = f"{button_name}{click_type}"
-            self.show_key_popup(key_name, is_mouse=True)
-            
     def handle_combo_key(self, combo_text):
         self.show_key_popup(combo_text, is_combo=True)
         
-    def handle_key_press(self, key):
-        key_name = self.get_key_name(key)
+    def handle_key_press(self, key_name):
         self.show_key_popup(key_name)
         
     def get_key_name(self, key):
