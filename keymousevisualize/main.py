@@ -16,6 +16,9 @@ DOUBLE_CLICK_THRESHOLD = 0.3
 POPUP_HEIGHT = 50
 POPUP_SPACING = 5
 BASE_Y_OFFSET = 140
+MOUSE_WINDOW_OPACITY = 0.8
+KEY_POPUP_OPACITY = 0.9
+COMBO_KEY_TIMEOUT = 0.3
 
 class KeyMouseVisualizer:
     def __init__(self):
@@ -33,6 +36,9 @@ class KeyMouseVisualizer:
         self.last_click_time = {}
         self.last_click_button = None
         self.click_after_ids = {}
+        
+        self.pressed_keys = set()
+        self.combo_after_id = None
         
         self.setup_tray()
         self.setup_listeners()
@@ -73,7 +79,7 @@ class KeyMouseVisualizer:
             self.mouse_window = tk.Toplevel(self.root)
             self.mouse_window.overrideredirect(True)
             self.mouse_window.attributes('-topmost', True)
-            self.mouse_window.attributes('-alpha', 0.9)
+            self.mouse_window.attributes('-alpha', MOUSE_WINDOW_OPACITY)
             self.mouse_window.configure(bg='black')
             
             self.mouse_label = tk.Label(
@@ -114,7 +120,8 @@ class KeyMouseVisualizer:
         self.mouse_listener.start()
         
         self.keyboard_listener = keyboard.Listener(
-            on_press=self.on_key_press
+            on_press=self.on_key_press,
+            on_release=self.on_key_release
         )
         self.keyboard_listener.start()
         
@@ -166,10 +173,59 @@ class KeyMouseVisualizer:
                     self.pause_click_count = 1
                 self.last_pause_time = current_time
             elif self.is_visible:
-                self.message_queue.put(('key_press', key))
-        except:
+                key_name = self.get_key_name(key)
+                if key_name not in self.pressed_keys:
+                    self.pressed_keys.add(key_name)
+                    self.schedule_combo_display()
+        except Exception as e:
             if self.is_visible:
-                self.message_queue.put(('key_press', key))
+                try:
+                    key_name = self.get_key_name(key)
+                    if key_name not in self.pressed_keys:
+                        self.pressed_keys.add(key_name)
+                        self.schedule_combo_display()
+                except:
+                    pass
+    
+    def on_key_release(self, key):
+        try:
+            key_name = self.get_key_name(key)
+            if key_name in self.pressed_keys:
+                self.pressed_keys.remove(key_name)
+        except:
+            pass
+    
+    def schedule_combo_display(self):
+        if self.combo_after_id is not None:
+            self.root.after_cancel(self.combo_after_id)
+        
+        self.combo_after_id = self.root.after(
+            int(COMBO_KEY_TIMEOUT * 1000),
+            self.display_combo_keys
+        )
+    
+    def display_combo_keys(self):
+        self.combo_after_id = None
+        if not self.pressed_keys or not self.is_visible:
+            return
+        
+        modifier_order = ['Ctrl', 'Alt', 'Shift', 'Win']
+        modifiers = []
+        normal_keys = []
+        
+        for key in self.pressed_keys:
+            if key in modifier_order:
+                modifiers.append(key)
+            else:
+                normal_keys.append(key)
+        
+        modifiers.sort(key=lambda x: modifier_order.index(x))
+        normal_keys.sort()
+        
+        all_keys = modifiers + normal_keys
+        combo_text = '+'.join(all_keys)
+        
+        self.message_queue.put(('combo_key', combo_text))
                 
     def process_queue(self):
         try:
@@ -183,6 +239,8 @@ class KeyMouseVisualizer:
                     self.handle_mouse_click(msg[1], msg[2], msg[3], True)
                 elif msg[0] == 'key_press':
                     self.handle_key_press(msg[1])
+                elif msg[0] == 'combo_key':
+                    self.handle_combo_key(msg[1])
                 elif msg[0] == 'toggle':
                     self.toggle_visibility()
         except queue.Empty:
@@ -210,6 +268,9 @@ class KeyMouseVisualizer:
             key_name = f"{button_name}{click_type}"
             self.show_key_popup(key_name, is_mouse=True)
             
+    def handle_combo_key(self, combo_text):
+        self.show_key_popup(combo_text, is_combo=True)
+        
     def handle_key_press(self, key):
         key_name = self.get_key_name(key)
         self.show_key_popup(key_name)
@@ -228,6 +289,8 @@ class KeyMouseVisualizer:
                 keyboard.Key.ctrl_r: 'Ctrl',
                 keyboard.Key.alt_l: 'Alt',
                 keyboard.Key.alt_r: 'Alt',
+                keyboard.Key.cmd_l: 'Win',
+                keyboard.Key.cmd_r: 'Win',
                 keyboard.Key.caps_lock: 'CapsLock',
                 keyboard.Key.esc: 'Esc',
                 keyboard.Key.up: '↑',
@@ -249,14 +312,14 @@ class KeyMouseVisualizer:
             }
             return key_map.get(key, str(key).replace('Key.', ''))
             
-    def show_key_popup(self, key_name, is_mouse=False):
+    def show_key_popup(self, key_name, is_mouse=False, is_combo=False):
         popup = tk.Toplevel(self.root)
         popup.overrideredirect(True)
         popup.attributes('-topmost', True)
-        popup.attributes('-alpha', 0.95)
+        popup.attributes('-alpha', KEY_POPUP_OPACITY)
         
-        bg_color = '#2d1b4e' if is_mouse else '#1a1a2e'
-        fg_color = '#ffaa00' if is_mouse else '#00ff88'
+        bg_color = '#2d1b4e' if is_mouse else '#1a2a4e' if is_combo else '#1a1a2e'
+        fg_color = '#ffaa00' if is_mouse else '#00aaff' if is_combo else '#00ff88'
         popup.configure(bg=bg_color)
         
         label = tk.Label(
@@ -283,7 +346,7 @@ class KeyMouseVisualizer:
             'window': popup,
             'start_time': start_time,
             'popup_height': popup_height,
-            'opacity': 0.95,
+            'opacity': KEY_POPUP_OPACITY,
             'pos_x': pos_x
         }
         
@@ -339,7 +402,7 @@ class KeyMouseVisualizer:
                         self.rearrange_windows()
                     return
                     
-                new_opacity = max(0.3, 0.95 - (elapsed * 0.325))
+                new_opacity = max(0.3, KEY_POPUP_OPACITY - (elapsed * (KEY_POPUP_OPACITY - 0.3) / 2))
                 
                 window.geometry(f"+{window_data['pos_x']}+{int(new_y)}")
                 window.attributes('-alpha', new_opacity)
