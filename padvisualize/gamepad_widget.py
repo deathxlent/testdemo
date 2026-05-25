@@ -16,6 +16,8 @@ class GamepadWidget(QWidget):
         self.pressed_fill = QColor(50, 50, 50, 180)
         self.show_stats = False
         self.stats_data = {}
+        
+        self.svg_scale = self.width / 832.0
 
     def set_gamepad_state(self, state):
         self.gamepad_state = state
@@ -30,6 +32,12 @@ class GamepadWidget(QWidget):
         self.show_stats = False
         self.stats_data = {}
         self.update()
+
+    def sx(self, x):
+        return x * self.svg_scale
+
+    def sy(self, y):
+        return y * self.svg_scale
 
     def paintEvent(self, event):
         if self.show_stats:
@@ -71,84 +79,66 @@ class GamepadWidget(QWidget):
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
 
         pen = QPen(self.line_color)
-        pen.setWidthF(2)
+        pen.setWidthF(1.5)
         pen.setCapStyle(Qt.RoundCap)
         pen.setJoinStyle(Qt.RoundJoin)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
 
-        scale = 1.0
+        self.draw_controller_body(painter)
+        self.draw_lt_rt(painter)
+        self.draw_lb_rb(painter)
+        self.draw_left_stick(painter)
+        self.draw_dpad(painter)
+        self.draw_abxy_buttons(painter)
+        self.draw_right_stick(painter)
+        self.draw_menu_buttons(painter)
 
-        self.draw_controller_body(painter, scale)
-        self.draw_lt_rt(painter, scale)
-        self.draw_lb_rb(painter, scale)
-        self.draw_dpad(painter, scale)
-        self.draw_abxy_buttons(painter, scale)
-        self.draw_thumbsticks(painter, scale)
-        self.draw_menu_buttons(painter, scale)
-
-    def draw_controller_body(self, painter, scale):
+    def draw_controller_body(self, painter):
         path = QPainterPath()
         
-        center_x = 130
-        center_y = 120
+        path.moveTo(self.sx(270), self.sy(30))
+        path.cubicTo(self.sx(235), self.sy(35), self.sx(220), self.sy(45), self.sx(210), self.sy(60))
+        path.cubicTo(self.sx(200), self.sy(75), self.sx(195), self.sy(90), self.sx(200), self.sy(110))
+        path.lineTo(self.sx(195), self.sy(130))
         
-        path.moveTo(50 * scale, 65 * scale)
-        path.cubicTo(35 * scale, 55 * scale, 40 * scale, 35 * scale, 55 * scale, 30 * scale)
-        path.lineTo(205 * scale, 30 * scale)
-        path.cubicTo(220 * scale, 35 * scale, 225 * scale, 55 * scale, 210 * scale, 65 * scale)
+        path.cubicTo(self.sx(160), self.sy(140), self.sx(130), self.sy(160), self.sx(100), self.sy(200))
+        path.cubicTo(self.sx(70), self.sy(250), self.sx(50), self.sy(310), self.sx(55), self.sy(380))
+        path.cubicTo(self.sx(58), self.sy(420), self.sx(80), self.sy(460), self.sx(120), self.sy(480))
+        path.cubicTo(self.sx(150), self.sy(495), self.sx(180), self.sy(485), self.sx(200), self.sy(460))
+        path.cubicTo(self.sx(220), self.sy(430), self.sx(240), self.sy(400), self.sx(260), self.sy(380))
         
-        path.cubicTo(235 * scale, 80 * scale, 245 * scale, 100 * scale, 240 * scale, 130 * scale)
-        path.cubicTo(250 * scale, 160 * scale, 240 * scale, 195 * scale, 210 * scale, 215 * scale)
-        path.cubicTo(195 * scale, 225 * scale, 180 * scale, 215 * scale, 175 * scale, 200 * scale)
-        path.lineTo(165 * scale, 175 * scale)
+        path.cubicTo(self.sx(300), self.sy(370), self.sx(350), self.sy(365), self.sx(416), self.sy(365))
+        path.cubicTo(self.sx(482), self.sy(365), self.sx(532), self.sy(370), self.sx(572), self.sy(380))
         
-        path.cubicTo(155 * scale, 160 * scale, 142 * scale, 155 * scale, 130 * scale, 155 * scale)
-        path.cubicTo(118 * scale, 155 * scale, 105 * scale, 160 * scale, 95 * scale, 175 * scale)
-        path.lineTo(85 * scale, 200 * scale)
-        path.cubicTo(80 * scale, 215 * scale, 65 * scale, 225 * scale, 50 * scale, 215 * scale)
-        path.cubicTo(20 * scale, 195 * scale, 10 * scale, 160 * scale, 20 * scale, 130 * scale)
-        path.cubicTo(15 * scale, 100 * scale, 25 * scale, 80 * scale, 50 * scale, 65 * scale)
+        path.cubicTo(self.sx(592), self.sy(400), self.sx(612), self.sy(430), self.sx(632), self.sy(460))
+        path.cubicTo(self.sx(652), self.sy(485), self.sx(682), self.sy(495), self.sx(712), self.sy(480))
+        path.cubicTo(self.sx(752), self.sy(460), self.sx(774), self.sy(420), self.sx(777), self.sy(380))
+        path.cubicTo(self.sx(782), self.sy(310), self.sx(762), self.sy(250), self.sx(732), self.sy(200))
+        path.cubicTo(self.sx(702), self.sy(160), self.sx(672), self.sy(140), self.sx(637), self.sy(130))
+        
+        path.lineTo(self.sx(632), self.sy(110))
+        path.cubicTo(self.sx(637), self.sy(90), self.sx(632), self.sy(75), self.sx(622), self.sy(60))
+        path.cubicTo(self.sx(612), self.sy(45), self.sx(597), self.sy(35), self.sx(562), self.sy(30))
+        
+        path.lineTo(self.sx(514), self.sy(15))
+        path.lineTo(self.sx(317), self.sy(15))
+        path.lineTo(self.sx(270), self.sy(30))
         
         path.closeSubpath()
         
         painter.drawPath(path)
 
-    def draw_lb_rb(self, painter, scale):
+    def draw_lt_rt(self, painter):
         pen = QPen(self.line_color)
-        pen.setWidthF(2)
+        pen.setWidthF(1.5)
         painter.setPen(pen)
         
-        lb_rect = QRectF(55 * scale, 25 * scale, 35 * scale, 15 * scale)
-        rb_rect = QRectF(170 * scale, 25 * scale, 35 * scale, 15 * scale)
+        lt_rect = QRectF(self.sx(268), self.sy(8), self.sx(50), self.sy(15))
+        rt_rect = QRectF(self.sx(514), self.sy(8), self.sx(50), self.sy(15))
         
-        painter.drawRoundedRect(lb_rect, 4 * scale, 4 * scale)
-        painter.drawRoundedRect(rb_rect, 4 * scale, 4 * scale)
-        
-        if self.gamepad_state and self.gamepad_state['connected']:
-            if self.gamepad_state['buttons'].get('LB', False):
-                painter.setBrush(self.pressed_fill)
-                painter.setPen(Qt.NoPen)
-                painter.drawRoundedRect(lb_rect, 4 * scale, 4 * scale)
-            
-            if self.gamepad_state['buttons'].get('RB', False):
-                painter.setBrush(self.pressed_fill)
-                painter.setPen(Qt.NoPen)
-                painter.drawRoundedRect(rb_rect, 4 * scale, 4 * scale)
-            
-            painter.setPen(pen)
-            painter.setBrush(Qt.NoBrush)
-
-    def draw_lt_rt(self, painter, scale):
-        pen = QPen(self.line_color)
-        pen.setWidthF(2)
-        painter.setPen(pen)
-        
-        lt_rect = QRectF(62 * scale, 8 * scale, 22 * scale, 12 * scale)
-        rt_rect = QRectF(176 * scale, 8 * scale, 22 * scale, 12 * scale)
-        
-        painter.drawRoundedRect(lt_rect, 3 * scale, 3 * scale)
-        painter.drawRoundedRect(rt_rect, 3 * scale, 3 * scale)
+        painter.drawRoundedRect(lt_rect, 3, 3)
+        painter.drawRoundedRect(rt_rect, 3, 3)
         
         if self.gamepad_state and self.gamepad_state['connected']:
             lt_value = self.gamepad_state['triggers'].get('LT', 0)
@@ -160,7 +150,7 @@ class GamepadWidget(QWidget):
                 fill_height = lt_rect.height() * lt_value
                 fill_rect = QRectF(lt_rect.x(), lt_rect.y() + lt_rect.height() - fill_height, 
                                    lt_rect.width(), fill_height)
-                painter.drawRoundedRect(fill_rect, 3 * scale, 3 * scale)
+                painter.drawRoundedRect(fill_rect, 3, 3)
             
             if rt_value > 0.01:
                 painter.setBrush(self.pressed_fill)
@@ -168,21 +158,90 @@ class GamepadWidget(QWidget):
                 fill_height = rt_rect.height() * rt_value
                 fill_rect = QRectF(rt_rect.x(), rt_rect.y() + rt_rect.height() - fill_height, 
                                    rt_rect.width(), fill_height)
-                painter.drawRoundedRect(fill_rect, 3 * scale, 3 * scale)
+                painter.drawRoundedRect(fill_rect, 3, 3)
             
             painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
 
-    def draw_dpad(self, painter, scale):
-        center_x = 75 * scale
-        center_y = 155 * scale
-        outer_radius = 22 * scale
+    def draw_lb_rb(self, painter):
+        pen = QPen(self.line_color)
+        pen.setWidthF(1.5)
+        painter.setPen(pen)
+        
+        lb_path = QPainterPath()
+        lb_path.moveTo(self.sx(195), self.sy(30))
+        lb_path.cubicTo(self.sx(180), self.sy(35), self.sx(175), self.sy(45), self.sx(185), self.sy(55))
+        lb_path.lineTo(self.sx(240), self.sy(55))
+        lb_path.cubicTo(self.sx(250), self.sy(45), self.sx(245), self.sy(35), self.sx(230), self.sy(30))
+        lb_path.closeSubpath()
+        painter.drawPath(lb_path)
+        
+        rb_path = QPainterPath()
+        rb_path.moveTo(self.sx(602), self.sy(30))
+        rb_path.cubicTo(self.sx(587), self.sy(35), self.sx(582), self.sy(45), self.sx(592), self.sy(55))
+        rb_path.lineTo(self.sx(647), self.sy(55))
+        rb_path.cubicTo(self.sx(657), self.sy(45), self.sx(652), self.sy(35), self.sx(637), self.sy(30))
+        rb_path.closeSubpath()
+        painter.drawPath(rb_path)
+        
+        if self.gamepad_state and self.gamepad_state['connected']:
+            if self.gamepad_state['buttons'].get('LB', False):
+                painter.setBrush(self.pressed_fill)
+                painter.setPen(Qt.NoPen)
+                painter.drawPath(lb_path)
+            
+            if self.gamepad_state['buttons'].get('RB', False):
+                painter.setBrush(self.pressed_fill)
+                painter.setPen(Qt.NoPen)
+                painter.drawPath(rb_path)
+            
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+
+    def draw_left_stick(self, painter):
+        center_x = self.sx(240)
+        center_y = self.sy(155)
+        outer_radius = self.sx(55)
+        inner_radius = self.sx(35)
         
         painter.drawEllipse(QPointF(center_x, center_y), outer_radius, outer_radius)
         
-        inner_radius = 14 * scale
-        cross_width = 6 * scale
-        cross_length = 8 * scale
+        stick_offset_x = 0
+        stick_offset_y = 0
+        
+        if self.gamepad_state and self.gamepad_state['connected']:
+            left = self.gamepad_state['thumbsticks']['left']
+            stick_offset_x = left['x'] * self.sx(15)
+            stick_offset_y = -left['y'] * self.sx(15)
+        
+        stick_center = QPointF(center_x + stick_offset_x, center_y + stick_offset_y)
+        
+        if self.gamepad_state and self.gamepad_state['connected']:
+            if self.gamepad_state['buttons'].get('L3', False):
+                painter.setBrush(self.pressed_fill)
+                painter.setPen(Qt.NoPen)
+                painter.drawEllipse(stick_center, inner_radius, inner_radius)
+                pen = QPen(self.line_color)
+                pen.setWidthF(1.5)
+                painter.setPen(pen)
+                painter.setBrush(Qt.NoBrush)
+            else:
+                painter.drawEllipse(stick_center, inner_radius, inner_radius)
+        else:
+            painter.drawEllipse(stick_center, inner_radius, inner_radius)
+        
+        painter.drawEllipse(stick_center, self.sx(8), self.sx(8))
+
+    def draw_dpad(self, painter):
+        center_x = self.sx(240)
+        center_y = self.sy(285)
+        outer_radius = self.sx(50)
+        
+        painter.drawEllipse(QPointF(center_x, center_y), outer_radius, outer_radius)
+        
+        inner_radius = self.sx(30)
+        cross_width = self.sx(12)
+        cross_length = self.sx(18)
         
         up_rect = QRectF(center_x - cross_width/2, center_y - inner_radius - cross_length/2, 
                         cross_width, cross_length)
@@ -216,19 +275,19 @@ class GamepadWidget(QWidget):
                 painter.drawRect(right_rect)
             
             pen = QPen(self.line_color)
-            pen.setWidthF(2)
+            pen.setWidthF(1.5)
             painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
 
-    def draw_abxy_buttons(self, painter, scale):
-        center_x = 185 * scale
-        center_y = 85 * scale
-        outer_radius = 22 * scale
+    def draw_abxy_buttons(self, painter):
+        center_x = self.sx(592)
+        center_y = self.sy(155)
+        outer_radius = self.sx(55)
         
         painter.drawEllipse(QPointF(center_x, center_y), outer_radius, outer_radius)
         
-        btn_radius = 6 * scale
-        offset = 13 * scale
+        btn_radius = self.sx(14)
+        offset = self.sx(32)
         
         y_center = QPointF(center_x, center_y - offset)
         b_center = QPointF(center_x + offset, center_y)
@@ -249,10 +308,10 @@ class GamepadWidget(QWidget):
         pen.setWidthF(1)
         painter.setPen(pen)
         
-        painter.drawText(QRectF(y_center.x() - 12, y_center.y() - 12, 24, 24), Qt.AlignCenter, "Y")
-        painter.drawText(QRectF(b_center.x() - 12, b_center.y() - 12, 24, 24), Qt.AlignCenter, "B")
-        painter.drawText(QRectF(a_center.x() - 12, a_center.y() - 12, 24, 24), Qt.AlignCenter, "A")
-        painter.drawText(QRectF(x_center.x() - 12, x_center.y() - 12, 24, 24), Qt.AlignCenter, "X")
+        painter.drawText(QRectF(y_center.x() - 15, y_center.y() - 15, 30, 30), Qt.AlignCenter, "Y")
+        painter.drawText(QRectF(b_center.x() - 15, b_center.y() - 15, 30, 30), Qt.AlignCenter, "B")
+        painter.drawText(QRectF(a_center.x() - 15, a_center.y() - 15, 30, 30), Qt.AlignCenter, "A")
+        painter.drawText(QRectF(x_center.x() - 15, x_center.y() - 15, 30, 30), Qt.AlignCenter, "X")
         
         if self.gamepad_state and self.gamepad_state['connected']:
             buttons = self.gamepad_state['buttons']
@@ -269,74 +328,48 @@ class GamepadWidget(QWidget):
                 painter.drawEllipse(x_center, btn_radius, btn_radius)
             
             pen = QPen(self.line_color)
-            pen.setWidthF(2)
+            pen.setWidthF(1.5)
             painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
 
-    def draw_thumbsticks(self, painter, scale):
-        left_center = QPointF(75 * scale, 75 * scale)
-        right_center = QPointF(185 * scale, 155 * scale)
-        stick_radius = 20 * scale
-        stick_inner_radius = 13 * scale
+    def draw_right_stick(self, painter):
+        center_x = self.sx(592)
+        center_y = self.sy(285)
+        outer_radius = self.sx(55)
+        inner_radius = self.sx(35)
         
-        painter.drawEllipse(left_center, stick_radius, stick_radius)
-        painter.drawEllipse(right_center, stick_radius, stick_radius)
+        painter.drawEllipse(QPointF(center_x, center_y), outer_radius, outer_radius)
         
-        pen = QPen(self.line_color)
-        pen.setWidthF(2)
-        painter.setPen(pen)
-        
-        left_stick_offset_x = 0
-        left_stick_offset_y = 0
-        right_stick_offset_x = 0
-        right_stick_offset_y = 0
+        stick_offset_x = 0
+        stick_offset_y = 0
         
         if self.gamepad_state and self.gamepad_state['connected']:
-            left = self.gamepad_state['thumbsticks']['left']
             right = self.gamepad_state['thumbsticks']['right']
-            left_stick_offset_x = left['x'] * 6 * scale
-            left_stick_offset_y = -left['y'] * 6 * scale
-            right_stick_offset_x = right['x'] * 6 * scale
-            right_stick_offset_y = -right['y'] * 6 * scale
+            stick_offset_x = right['x'] * self.sx(15)
+            stick_offset_y = -right['y'] * self.sx(15)
         
-        left_stick_center = QPointF(left_center.x() + left_stick_offset_x, 
-                                   left_center.y() + left_stick_offset_y)
-        right_stick_center = QPointF(right_center.x() + right_stick_offset_x, 
-                                    right_center.y() + right_stick_offset_y)
+        stick_center = QPointF(center_x + stick_offset_x, center_y + stick_offset_y)
         
         if self.gamepad_state and self.gamepad_state['connected']:
-            if self.gamepad_state['buttons'].get('L3', False):
-                painter.setBrush(self.pressed_fill)
-                painter.setPen(Qt.NoPen)
-                painter.drawEllipse(left_stick_center, stick_inner_radius, stick_inner_radius)
-                painter.setPen(pen)
-                painter.setBrush(Qt.NoBrush)
-            else:
-                painter.drawEllipse(left_stick_center, stick_inner_radius, stick_inner_radius)
-            
             if self.gamepad_state['buttons'].get('R3', False):
                 painter.setBrush(self.pressed_fill)
                 painter.setPen(Qt.NoPen)
-                painter.drawEllipse(right_stick_center, stick_inner_radius, stick_inner_radius)
+                painter.drawEllipse(stick_center, inner_radius, inner_radius)
+                pen = QPen(self.line_color)
+                pen.setWidthF(1.5)
                 painter.setPen(pen)
                 painter.setBrush(Qt.NoBrush)
             else:
-                painter.drawEllipse(right_stick_center, stick_inner_radius, stick_inner_radius)
+                painter.drawEllipse(stick_center, inner_radius, inner_radius)
         else:
-            painter.drawEllipse(left_stick_center, stick_inner_radius, stick_inner_radius)
-            painter.drawEllipse(right_stick_center, stick_inner_radius, stick_inner_radius)
+            painter.drawEllipse(stick_center, inner_radius, inner_radius)
         
-        painter.drawEllipse(left_stick_center, 4 * scale, 4 * scale)
-        painter.drawEllipse(right_stick_center, 4 * scale, 4 * scale)
+        painter.drawEllipse(stick_center, self.sx(8), self.sx(8))
 
-    def draw_menu_buttons(self, painter, scale):
-        center_x = 130 * scale
-        center_y = 100 * scale
-        btn_radius = 5 * scale
-        spacing = 30 * scale
-        
-        back_center = QPointF(center_x - spacing, center_y)
-        start_center = QPointF(center_x + spacing, center_y)
+    def draw_menu_buttons(self, painter):
+        back_center = QPointF(self.sx(365), self.sy(150))
+        start_center = QPointF(self.sx(467), self.sy(150))
+        btn_radius = self.sx(15)
         
         painter.drawEllipse(back_center, btn_radius, btn_radius)
         painter.drawEllipse(start_center, btn_radius, btn_radius)
@@ -352,6 +385,6 @@ class GamepadWidget(QWidget):
                 painter.drawEllipse(start_center, btn_radius, btn_radius)
             
             pen = QPen(self.line_color)
-            pen.setWidthF(2)
+            pen.setWidthF(1.5)
             painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
