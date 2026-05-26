@@ -1,0 +1,5 @@
+pystray>=0.19.5
+Pillow>=10.0.0
+pywin32>=306
+nuitka>=2.0.0
+ordered-set>=4.1.0
