@@ -148,9 +148,6 @@ class TopItApp:
         return img
 
     def _build_menu(self) -> pystray.Menu:
-        def on_clicked(icon, window):
-            threading.Thread(target=self.toggle_window, args=(window,), daemon=True).start()
-
         def on_cancel(icon):
             threading.Thread(target=self.cancel_topmost, daemon=True).start()
 
@@ -158,6 +155,16 @@ class TopItApp:
             self._cleanup()
             icon.stop()
             sys.exit(0)
+
+        def create_action_callback(window):
+            def callback(icon, item):
+                threading.Thread(target=self.toggle_window, args=(window,), daemon=True).start()
+            return callback
+
+        def create_checked_callback(handle):
+            def callback(item):
+                return handle == self._current_topmost
+            return callback
 
         windows = self.get_visible_windows()
         items = []
@@ -167,12 +174,11 @@ class TopItApp:
 
         for w in windows:
             display_title = w.title[:50] + "..." if len(w.title) > 50 else w.title
-            is_current = w.handle == self._current_topmost
 
             items.append(pystray.MenuItem(
                 display_title,
-                lambda icon, item, win=w: on_clicked(icon, win),
-                checked=lambda item, win=w: win.handle == self._current_topmost
+                create_action_callback(w),
+                checked=create_checked_callback(w.handle)
             ))
 
         if self._current_topmost:
