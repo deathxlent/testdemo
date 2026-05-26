@@ -1,0 +1,13 @@
+# FRP 配置示例 (frpc.toml)
+# 新建配置时会作为模板使用
+
+serverAddr = "127.0.0.1"
+serverPort = 7000
+auth.token = "your_token_here"
+
+#[[proxies]]
+#name = "web"
+#type = "http"
+#localIP = "127.0.0.1"
+#localPort = 8080
+#customDomains = ["example.com"]

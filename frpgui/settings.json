@@ -1,0 +1,7 @@
+{
+  "frp_bin_path": "",
+  "configs_dir": "configs",
+  "auto_restart_on_change": true,
+  "alert_on_error": true,
+  "active_config": ""
+}
