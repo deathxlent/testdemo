@@ -1,6 +1,6 @@
 import sys
 import ctypes
-import ctypes.wintypes
+from ctypes import wintypes
 import threading
 import win32gui
 import win32con
@@ -13,6 +13,16 @@ from typing import Optional, List
 
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
+
+user32.SetWindowPos.argtypes = [
+    wintypes.HWND, wintypes.HWND,
+    ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+    wintypes.UINT
+]
+user32.SetWindowPos.restype = wintypes.BOOL
+
+user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+user32.GetWindowTextW.restype = ctypes.c_int
 
 HWND_TOPMOST = -1
 HWND_NOTOPMOST = -2
@@ -94,9 +104,14 @@ class TopItApp:
         return sorted(windows, key=lambda w: w.title.lower())
 
     def set_topmost(self, hwnd: int, topmost: bool) -> bool:
-        h_after = HWND_TOPMOST if topmost else HWND_NOTOPMOST
-        flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
-        return bool(user32.SetWindowPos(hwnd, h_after, 0, 0, 0, 0, flags))
+        try:
+            flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
+            h_after = win32con.HWND_TOPMOST if topmost else win32con.HWND_NOTOPMOST
+            win32gui.SetWindowPos(hwnd, h_after, 0, 0, 0, 0, flags)
+            return True
+        except Exception as e:
+            print(f"SetWindowPos 错误: {e}")
+            return False
 
     def toggle_window(self, window: WindowInfo):
         with self._lock:
