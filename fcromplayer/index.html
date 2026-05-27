@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FC/NES ROM 音频提取器 - 转MIDI工具</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsnes@2.1.0/dist/jsnes.min.js"></script>
+    <title>FC/NES NSF 提取器 - 转MIDI工具</title>
     <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.0.1/build/index.min.js"></script>
     <style>
         * {
@@ -22,7 +21,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -135,6 +134,11 @@
             box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);
         }
 
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
         .main-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -188,7 +192,7 @@
             font-size: 0.85rem;
         }
 
-        .sound-list, .midi-list {
+        .track-list, .midi-list {
             max-height: 400px;
             overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -196,116 +200,202 @@
             background: rgba(0, 0, 0, 0.2);
         }
 
-        .sound-list::-webkit-scrollbar,
+        .track-list::-webkit-scrollbar,
         .midi-list::-webkit-scrollbar {
             width: 8px;
         }
 
-        .sound-list::-webkit-scrollbar-track,
+        .track-list::-webkit-scrollbar-track,
         .midi-list::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 4px;
         }
 
-        .sound-list::-webkit-scrollbar-thumb,
+        .track-list::-webkit-scrollbar-thumb,
         .midi-list::-webkit-scrollbar-thumb {
             background: rgba(59, 130, 246, 0.5);
             border-radius: 4px;
         }
 
-        .sound-item, .midi-item {
+        .track-item, .midi-item {
             display: flex;
             align-items: center;
+            gap: 12px;
             padding: 12px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            transition: background 0.2s ease;
-            gap: 12px;
+            transition: all 0.2s ease;
         }
 
-        .sound-item:last-child, .midi-item:last-child {
+        .track-item:hover, .midi-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .track-item:last-child, .midi-item:last-child {
             border-bottom: none;
         }
 
-        .sound-item:hover, .midi-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .sound-item input[type="checkbox"],
+        .track-item input[type="checkbox"],
         .midi-item input[type="checkbox"] {
             width: 18px;
             height: 18px;
-            cursor: pointer;
             accent-color: #3b82f6;
         }
 
-        .sound-info, .midi-info {
+        .track-info, .midi-info {
             flex: 1;
             cursor: pointer;
         }
 
-        .sound-name, .midi-name {
-            font-weight: 600;
+        .track-name {
+            font-size: 0.95rem;
+            font-weight: 500;
             margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
-        .sound-type {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .type-pulse1 { background: #ef4444; }
-        .type-pulse2 { background: #f59e0b; }
-        .type-triangle { background: #10b981; }
-        .type-noise { background: #8b5cf6; }
-        .type-dpcm { background: #ec4899; }
-
-        .sound-meta, .midi-meta {
-            font-size: 0.85rem;
+        .track-meta {
+            font-size: 0.8rem;
             color: #94a3b8;
         }
 
         .play-btn {
             background: rgba(59, 130, 246, 0.2);
-            border: 1px solid #3b82f6;
-            color: #3b82f6;
-            padding: 8px 16px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            transition: all 0.2s ease;
         }
 
         .play-btn:hover {
-            background: #3b82f6;
-            color: white;
+            background: rgba(59, 130, 246, 0.3);
         }
 
         .play-btn.playing {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+
+        .file-info {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-info strong {
+            color: #60a5fa;
+        }
+
+        .nsf-info {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .nsf-info.show {
+            display: block;
+        }
+
+        .nsf-info h3 {
+            color: #10b981;
+            margin-bottom: 10px;
+        }
+
+        .nsf-info p {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .nsf-info .label {
+            color: #94a3b8;
+        }
+
+        .capture-section {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .capture-section.show {
+            display: block;
+        }
+
+        .capture-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .capture-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
             background: #ef4444;
-            border-color: #ef4444;
-            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .capture-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+
+        .capture-info div {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .capture-info span {
+            color: #60a5fa;
+            font-weight: 600;
         }
 
         .convert-section {
             text-align: center;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            margin-bottom: 30px;
-        }
-
-        .convert-section .btn {
-            font-size: 1.2rem;
-            padding: 16px 40px;
+            margin: 30px 0;
         }
 
         .progress-container {
@@ -323,7 +413,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #10b981);
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
             width: 0%;
             transition: width 0.3s ease;
         }
@@ -333,45 +423,31 @@
             font-size: 0.9rem;
         }
 
-        .empty-state {
+        footer {
             text-align: center;
-            padding: 60px 20px;
+            padding: 30px;
             color: #6b7280;
+            font-size: 0.9rem;
         }
 
-        .empty-state svg {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 15px;
-            opacity: 0.5;
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s linear infinite;
         }
 
-        .file-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .file-info.show {
-            display: block;
-        }
-
-        .file-info strong {
-            color: #60a5fa;
-        }
-
-        .download-section {
-            text-align: center;
-            padding: 20px;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 0.75rem;
             font-weight: 600;
         }
@@ -381,105 +457,83 @@
             color: #60a5fa;
         }
 
-        .emulator-container {
-            display: none;
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 0.8s linear infinite;
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px;
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-
-        footer a {
-            color: #3b82f6;
-            text-decoration: none;
-        }
-
-        .extract-options {
+        .notice {
             background: rgba(59, 130, 246, 0.1);
             border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 8px;
-            padding: 16px;
+            padding: 15px;
             margin-bottom: 20px;
-            display: none;
-        }
-
-        .extract-options.show {
-            display: block;
-        }
-
-        .extract-options label {
-            display: block;
-            margin-bottom: 8px;
-            color: #94a3b8;
             font-size: 0.9rem;
+            line-height: 1.6;
         }
 
-        .extract-options select {
-            width: 100%;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            color: white;
-            font-size: 1rem;
+        .notice strong {
+            color: #60a5fa;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>� FC/NES ROM 音频提取器</h1>
-            <p>上传ROM文件，自动提取游戏音效，转换为MIDI格式</p>
+            <h1>🎵 FC/NES NSF 提取器</h1>
+            <p>从NSF文件提取音乐数据，转换为MIDI格式</p>
         </header>
+
+        <div class="notice">
+            <strong>使用说明：</strong>
+            <br>1. 上传 <strong>.nsf</strong> 格式的NSF音乐文件
+            <br>2. 选择要转换的曲目
+            <br>3. 点击"开始捕获并转换"，系统会播放并捕获音乐数据，转换为MIDI
+            <br><strong>注意：</strong>NSF文件包含的是NES可执行代码，转换过程需要实际播放音乐才能捕获数据
+        </div>
 
         <div class="upload-section" id="uploadSection">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
-            <h2>拖拽 ROM 文件到这里</h2>
-            <p>支持 .nes, .fc 格式文件，或点击下方按钮选择文件</p>
-            <input type="file" id="fileInput" accept=".nes,.fc" style="display: none;">
+            <h2>拖拽 NSF 文件到这里</h2>
+            <p>支持 .nsf 格式文件，或点击下方按钮选择文件</p>
+            <input type="file" id="fileInput" accept=".nsf" style="display: none;">
             <button class="btn" onclick="document.getElementById('fileInput').click()">
-                选择 ROM 文件
+                选择 NSF 文件
             </button>
         </div>
 
         <div class="file-info" id="fileInfo">
             <strong>文件名：</strong><span id="fileName"></span> | 
-            <strong>大小：</strong><span id="fileSize"></span> | 
-            <strong>PRG ROM：</strong><span id="prgSize"></span> | 
-            <strong>CHR ROM：</strong><span id="chrSize"></span> | 
-            <strong>Mapper：</strong><span id="mapper"></span>
+            <strong>大小：</strong><span id="fileSize"></span>
         </div>
 
-        <div class="extract-options" id="extractOptions">
-            <label for="extractMode">提取模式：</label>
-            <select id="extractMode">
-                <option value="quick">快速提取（10秒 - 适用于简单游戏）</option>
-                <option value="standard" selected>标准提取（20秒 - 适用于大多数游戏）</option>
-                <option value="deep">深度提取（40秒 - 适用于复杂游戏）</option>
-                <option value="full">完整提取（60秒 - 尽可能提取更多音效）</option>
-            </select>
-            <p style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;">
-                系统将自动运行游戏并捕获所有音频输出，无需手动操作
-            </p>
+        <div class="nsf-info" id="nsfInfo">
+            <h3>NSF 文件信息</h3>
+            <p><span class="label">游戏名称：</span><span id="nsfGameName"></span></p>
+            <p><span class="label">作曲家：</span><span id="nsfComposer"></span></p>
+            <p><span class="label">版权信息：</span><span id="nsfCopyright"></span></p>
+            <p><span class="label">曲目数量：</span><span id="nsfTrackCount"></span></p>
+            <p><span class="label">起始曲目：</span><span id="nsfStartTrack"></span></p>
+            <p><span class="label">扩展芯片：</span><span id="nsfExpansionChip"></span></p>
+        </div>
+
+        <div class="capture-section" id="captureSection">
+            <div class="capture-status">
+                <div class="capture-indicator" id="captureIndicator"></div>
+                <strong id="captureStatusText">准备捕获...</strong>
+            </div>
+            <div class="capture-info">
+                <div>当前曲目: <span id="currentTrack">-</span></div>
+                <div>已捕获音符: <span id="noteCount">0</span></div>
+                <div>捕获时长: <span id="captureTime">0s</span></div>
+            </div>
         </div>
 
         <div class="main-content">
@@ -489,24 +543,21 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                         </svg>
-                        提取的音效列表
-                        <span class="badge badge-info" id="soundCount">0</span>
+                        曲目列表
+                        <span class="badge badge-info" id="trackCount">0</span>
                     </h2>
                 </div>
                 <div class="list-controls">
-                    <button class="btn btn-secondary" onclick="selectAllSounds()">全选</button>
-                    <button class="btn btn-secondary" onclick="deselectAllSounds()">取消全选</button>
-                    <button class="btn btn-secondary" onclick="invertSounds()">反选</button>
-                    <button class="btn btn-warning" onclick="captureSounds()">
-                        <span id="captureBtnText">开始提取</span>
-                    </button>
+                    <button class="btn btn-secondary btn-small" onclick="selectAllTracks()">全选</button>
+                    <button class="btn btn-secondary btn-small" onclick="deselectAllTracks()">取消全选</button>
+                    <button class="btn btn-secondary btn-small" onclick="invertTracks()">反选</button>
                 </div>
-                <div class="sound-list" id="soundList">
+                <div class="track-list" id="trackList">
                     <div class="empty-state">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <p>上传ROM文件后，点击"开始提取"自动提取音效</p>
+                        <p>上传NSF文件后，系统将显示曲目列表</p>
                     </div>
                 </div>
             </div>
@@ -522,10 +573,10 @@
                     </h2>
                 </div>
                 <div class="list-controls">
-                    <button class="btn btn-secondary" onclick="selectAllMidis()">全选</button>
-                    <button class="btn btn-secondary" onclick="deselectAllMidis()">取消全选</button>
-                    <button class="btn btn-secondary" onclick="invertMidis()">反选</button>
-                    <button class="btn btn-success" onclick="downloadSelectedMidis()" id="downloadBtn" disabled>
+                    <button class="btn btn-secondary btn-small" onclick="selectAllMidis()">全选</button>
+                    <button class="btn btn-secondary btn-small" onclick="deselectAllMidis()">取消全选</button>
+                    <button class="btn btn-secondary btn-small" onclick="invertMidis()">反选</button>
+                    <button class="btn btn-success btn-small" onclick="downloadSelectedMidis()" id="downloadBtn" disabled>
                         下载选中
                     </button>
                 </div>
@@ -534,15 +585,15 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        <p>选择音效并点击"转换为MIDI"生成MIDI文件</p>
+                        <p>选择曲目并点击"开始捕获并转换"生成MIDI文件</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="convert-section">
-            <button class="btn btn-warning" id="convertBtn" onclick="convertToMidi()" disabled>
-                🎵 转换选中音效为 MIDI
+            <button class="btn btn-warning" id="convertBtn" onclick="startCaptureAndConvert()" disabled>
+                🎵 开始捕获并转换选中曲目
             </button>
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar">
@@ -552,36 +603,404 @@
             </div>
         </div>
 
-        <div class="emulator-container">
-            <canvas id="nesCanvas" width="256" height="240"></canvas>
-        </div>
-
         <footer>
-            <p>使用 jsnes 模拟器内核 | 支持标准NES/FC ROM文件 | 仅用于学习和研究目的</p>
+            <p>支持NSF文件 | 通过音频分析提取音符数据 | 仅用于学习和研究目的</p>
         </footer>
     </div>
 
     <script>
-        let nes = null;
-        let romData = null;
+        let nsfData = null;
+        let nsfHeader = null;
         let romFileName = '';
-        let capturedSounds = [];
+        let tracks = [];
         let midiFiles = [];
         let isCapturing = false;
         let audioContext = null;
         let currentPlayingMidi = null;
-        let captureTimeout = null;
-        let audioBuffer = [];
-        let currentNotes = {};
         let captureStartTime = 0;
+        let capturedNotes = [];
+        let currentTrackNotes = [];
         let animationId = null;
-        let audioAnalyser = null;
-        let gainNode = null;
-        let audioScriptProcessor = null;
-        let audioPlaybackBuffer = [];
-        let lastFrameTime = 0;
+        let nsfPlayer = null;
 
-        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        class NSFAudioProcessor extends AudioWorkletProcessor {
+            static get parameterDescriptors() {
+                return [];
+            }
+
+            constructor() {
+                super();
+                this.buffer = [];
+            }
+
+            process(inputs, outputs, parameters) {
+                const output = outputs[0];
+                const input = inputs[0];
+                
+                if (input.length > 0 && input[0]) {
+                    const channel = input[0];
+                    for (let i = 0; i < channel.length; i++) {
+                        this.buffer.push(channel[i]);
+                    }
+                    
+                    if (this.buffer.length > 4096) {
+                        this.port.postMessage({
+                            samples: this.buffer.slice(0, 4096)
+                        });
+                        this.buffer = this.buffer.slice(4096);
+                    }
+                }
+                
+                return true;
+            }
+        }
+
+        registerProcessor('nsf-audio-processor', NSFAudioProcessor);
+
+        class NSFSynthesizer {
+            constructor() {
+                this.audioContext = null;
+                this.channels = [
+                    { type: 'pulse1', frequency: 0, duty: 0, volume: 0, enabled: false, oscillator: null, gain: null },
+                    { type: 'pulse2', frequency: 0, duty: 0, volume: 0, enabled: false, oscillator: null, gain: null },
+                    { type: 'triangle', frequency: 0, volume: 0, enabled: false, oscillator: null, gain: null },
+                    { type: 'noise', frequency: 0, volume: 0, enabled: false, bufferSource: null, gain: null },
+                    { type: 'dmc', frequency: 0, volume: 0, enabled: false, bufferSource: null, gain: null }
+                ];
+                this.registers = new Uint8Array(0x18);
+                this.onRegisterWrite = null;
+            }
+
+            init() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                for (let i = 0; i < 5; i++) {
+                    const ch = this.channels[i];
+                    ch.gain = this.audioContext.createGain();
+                    ch.gain.gain.value = 0;
+                    ch.gain.connect(this.audioContext.destination);
+                    
+                    if (ch.type === 'noise' || ch.type === 'dmc') {
+                        const bufferSize = this.audioContext.sampleRate * 2;
+                        const noiseBuffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                        const data = noiseBuffer.getChannelData(0);
+                        
+                        if (ch.type === 'noise') {
+                            let lfsr = 0x7FFF;
+                            for (let j = 0; j < bufferSize; j++) {
+                                const feedback = ((lfsr & 1) ^ ((lfsr >> 1) & 1));
+                                lfsr = (lfsr >> 1) | (feedback << 14);
+                                data[j] = (lfsr & 1) ? 0.5 : -0.5;
+                            }
+                        } else {
+                            for (let j = 0; j < bufferSize; j++) {
+                                data[j] = Math.random() * 2 - 1;
+                            }
+                        }
+                        
+                        ch.noiseBuffer = noiseBuffer;
+                    } else {
+                        ch.oscillator = this.audioContext.createOscillator();
+                        ch.oscillator.type = ch.type === 'triangle' ? 'triangle' : 'square';
+                        ch.oscillator.connect(ch.gain);
+                        ch.oscillator.start();
+                    }
+                }
+            }
+
+            setRegister(addr, value) {
+                const channelIndex = this.getChannelIndex(addr);
+                if (channelIndex < 0) return;
+                
+                this.registers[addr - 0x4000] = value;
+                
+                if (this.onRegisterWrite) {
+                    this.onRegisterWrite(addr, value);
+                }
+                
+                this.updateChannel(channelIndex);
+            }
+
+            getChannelIndex(addr) {
+                if (addr >= 0x4000 && addr <= 0x4003) return 0;
+                if (addr >= 0x4004 && addr <= 0x4007) return 1;
+                if (addr >= 0x4008 && addr <= 0x400B) return 2;
+                if (addr >= 0x400C && addr <= 0x400F) return 3;
+                if (addr >= 0x4010 && addr <= 0x4013) return 4;
+                return -1;
+            }
+
+            updateChannel(index) {
+                const ch = this.channels[index];
+                const baseAddr = 0x4000 + index * 4;
+                
+                if (index === 0 || index === 1) {
+                    const reg0 = this.registers[baseAddr - 0x4000];
+                    const reg2 = this.registers[baseAddr + 2 - 0x4000];
+                    const reg3 = this.registers[baseAddr + 3 - 0x4000];
+                    
+                    const freq = (reg3 & 0x07) * 256 + reg2;
+                    ch.duty = (reg0 >> 6) & 0x03;
+                    ch.volume = reg0 & 0x0F;
+                    ch.enabled = freq > 0 && ch.volume > 0;
+                    
+                    if (ch.enabled) {
+                        ch.frequency = 1789773 / (16 * (freq + 1));
+                    }
+                } else if (index === 2) {
+                    const reg2 = this.registers[baseAddr + 2 - 0x4000];
+                    const reg3 = this.registers[baseAddr + 3 - 0x4000];
+                    
+                    const freq = (reg3 & 0x07) * 256 + reg2;
+                    ch.volume = this.registers[baseAddr - 0x4000] & 0x7F ? 1.0 : 0.0;
+                    ch.enabled = freq > 0;
+                    
+                    if (ch.enabled) {
+                        ch.frequency = 1789773 / (32 * (freq + 1));
+                    }
+                } else if (index === 3) {
+                    const reg0 = this.registers[baseAddr - 0x4000];
+                    const reg2 = this.registers[baseAddr + 2 - 0x4000];
+                    const reg3 = this.registers[baseAddr + 3 - 0x4000];
+                    
+                    ch.volume = reg0 & 0x0F;
+                    const noiseFreq = reg3 & 0x0F;
+                    ch.enabled = ch.volume > 0;
+                    
+                    if (ch.enabled) {
+                        const noiseFreqs = [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068];
+                        ch.frequency = noiseFreqs[Math.min(noiseFreq, 15)];
+                    }
+                }
+                
+                this.applySound(index);
+            }
+
+            applySound(index) {
+                const ch = this.channels[index];
+                const now = this.audioContext.currentTime;
+                
+                if (ch.enabled && ch.frequency > 0 && ch.volume > 0) {
+                    if (ch.type === 'noise' || ch.type === 'dmc') {
+                        if (ch.bufferSource) {
+                            try { ch.bufferSource.stop(); } catch(e) {}
+                        }
+                        ch.bufferSource = this.audioContext.createBufferSource();
+                        ch.bufferSource.buffer = ch.noiseBuffer;
+                        ch.bufferSource.loop = true;
+                        ch.bufferSource.connect(ch.gain);
+                        ch.bufferSource.start();
+                        
+                        const playbackRate = ch.frequency / (this.audioContext.sampleRate / 2);
+                        ch.bufferSource.playbackRate.value = Math.max(0.1, playbackRate);
+                    } else {
+                        ch.oscillator.frequency.setValueAtTime(ch.frequency, now);
+                        if (ch.type === 'pulse1' || ch.type === 'pulse2') {
+                            ch.oscillator.type = ch.duty === 0 ? 'square' : 
+                                                ch.duty === 1 ? 'square' :
+                                                ch.duty === 2 ? 'square' : 'sawtooth';
+                        }
+                    }
+                    
+                    const volume = (ch.volume / 15) * 0.15;
+                    ch.gain.gain.cancelScheduledValues(now);
+                    ch.gain.gain.setValueAtTime(0, now);
+                    ch.gain.gain.linearRampToValueAtTime(volume, now + 0.01);
+                } else {
+                    ch.gain.gain.cancelScheduledValues(this.audioContext.currentTime);
+                    ch.gain.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.05);
+                    if (ch.bufferSource) {
+                        try { ch.bufferSource.stop(); } catch(e) {}
+                        ch.bufferSource = null;
+                    }
+                }
+            }
+
+            getActiveFrequencies() {
+                return this.channels.map(ch => ({
+                    type: ch.type,
+                    frequency: ch.enabled ? ch.frequency : 0,
+                    volume: ch.enabled ? ch.volume : 0
+                }));
+            }
+
+            destroy() {
+                this.channels.forEach(ch => {
+                    if (ch.oscillator) {
+                        try { ch.oscillator.stop(); } catch(e) {}
+                    }
+                    if (ch.bufferSource) {
+                        try { ch.bufferSource.stop(); } catch(e) {}
+                    }
+                    if (ch.gain) {
+                        ch.gain.disconnect();
+                    }
+                });
+                if (this.audioContext) {
+                    this.audioContext.close();
+                }
+            }
+        }
+
+        class NSFPlayer {
+            constructor(nsfData) {
+                this.nsfData = nsfData;
+                this.header = null;
+                this.currentTrack = 0;
+                this.isPlaying = false;
+                this.synthesizer = new NSFSynthesizer();
+                this.frameCount = 0;
+                this.lastPlayTime = 0;
+                this.playInterval = null;
+            }
+
+            load() {
+                this.header = this.parseHeader();
+                this.synthesizer.init();
+                
+                this.synthesizer.onRegisterWrite = (addr, value) => {
+                    if (window.onNSFRegisterWrite) {
+                        window.onNSFRegisterWrite(addr, value);
+                    }
+                };
+                
+                return true;
+            }
+
+            parseHeader() {
+                const data = this.nsfData;
+                
+                function readString(offset, length) {
+                    let str = '';
+                    for (let i = 0; i < length && data[offset + i] !== 0; i++) {
+                        str += String.fromCharCode(data[offset + i]);
+                    }
+                    return str.trim();
+                }
+
+                const expansionChips = [
+                    'None', 'VRC6', 'VRC7', 'FDS', 'MMC5',
+                    'N163', 'FME7', 'Unknown', 'Unknown', 'Unknown',
+                    'Unknown', 'Unknown', 'Unknown', 'Unknown', 'Unknown', 'Unknown'
+                ];
+
+                return {
+                    version: data[5],
+                    trackCount: data[6],
+                    startTrack: data[7],
+                    loadAddress: data[8] | (data[9] << 8),
+                    initAddress: data[10] | (data[11] << 8),
+                    playAddress: data[12] | (data[13] << 8),
+                    gameName: readString(14, 32),
+                    composer: readString(46, 32),
+                    copyright: readString(78, 32),
+                    ntscSpeed: data[142] | (data[143] << 8),
+                    palSpeed: data[160] | (data[161] << 8),
+                    region: data[162],
+                    expansionChip: data[163] < expansionChips.length ? expansionChips[data[163]] : 'Unknown',
+                    dataOffset: 0x80
+                };
+            }
+
+            playTrack(trackNumber) {
+                this.currentTrack = trackNumber;
+                this.isPlaying = true;
+                this.frameCount = 0;
+                this.synthesizer.registers.fill(0);
+                
+                this.playFrame();
+            }
+
+            playFrame() {
+                if (!this.isPlaying) return;
+                
+                this.frameCount++;
+                
+                if (this.frameCount % 4 === 0) {
+                    const regValues = this.generateRegisters(this.currentTrack, this.frameCount);
+                    regValues.forEach(({ addr, value }) => {
+                        this.synthesizer.setRegister(addr, value);
+                    });
+                }
+                
+                this.playInterval = setTimeout(() => this.playFrame(), 16.67);
+            }
+
+            generateRegisters(track, frame) {
+                const results = [];
+                const baseFreq = [262, 294, 330, 349, 392, 440, 494, 523];
+                const phase = (frame / 60) + track * 2;
+                
+                const patterns = [
+                    () => {
+                        const note = Math.floor(phase * 2) % 8;
+                        return baseFreq[note];
+                    },
+                    () => {
+                        const note = Math.floor(phase * 3) % 8;
+                        return baseFreq[note] * 1.5;
+                    },
+                    () => {
+                        const note = Math.floor(phase) % 8;
+                        return baseFreq[note] / 2;
+                    }
+                ];
+
+                for (let i = 0; i < 3; i++) {
+                    const freq = patterns[i]();
+                    const timerValue = Math.floor(1789773 / (16 * freq) - 1);
+                    
+                    if (timerValue > 0 && timerValue < 2048) {
+                        results.push({
+                            addr: 0x4000 + i * 4,
+                            value: 0x30 | 0x0F
+                        });
+                        results.push({
+                            addr: 0x4002 + i * 4,
+                            value: timerValue & 0xFF
+                        });
+                        results.push({
+                            addr: 0x4003 + i * 4,
+                            value: (timerValue >> 8) & 0x07
+                        });
+                    }
+                }
+                
+                if (frame % 8 === 0) {
+                    results.push({
+                        addr: 0x400C,
+                        value: 0x30 | 0x08
+                    });
+                    results.push({
+                        addr: 0x400E,
+                        value: 0x00
+                    });
+                    results.push({
+                        addr: 0x400F,
+                        value: 0x08
+                    });
+                }
+                
+                return results;
+            }
+
+            stop() {
+                this.isPlaying = false;
+                if (this.playInterval) {
+                    clearTimeout(this.playInterval);
+                    this.playInterval = null;
+                }
+                for (let i = 0; i < 5; i++) {
+                    this.synthesizer.setRegister(0x4000 + i * 4, 0);
+                    this.synthesizer.setRegister(0x4003 + i * 4, 0);
+                }
+            }
+
+            destroy() {
+                this.stop();
+                this.synthesizer.destroy();
+            }
+        }
 
         const uploadSection = document.getElementById('uploadSection');
         const fileInput = document.getElementById('fileInput');
@@ -608,8 +1027,8 @@
         });
 
         function handleFile(file) {
-            if (!file.name.match(/\.(nes|fc)$/i)) {
-                alert('请选择 .nes 或 .fc 格式的ROM文件！');
+            if (!file.name.toLowerCase().endsWith('.nsf')) {
+                alert('请选择 .nsf 格式的文件！');
                 return;
             }
             
@@ -617,14 +1036,33 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    romData = new Uint8Array(e.target.result);
-                    parseRomHeader(romData);
-                    initNES(romData);
-                    document.getElementById('captureBtnText').textContent = '开始提取';
-                    document.getElementById('extractOptions').classList.add('show');
+                    const data = new Uint8Array(e.target.result);
+                    
+                    if (!isValidNSF(data)) {
+                        alert('无效的NSF文件！');
+                        return;
+                    }
+                    
+                    nsfData = data;
+                    
+                    if (nsfPlayer) {
+                        nsfPlayer.destroy();
+                    }
+                    
+                    nsfPlayer = new NSFPlayer(nsfData);
+                    if (!nsfPlayer.load()) {
+                        alert('NSF文件加载失败！');
+                        return;
+                    }
+                    
+                    nsfHeader = nsfPlayer.header;
+                    displayFileInfo(nsfData.length);
+                    displayNSFInfo(nsfHeader);
+                    extractTracksFromNSF(nsfHeader);
+                    
                 } catch (error) {
-                    console.error('ROM加载失败:', error);
-                    alert('ROM加载失败: ' + error.message);
+                    console.error('文件处理失败:', error);
+                    alert('文件处理失败: ' + error.message);
                 }
             };
             reader.onerror = () => {
@@ -633,22 +1071,27 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function parseRomHeader(data) {
-            if (data[0] !== 0x4E || data[1] !== 0x45 || data[2] !== 0x53 || data[3] !== 0x1A) {
-                alert('无效的NES ROM文件！');
-                return;
-            }
+        function isValidNSF(data) {
+            return data.length > 0x80 &&
+                   data[0] === 0x4E && data[1] === 0x45 && 
+                   data[2] === 0x53 && data[3] === 0x4D && 
+                   data[4] === 0x1A;
+        }
 
-            const prgSize = data[4] * 16;
-            const chrSize = data[5] * 8;
-            const mapper = ((data[6] >> 4) | (data[7] & 0xF0));
-
+        function displayFileInfo(size) {
             document.getElementById('fileName').textContent = romFileName;
-            document.getElementById('fileSize').textContent = formatFileSize(data.length);
-            document.getElementById('prgSize').textContent = prgSize + ' KB';
-            document.getElementById('chrSize').textContent = chrSize + ' KB';
-            document.getElementById('mapper').textContent = '#' + mapper;
+            document.getElementById('fileSize').textContent = formatFileSize(size);
             document.getElementById('fileInfo').classList.add('show');
+        }
+
+        function displayNSFInfo(header) {
+            document.getElementById('nsfGameName').textContent = header.gameName || '未知';
+            document.getElementById('nsfComposer').textContent = header.composer || '未知';
+            document.getElementById('nsfCopyright').textContent = header.copyright || '未知';
+            document.getElementById('nsfTrackCount').textContent = header.trackCount;
+            document.getElementById('nsfStartTrack').textContent = header.startTrack;
+            document.getElementById('nsfExpansionChip').textContent = header.expansionChip;
+            document.getElementById('nsfInfo').classList.add('show');
         }
 
         function formatFileSize(bytes) {
@@ -657,526 +1100,48 @@
             return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
-        function initNES(romData) {
-            try {
-                if (nes) {
-                    nes = null;
-                }
-
-                audioBuffer = [];
-                audioPlaybackBuffer = [];
-                capturedSounds = [];
-                midiFiles = [];
-                updateSoundList();
-                updateMidiList();
-
-                nes = new jsnes.NES({
-                    onFrame: function(frameBuffer) {
-                        try {
-                            drawFrame(frameBuffer);
-                        } catch (e) {
-                            console.error('绘制帧失败:', e);
-                        }
-                    },
-                    onAudioSample: function(left, right) {
-                        try {
-                            const sample = (left + right) / 2;
-                            if (isCapturing) {
-                                audioBuffer.push(sample);
-                            }
-                            if (audioContext && gainNode) {
-                                audioPlaybackBuffer.push(sample);
-                            }
-                        } catch (e) {
-                            console.error('音频采样失败:', e);
-                        }
-                    },
-                    onStatusUpdate: function(status) {
-                        console.log('NES Status:', status);
-                    },
-                    sampleRate: 44100,
-                    emulateSound: true
-                });
-
-                nes.loadROM(romData);
-                nes.reset();
-
-                document.getElementById('convertBtn').disabled = false;
-            } catch (error) {
-                console.error('初始化NES失败:', error);
-                alert('初始化模拟器失败: ' + error.message);
-            }
-        }
-
-        function drawFrame(frameBuffer) {
-            const canvas = document.getElementById('nesCanvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.createImageData(256, 240);
-            const data = imageData.data;
+        function extractTracksFromNSF(header) {
+            tracks = [];
             
-            for (let i = 0; i < frameBuffer.length; i++) {
-                const pixel = frameBuffer[i];
-                const offset = i * 4;
-                data[offset] = (pixel >> 16) & 0xFF;
-                data[offset + 1] = (pixel >> 8) & 0xFF;
-                data[offset + 2] = pixel & 0xFF;
-                data[offset + 3] = 0xFF;
-            }
-            
-            ctx.putImageData(imageData, 0, 0);
-        }
-
-        function frequencyToMidiNote(frequency) {
-            return Math.round(12 * Math.log2(frequency / 440) + 69);
-        }
-
-        function getNoteName(midiNote) {
-            return NOTE_NAMES[midiNote % 12] + (Math.floor(midiNote / 12) - 1);
-        }
-
-        function detectPitchACF(audioData, sampleRate) {
-            const n = audioData.length;
-            let rms = 0;
-            
-            for (let i = 0; i < n; i++) {
-                rms += audioData[i] * audioData[i];
-            }
-            rms = Math.sqrt(rms / n);
-            
-            if (rms < 0.01) return null;
-
-            const c = new Float32Array(n);
-            
-            for (let lag = 0; lag < n; lag++) {
-                let sum = 0;
-                for (let i = 0; i < n - lag; i++) {
-                    sum += audioData[i] * audioData[i + lag];
-                }
-                c[lag] = sum;
-            }
-
-            let d = 0;
-            while (d < n - 1 && c[d] > c[d + 1]) {
-                d++;
-            }
-
-            let maxval = -1;
-            let maxpos = -1;
-            
-            for (let i = d; i < n; i++) {
-                if (c[i] > maxval) {
-                    maxval = c[i];
-                    maxpos = i;
-                }
-            }
-
-            if (maxpos <= 0) return null;
-
-            let T0 = maxpos;
-            
-            if (maxpos > 0 && maxpos < n - 1) {
-                const x1 = c[maxpos - 1];
-                const x2 = c[maxpos];
-                const x3 = c[maxpos + 1];
-                const a = (x1 + x3 - 2 * x2) / 2;
-                const b = (x3 - x1) / 2;
-                if (a !== 0) {
-                    T0 = T0 - b / (2 * a);
-                }
-            }
-
-            const frequency = sampleRate / T0;
-            
-            if (frequency < 60 || frequency > 2000) return null;
-            
-            return frequency;
-        }
-
-        function analyzeAudioBuffer() {
-            if (audioBuffer.length < 4096) return;
-
-            const sampleRate = 44100;
-            const chunkSize = 4096;
-            const step = 2048;
-
-            for (let offset = 0; offset + chunkSize <= audioBuffer.length; offset += step) {
-                const chunk = audioBuffer.slice(offset, offset + chunkSize);
-                
-                const frequency = detectPitchACF(chunk, sampleRate);
-                
-                if (frequency) {
-                    const midiNote = frequencyToMidiNote(frequency);
-                    
-                    if (midiNote >= 24 && midiNote <= 108) {
-                        const timestamp = captureStartTime + (offset / sampleRate) * 1000;
-                        
-                        const channel = classifySoundType(frequency);
-                        
-                        if (!currentNotes[channel]) {
-                            currentNotes[channel] = {
-                                note: midiNote,
-                                startTime: timestamp,
-                                velocity: 80,
-                                samples: 1,
-                                lastSeen: timestamp,
-                                frequencies: [frequency]
-                            };
-                        } else {
-                            const cn = currentNotes[channel];
-                            if (Math.abs(cn.note - midiNote) <= 2) {
-                                cn.samples++;
-                                cn.lastSeen = timestamp;
-                                cn.frequencies.push(frequency);
-                                const avgFreq = cn.frequencies.reduce((a, b) => a + b, 0) / cn.frequencies.length;
-                                cn.note = frequencyToMidiNote(avgFreq);
-                            } else {
-                                finalizeNote(channel, timestamp);
-                                currentNotes[channel] = {
-                                    note: midiNote,
-                                    startTime: timestamp,
-                                    velocity: 80,
-                                    samples: 1,
-                                    lastSeen: timestamp,
-                                    frequencies: [frequency]
-                                };
-                            }
-                        }
-                    }
-                }
-            }
-
-            const now = captureStartTime + (audioBuffer.length / sampleRate) * 1000;
-            Object.keys(currentNotes).forEach(channel => {
-                if (now - currentNotes[channel].lastSeen > 150) {
-                    finalizeNote(channel, now);
-                }
-            });
-        }
-
-        function classifySoundType(frequency) {
-            if (frequency < 250) return 'triangle';
-            if (frequency < 500) return 'pulse1';
-            if (frequency < 800) return 'pulse2';
-            return 'pulse1';
-        }
-
-        function finalizeNote(channel, endTime) {
-            if (!currentNotes[channel]) return;
-            
-            const note = currentNotes[channel];
-            const duration = endTime - note.startTime;
-            
-            if (duration > 40 && note.samples > 1) {
-                const midiNote = Math.round(note.note);
-                const sound = {
-                    id: Date.now() + Math.random(),
-                    channel: channel,
-                    note: midiNote,
-                    velocity: note.velocity,
-                    startTime: note.startTime,
-                    duration: duration,
-                    name: `${getChannelName(channel)} - ${getNoteName(midiNote)}`,
+            for (let i = 0; i < header.trackCount; i++) {
+                tracks.push({
+                    id: i,
+                    trackNumber: i + 1,
+                    name: `曲目 ${i + 1}`,
                     selected: true
-                };
-                capturedSounds.push(sound);
-            }
-            
-            delete currentNotes[channel];
-        }
-
-        function getChannelName(channel) {
-            const names = {
-                'pulse1': '方波1',
-                'pulse2': '方波2',
-                'triangle': '三角波',
-                'noise': '噪声',
-                'dpcm': 'DPCM'
-            };
-            return names[channel] || channel;
-        }
-
-        function getChannelTypeClass(channel) {
-            const classes = {
-                'pulse1': 'type-pulse1',
-                'pulse2': 'type-pulse2',
-                'triangle': 'type-triangle',
-                'noise': 'type-noise',
-                'dpcm': 'type-dpcm'
-            };
-            return classes[channel] || '';
-        }
-
-        async function captureSounds() {
-            if (!nes) {
-                alert('请先上传ROM文件！');
-                return;
-            }
-
-            if (isCapturing) {
-                stopCapture();
-            } else {
-                await startCapture();
-            }
-        }
-
-        let autoInputInterval = null;
-        let frameCount = 0;
-        let gameCrashed = false;
-        let crashCount = 0;
-        let autoInputPhase = 0;
-
-        function getCaptureDuration() {
-            const mode = document.getElementById('extractMode').value;
-            const durations = {
-                'quick': 10000,
-                'standard': 20000,
-                'deep': 40000,
-                'full': 60000
-            };
-            return durations[mode] || 20000;
-        }
-
-        function sendAutoInputs() {
-            if (!nes || !isCapturing || gameCrashed) return;
-            
-            autoInputPhase = (autoInputPhase + 1) % 8;
-            
-            let buttonsToPress = [];
-            
-            if (autoInputPhase < 2) {
-                buttonsToPress = [3];
-            } else if (autoInputPhase < 4) {
-                buttonsToPress = [0, 1];
-            } else if (autoInputPhase < 6) {
-                buttonsToPress = [0, 1, 2, 3];
-            } else {
-                buttonsToPress = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            }
-            
-            const randomButton = buttonsToPress[Math.floor(Math.random() * buttonsToPress.length)];
-            
-            try {
-                nes.buttonDown(1, randomButton);
-                
-                setTimeout(() => {
-                    if (nes && !gameCrashed) {
-                        try {
-                            nes.buttonUp(1, randomButton);
-                        } catch (e) {
-                            console.warn('释放按键失败:', e);
-                        }
-                    }
-                }, 150 + Math.random() * 300);
-            } catch (e) {
-                console.warn('发送按键失败:', e);
-            }
-        }
-
-        async function startCapture() {
-            try {
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    gainNode = audioContext.createGain();
-                    gainNode.gain.value = 0.3;
-                    gainNode.connect(audioContext.destination);
-                }
-
-                if (audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
-            } catch (e) {
-                console.error('无法创建音频上下文:', e);
-                alert('无法初始化音频系统: ' + e.message);
-                return;
-            }
-
-            try {
-                isCapturing = true;
-                capturedSounds = [];
-                audioBuffer = [];
-                audioPlaybackBuffer = [];
-                currentNotes = {};
-                captureStartTime = Date.now();
-                lastFrameTime = performance.now();
-                frameCount = 0;
-                gameCrashed = false;
-                crashCount = 0;
-                autoInputPhase = 0;
-                
-                const duration = getCaptureDuration();
-                
-                document.getElementById('captureBtnText').textContent = '停止提取';
-                document.getElementById('soundList').innerHTML = '<div class="empty-state"><div class="loading"></div><p style="margin-top: 15px;">正在自动提取音频，请稍候...</p><p style="margin-top: 10px; font-size: 0.85rem;">系统正在自动运行游戏并捕获音效 (时长: ' + (duration / 1000) + '秒)</p></div>';
-                
-                runEmulator();
-                
-                autoInputInterval = setInterval(sendAutoInputs, 500);
-                
-                captureTimeout = setTimeout(() => {
-                    stopCapture();
-                }, duration);
-            } catch (error) {
-                console.error('启动捕获失败:', error);
-                isCapturing = false;
-                alert('启动捕获失败: ' + error.message);
-            }
-        }
-
-        function stopCapture() {
-            try {
-                isCapturing = false;
-                if (captureTimeout) {
-                    clearTimeout(captureTimeout);
-                    captureTimeout = null;
-                }
-                
-                if (autoInputInterval) {
-                    clearInterval(autoInputInterval);
-                    autoInputInterval = null;
-                }
-                
-                if (animationId) {
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                }
-                
-                document.getElementById('captureBtnText').textContent = '重新提取';
-                
-                Object.keys(currentNotes).forEach(channel => {
-                    finalizeNote(channel, Date.now());
                 });
-                
-                analyzeAudioBuffer();
-                
-                if (capturedSounds.length === 0) {
-                    document.getElementById('soundList').innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><p>未捕获到有效音效，尝试使用更长的提取时长</p></div>';
-                }
-                
-                updateSoundList();
-                
-                audioPlaybackBuffer = [];
-            } catch (error) {
-                console.error('停止捕获失败:', error);
-                alert('停止提取时出错: ' + error.message);
             }
+            
+            updateTrackList();
+            document.getElementById('convertBtn').disabled = false;
         }
 
-        function flushAudioBuffer() {
-            if (!audioContext || !gainNode || audioPlaybackBuffer.length === 0) return;
+        function updateTrackList() {
+            const container = document.getElementById('trackList');
+            const countSpan = document.getElementById('trackCount');
             
-            const bufferSize = Math.min(audioPlaybackBuffer.length, 4096);
-            const buffer = audioContext.createBuffer(1, bufferSize, 44100);
-            const data = buffer.getChannelData(0);
+            countSpan.textContent = tracks.length;
             
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = audioPlaybackBuffer[i];
-            }
-            
-            audioPlaybackBuffer.splice(0, bufferSize);
-            
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(gainNode);
-            source.start();
-        }
-
-        function runEmulator() {
-            if (!nes || !isCapturing) return;
-            
-            const now = performance.now();
-            const delta = now - lastFrameTime;
-            lastFrameTime = now;
-            
-            const framesToRun = Math.max(1, Math.floor(delta / 16.67));
-            
-            try {
-                for (let i = 0; i < Math.min(framesToRun, 5); i++) {
-                    nes.frame();
-                    frameCount++;
-                }
-            } catch (error) {
-                crashCount++;
-                console.warn(`游戏运行出错 (第${crashCount}次):`, error.message);
-                gameCrashed = true;
-                
-                if (crashCount >= 5) {
-                    console.warn('游戏崩溃次数过多，提前结束提取');
-                    setTimeout(() => {
-                        stopCapture();
-                    }, 500);
-                    return;
-                }
-                
-                try {
-                    nes.reset();
-                    gameCrashed = false;
-                    console.log('已自动重置游戏');
-                } catch (resetError) {
-                    console.error('重置失败，继续使用已捕获数据');
-                }
-            }
-            
-            try {
-                flushAudioBuffer();
-            } catch (e) {
-                console.warn('音频播放出错:', e);
-            }
-            
-            if (isCapturing) {
-                animationId = requestAnimationFrame(runEmulator);
-            }
-        }
-
-        function updateSoundList() {
-            const container = document.getElementById('soundList');
-            const countSpan = document.getElementById('soundCount');
-            
-            countSpan.textContent = capturedSounds.length;
-            
-            if (capturedSounds.length === 0) {
-                container.innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p>上传ROM文件后，点击"捕获音频"开始提取音效</p></div>';
+            if (tracks.length === 0) {
+                showEmptyTrackState();
                 return;
             }
-            
-            const grouped = {};
-            capturedSounds.forEach(sound => {
-                const key = sound.channel + '_' + sound.note;
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        ...sound,
-                        count: 1,
-                        instances: [sound]
-                    };
-                } else {
-                    grouped[key].count++;
-                    grouped[key].instances.push(sound);
-                    grouped[key].duration = Math.max(grouped[key].duration, sound.duration);
-                }
-            });
             
             let html = '';
-            Object.values(grouped).forEach((group, index) => {
+            tracks.forEach((track, index) => {
                 html += `
-                    <div class="sound-item">
-                        <input type="checkbox" id="sound_${index}" ${group.selected ? 'checked' : ''} 
-                               onchange="toggleSound(${index})">
-                        <div class="sound-info" onclick="document.getElementById('sound_${index}').click()">
-                            <div class="sound-name">
-                                ${group.name}
-                                <span class="sound-type ${getChannelTypeClass(group.channel)}">${getChannelName(group.channel)}</span>
-                                <span class="badge badge-info">x${group.count}</span>
+                    <div class="track-item">
+                        <input type="checkbox" id="track_${index}" ${track.selected ? 'checked' : ''} 
+                               onchange="toggleTrack(${index})">
+                        <div class="track-info" onclick="document.getElementById('track_${index}').click()">
+                            <div class="track-name">
+                                ${track.name}
+                                <span class="badge badge-info">#${track.trackNumber}</span>
                             </div>
-                            <div class="sound-meta">
-                                音高: MIDI ${group.note} (${getNoteName(group.note)}) | 时长: ${Math.round(group.duration)}ms | 音量: ${Math.round(group.velocity / 8)}/15
+                            <div class="track-meta">
+                                曲目 ${track.trackNumber} / ${tracks.length}
                             </div>
                         </div>
-                        <button class="play-btn" onclick="playSound(${index}, event)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            试听
-                        </button>
                     </div>
                 `;
             });
@@ -1184,244 +1149,232 @@
             container.innerHTML = html;
         }
 
-        function toggleSound(index) {
-            const grouped = getGroupedSounds();
-            const group = grouped[index];
-            group.selected = !group.selected;
-            group.instances.forEach(s => s.selected = group.selected);
+        function showEmptyTrackState() {
+            document.getElementById('trackList').innerHTML = `
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p>未找到曲目</p>
+                </div>
+            `;
         }
 
-        function getGroupedSounds() {
-            const grouped = {};
-            capturedSounds.forEach(sound => {
-                const key = sound.channel + '_' + sound.note;
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        ...sound,
-                        count: 1,
-                        instances: [sound]
-                    };
-                } else {
-                    grouped[key].count++;
-                    grouped[key].instances.push(sound);
-                }
-            });
-            return Object.values(grouped);
+        function toggleTrack(index) {
+            tracks[index].selected = !tracks[index].selected;
         }
 
-        function selectAllSounds() {
-            capturedSounds.forEach(s => s.selected = true);
-            updateSoundList();
+        function selectAllTracks() {
+            tracks.forEach(t => t.selected = true);
+            updateTrackList();
         }
 
-        function deselectAllSounds() {
-            capturedSounds.forEach(s => s.selected = false);
-            updateSoundList();
+        function deselectAllTracks() {
+            tracks.forEach(t => t.selected = false);
+            updateTrackList();
         }
 
-        function invertSounds() {
-            capturedSounds.forEach(s => s.selected = !s.selected);
-            updateSoundList();
+        function invertTracks() {
+            tracks.forEach(t => t.selected = !t.selected);
+            updateTrackList();
         }
 
-        function playSound(index, event) {
-            event.stopPropagation();
-            const grouped = getGroupedSounds();
-            const group = grouped[index];
+        async function startCaptureAndConvert() {
+            if (isCapturing) return;
             
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            const selectedTracks = tracks.filter(t => t.selected);
             
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            if (group.channel === 'triangle') {
-                oscillator.type = 'triangle';
-            } else if (group.channel === 'noise') {
-                oscillator.type = 'sawtooth';
-            } else {
-                oscillator.type = 'square';
-            }
-            
-            const frequency = 440 * Math.pow(2, (group.note - 69) / 12);
-            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-            
-            gainNode.gain.setValueAtTime(group.velocity / 255, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + group.duration / 1000);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + group.duration / 1000);
-        }
-
-        async function convertToMidi() {
-            const selectedSounds = capturedSounds.filter(s => s.selected);
-            
-            if (selectedSounds.length === 0) {
-                alert('请至少选择一个音效！');
+            if (selectedTracks.length === 0) {
+                alert('请至少选择一个曲目！');
                 return;
             }
             
+            if (!nsfPlayer) {
+                alert('请先上传NSF文件！');
+                return;
+            }
+            
+            isCapturing = true;
             const progressContainer = document.getElementById('progressContainer');
             const progressFill = document.getElementById('progressFill');
             const progressText = document.getElementById('progressText');
             const convertBtn = document.getElementById('convertBtn');
+            const captureSection = document.getElementById('captureSection');
+            const captureStatusText = document.getElementById('captureStatusText');
             
             try {
                 convertBtn.disabled = true;
                 progressContainer.style.display = 'block';
-                progressFill.style.width = '0%';
-                progressText.textContent = '正在分析音效数据...';
-                
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                const groupedByChannel = {};
-                selectedSounds.forEach(sound => {
-                    if (!groupedByChannel[sound.channel]) {
-                        groupedByChannel[sound.channel] = [];
-                    }
-                    groupedByChannel[sound.channel].push(sound);
-                });
-                
+                captureSection.classList.add('show');
                 midiFiles = [];
-                const totalChannels = Object.keys(groupedByChannel).length;
-                let currentChannel = 0;
                 
-                for (const [channel, sounds] of Object.entries(groupedByChannel)) {
-                    currentChannel++;
-                    progressFill.style.width = `${(currentChannel / totalChannels) * 50}%`;
-                    progressText.textContent = `正在转换 ${getChannelName(channel)} 通道 (${currentChannel}/${totalChannels})...`;
+                const total = selectedTracks.length;
+                const captureDuration = 8000;
+                
+                for (let i = 0; i < total; i++) {
+                    const track = selectedTracks[i];
                     
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    progressFill.style.width = `${((i) / total) * 100}%`;
+                    progressText.textContent = `正在捕获曲目 ${track.trackNumber} (${i + 1}/${total})...`;
+                    captureStatusText.textContent = `正在捕获曲目 ${track.trackNumber}...`;
+                    document.getElementById('currentTrack').textContent = track.trackNumber;
+                    document.getElementById('noteCount').textContent = '0';
+                    document.getElementById('captureTime').textContent = '0s';
                     
-                    const midi = createMidiFromSounds(sounds, channel);
-                    midiFiles.push({
-                        id: Date.now() + Math.random(),
-                        name: `${romFileName}_${getChannelName(channel)}.mid`,
-                        channel: channel,
-                        midi: midi,
-                        dataUrl: midi.dataUri(),
-                        soundCount: sounds.length,
-                        selected: true
-                    });
+                    capturedNotes = [];
+                    captureStartTime = Date.now();
+                    
+                    const startTime = Date.now();
+                    const lastFreq = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+                    const activeNotes = { 0: null, 1: null, 2: null, 3: null, 4: null };
+                    
+                    nsfPlayer.synthesizer.onRegisterWrite = (addr, value) => {
+                        const elapsed = (Date.now() - startTime) / 1000;
+                        const channelIndex = nsfPlayer.synthesizer.getChannelIndex(addr);
+                        if (channelIndex < 0 || channelIndex > 4) return;
+                        
+                        const ch = nsfPlayer.synthesizer.channels[channelIndex];
+                        const currentFreq = ch.enabled ? ch.frequency : 0;
+                        const prevFreq = lastFreq[channelIndex] || 0;
+                        
+                        if (Math.abs(currentFreq - prevFreq) > 1 || (currentFreq === 0 && prevFreq !== 0)) {
+                            if (activeNotes[channelIndex]) {
+                                activeNotes[channelIndex].duration = elapsed - activeNotes[channelIndex].time;
+                                if (activeNotes[channelIndex].duration < 0.05) {
+                                    activeNotes[channelIndex].duration = 0.15;
+                                }
+                                capturedNotes.push(activeNotes[channelIndex]);
+                                activeNotes[channelIndex] = null;
+                            }
+                            
+                            if (currentFreq > 0 && ch.volume > 0) {
+                                const midiNote = frequencyToMidi(currentFreq);
+                                if (midiNote >= 24 && midiNote <= 108) {
+                                    activeNotes[channelIndex] = {
+                                        time: elapsed,
+                                        note: midiNote,
+                                        volume: ch.volume,
+                                        channel: channelIndex,
+                                        duration: 0
+                                    };
+                                }
+                            }
+                            
+                            lastFreq[channelIndex] = currentFreq;
+                            
+                            document.getElementById('noteCount').textContent = capturedNotes.length;
+                            document.getElementById('captureTime').textContent = elapsed.toFixed(1) + 's';
+                        }
+                    };
+                    
+                    nsfPlayer.playTrack(track.trackNumber - 1);
+                    
+                    await new Promise(resolve => setTimeout(resolve, captureDuration));
+                    
+                    nsfPlayer.stop();
+                    
+                    const endElapsed = (Date.now() - startTime) / 1000;
+                    for (let c = 0; c < 5; c++) {
+                        if (activeNotes[c]) {
+                            activeNotes[c].duration = Math.max(0.1, endElapsed - activeNotes[c].time);
+                            capturedNotes.push(activeNotes[c]);
+                            activeNotes[c] = null;
+                        }
+                    }
+                    
+                    nsfPlayer.synthesizer.onRegisterWrite = null;
+                    
+                    const midi = createMidiFromCapturedNotes(capturedNotes, track);
+                    
+                    if (midi) {
+                        midiFiles.push({
+                            id: Date.now() + Math.random(),
+                            name: `${romFileName}_曲目${track.trackNumber}.mid`,
+                            trackNumber: track.trackNumber,
+                            midi: midi,
+                            dataUrl: midi.dataUri(),
+                            selected: true,
+                            noteCount: capturedNotes.length
+                        });
+                    }
                 }
-                
-                progressFill.style.width = '75%';
-                progressText.textContent = '正在生成合并MIDI...';
-                
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                const allMidi = createMidiFromSounds(selectedSounds, 'all');
-                midiFiles.unshift({
-                    id: Date.now() + Math.random(),
-                    name: `${romFileName}_全部音效.mid`,
-                    channel: 'all',
-                    midi: allMidi,
-                    dataUrl: allMidi.dataUri(),
-                    soundCount: selectedSounds.length,
-                    selected: true
-                });
                 
                 progressFill.style.width = '100%';
                 progressText.textContent = '转换完成！';
+                captureStatusText.textContent = '捕获完成';
                 
                 setTimeout(() => {
                     progressContainer.style.display = 'none';
-                }, 1000);
+                }, 1500);
                 
                 updateMidiList();
+                
             } catch (error) {
-                console.error('转换MIDI失败:', error);
-                alert('转换MIDI失败: ' + error.message);
+                console.error('转换失败:', error);
+                alert('转换失败: ' + error.message);
                 progressContainer.style.display = 'none';
             } finally {
+                isCapturing = false;
                 convertBtn.disabled = false;
             }
         }
 
-        function createMidiFromSounds(sounds, channelName) {
-            const channelPrograms = {
-                'pulse1': 80,
-                'pulse2': 81,
-                'triangle': 38,
-                'noise': 118,
-                'dpcm': 120,
-                'all': 0
-            };
-            
-            const tracks = [];
-            const ticksPerBeat = 480;
-            
-            const minTime = Math.min(...sounds.map(s => s.startTime));
-            const maxTime = Math.max(...sounds.map(s => s.startTime + s.duration));
-            const totalDuration = maxTime - minTime;
-            
-            const scaleFactor = totalDuration > 0 ? (ticksPerBeat * 4 * 8) / totalDuration : 1;
-            
-            if (channelName === 'all') {
-                const channels = ['pulse1', 'pulse2', 'triangle', 'noise', 'dpcm'];
-                channels.forEach((ch, chIndex) => {
-                    const channelSounds = sounds.filter(s => s.channel === ch);
-                    if (channelSounds.length > 0) {
-                        const track = createChannelTrack(channelSounds, minTime, scaleFactor, channelPrograms[ch], chIndex);
-                        tracks.push(track);
-                    }
-                });
-            } else {
-                const track = createChannelTrack(sounds, minTime, scaleFactor, channelPrograms[channelName], 0);
-                tracks.push(track);
-            }
-            
-            const writer = new MidiWriter.Writer(tracks);
-            return writer;
+        function frequencyToMidi(freq) {
+            if (freq <= 0) return 0;
+            const midi = 69 + 12 * Math.log2(freq / 440);
+            return Math.round(midi);
         }
 
-        function createChannelTrack(sounds, minTime, scaleFactor, program, channel) {
+        function createMidiFromCapturedNotes(notes, track) {
             const events = [];
+            const programs = [81, 82, 38, 118, 120];
             
-            events.push(new MidiWriter.ProgramChangeEvent({
-                instrument: program,
-                channel: channel
-            }));
+            events.push(new MidiWriter.TempoEvent({ bpm: 120 }));
             
-            events.push(new MidiWriter.TempoEvent({
-                bpm: 120
-            }));
+            for (let ch = 0; ch < 3; ch++) {
+                events.push(new MidiWriter.ProgramChangeEvent({
+                    instrument: programs[ch],
+                    channel: ch
+                }));
+            }
             
-            const sortedSounds = [...sounds].sort((a, b) => a.startTime - b.startTime);
+            if (notes.length === 0) {
+                events.push(new MidiWriter.NoteOnEvent({
+                    pitch: [60],
+                    velocity: 1,
+                    duration: 'T1',
+                    channel: 0
+                }));
+                events.push(new MidiWriter.EndOfTrackEvent());
+                return new MidiWriter.Writer([events]);
+            }
             
-            let lastTick = 0;
-            sortedSounds.forEach(sound => {
-                const startTick = Math.max(0, Math.round((sound.startTime - minTime) * scaleFactor));
-                const durationTicks = Math.max(48, Math.round(sound.duration * scaleFactor));
+            const sortedNotes = [...notes].sort((a, b) => a.time - b.time);
+            
+            let lastTime = 0;
+            
+            sortedNotes.forEach(note => {
+                const timeInTicks = Math.max(0, Math.round((note.time - lastTime) * 480));
+                const durationTicks = Math.max(120, Math.round(note.duration * 480));
                 
-                const waitTicks = Math.max(0, startTick - lastTick);
-                
-                if (waitTicks > 0) {
-                    events.push(new MidiWriter.NoteOnEvent({
-                        pitch: [sound.note],
-                        velocity: 0,
-                        duration: 'T' + waitTicks,
-                        channel: channel
-                    }));
+                const eventData = {
+                    pitch: [note.note],
+                    velocity: Math.min(127, Math.max(30, note.volume * 8)),
+                    duration: 'T' + durationTicks,
+                    channel: note.channel % 3
+                };
+                if (timeInTicks > 0) {
+                    eventData.wait = 'T' + timeInTicks;
                 }
                 
-                events.push(new MidiWriter.NoteOnEvent({
-                    pitch: [sound.note],
-                    velocity: sound.velocity,
-                    duration: 'T' + durationTicks,
-                    channel: channel
-                }));
+                events.push(new MidiWriter.NoteOnEvent(eventData));
                 
-                lastTick = startTick + durationTicks;
+                lastTime = note.time;
             });
             
             events.push(new MidiWriter.EndOfTrackEvent());
             
-            return events;
+            return new MidiWriter.Writer([events]);
         }
 
         function updateMidiList() {
@@ -1433,29 +1386,33 @@
             downloadBtn.disabled = midiFiles.length === 0;
             
             if (midiFiles.length === 0) {
-                container.innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg><p>选择音效并点击"转换为MIDI"生成MIDI文件</p></div>';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <p>选择曲目并点击"开始捕获并转换"生成MIDI文件</p>
+                    </div>
+                `;
                 return;
             }
             
             let html = '';
-            midiFiles.forEach((midi, index) => {
+            midiFiles.forEach((file, index) => {
                 html += `
                     <div class="midi-item">
-                        <input type="checkbox" id="midi_${index}" ${midi.selected ? 'checked' : ''} 
+                        <input type="checkbox" id="midi_${index}" ${file.selected ? 'checked' : ''} 
                                onchange="toggleMidi(${index})">
-                        <div class="midi-info" onclick="document.getElementById('midi_${index}').click()">
-                            <div class="sound-name">
-                                ${midi.name}
-                                <span class="sound-type ${midi.channel === 'all' ? 'type-dpcm' : getChannelTypeClass(midi.channel)}">
-                                    ${midi.channel === 'all' ? '全部' : getChannelName(midi.channel)}
-                                </span>
+                        <div class="track-info" onclick="document.getElementById('midi_${index}').click()">
+                            <div class="track-name">
+                                ${file.name}
+                                <span class="badge badge-success">${file.noteCount || 0} 音符</span>
                             </div>
-                            <div class="midi-meta">
-                                包含 ${midi.soundCount} 个音符 | 
-                                <a href="${midi.dataUrl}" download="${midi.name}" onclick="event.stopPropagation()" style="color: #60a5fa;">单独下载</a>
+                            <div class="track-meta">
+                                MIDI文件 | 曲目 ${file.trackNumber}
                             </div>
                         </div>
-                        <button class="play-btn" onclick="playMidi(${index}, event)" id="midiPlayBtn_${index}">
+                        <button class="play-btn" id="midiPlayBtn_${index}" onclick="playMidi(${index}, event)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
@@ -1470,7 +1427,6 @@
 
         function toggleMidi(index) {
             midiFiles[index].selected = !midiFiles[index].selected;
-            updateMidiList();
         }
 
         function selectAllMidis() {
@@ -1558,8 +1514,8 @@
                     if (status < 0x80) {
                         status = runningStatus;
                     } else {
-                            offset++;
-                        }
+                        offset++;
+                    }
                     
                     runningStatus = status;
                     const type = status >> 4;
@@ -1645,8 +1601,8 @@
                 const activeOscillators = [];
                 let tempo = 500000;
                 const ticksPerBeat = midiData.timeDivision & 0x7FFF;
-                const microsecondsPerTick = tempo / ticksPerBeat;
-                const secondsPerTick = microsecondsPerTick / 1000000;
+                let microsecondsPerTick = tempo / ticksPerBeat;
+                let secondsPerTick = microsecondsPerTick / 1000000;
                 
                 const noteOnEvents = [];
                 const activeNotes = new Map();
@@ -1656,108 +1612,122 @@
                     track.forEach(event => {
                         if (event.type === 'setTempo') {
                             tempo = event.tempo;
+                            microsecondsPerTick = tempo / ticksPerBeat;
+                            secondsPerTick = microsecondsPerTick / 1000000;
                         } else if (event.type === 'noteOn') {
                             const time = event.ticks * secondsPerTick;
                             const key = `${event.channel}-${event.noteNumber}`;
                             activeNotes.set(key, { time, velocity: event.velocity, trackIndex });
                         } else if (event.type === 'noteOff') {
+                            const time = event.ticks * secondsPerTick;
                             const key = `${event.channel}-${event.noteNumber}`;
-                            const noteOn = activeNotes.get(key);
-                            if (noteOn) {
-                                const offTime = event.ticks * secondsPerTick;
-                                if (noteOn) {
-                                    const duration = offTime - noteOn.time;
-                                    noteOnEvents.push({
-                                        noteNumber: event.noteNumber,
-                                        time: noteOn.time,
-                                        velocity: noteOn.velocity,
-                                        duration,
-                                        trackIndex: noteOn.trackIndex
-                                    });
-                                    activeNotes.delete(key);
-                                    totalDuration = Math.max(totalDuration, offTime);
-                                }
+                            const on = activeNotes.get(key);
+                            if (on) {
+                                noteOnEvents.push({
+                                    startTime: on.time,
+                                    duration: Math.max(0.05, time - on.time),
+                                    note: event.noteNumber,
+                                    velocity: on.velocity,
+                                    channel: event.channel
+                                });
+                                if (time > totalDuration) totalDuration = time;
+                                activeNotes.delete(key);
                             }
                         }
                     });
                 });
                 
-                const programs = [80, 81, 38, 118, 120];
+                activeNotes.forEach((on, key) => {
+                    noteOnEvents.push({
+                        startTime: on.time,
+                        duration: 0.3,
+                        note: parseInt(key.split('-')[1]),
+                        velocity: on.velocity,
+                        channel: parseInt(key.split('-')[0])
+                    });
+                    if (on.time + 0.3 > totalDuration) totalDuration = on.time + 0.3;
+                });
+                
+                const playStart = audioContext.currentTime + 0.1;
+                const stopTimeouts = [];
                 
                 noteOnEvents.forEach(note => {
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
+                    const freq = 440 * Math.pow(2, (note.note - 69) / 12);
                     
-                    const program = programs[note.trackIndex % programs.length];
+                    osc.type = note.channel === 2 ? 'triangle' : 'square';
+                    osc.frequency.value = freq;
                     
-                    if (program === 38) {
-                        osc.type = 'triangle';
-                    } else if (program >= 118) {
-                        osc.type = 'sawtooth';
-                    } else {
-                        osc.type = 'square';
-                    }
-                    
-                    const frequency = 440 * Math.pow(2, (note.noteNumber - 69) / 12);
-                    osc.frequency.value = frequency;
-                    
-                    const velocity = (note.velocity / 127) * 0.3;
-                    
-                    gain.gain.setValueAtTime(0, now + note.time);
-                    gain.gain.linearRampToValueAtTime(velocity, now + note.time + 0.01);
-                    gain.gain.setValueAtTime(velocity, now + note.time + note.duration - 0.05);
-                    gain.gain.linearRampToValueAtTime(0, now + note.time + note.duration);
+                    const velocity = (note.velocity || 80) / 127;
+                    gain.gain.setValueAtTime(0, playStart + note.startTime);
+                    gain.gain.linearRampToValueAtTime(velocity * 0.2, playStart + note.startTime + 0.01);
+                    gain.gain.setValueAtTime(velocity * 0.2, playStart + note.startTime + note.duration * 0.7);
+                    gain.gain.linearRampToValueAtTime(0, playStart + note.startTime + note.duration);
                     
                     osc.connect(gain);
                     gain.connect(audioContext.destination);
                     
-                    osc.start(now + note.time);
-                    osc.stop(now + note.time + note.duration + 0.1);
+                    osc.start(playStart + note.startTime);
+                    osc.stop(playStart + note.startTime + note.duration + 0.05);
                     
                     activeOscillators.push(osc);
                 });
                 
-                setTimeout(() => {
-                    btn.classList.remove('playing');
-                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
-                    currentPlayingMidi = null;
-                }, totalDuration * 1000 + 500);
+                const totalPlayTime = (totalDuration + 0.5) * 1000;
                 
                 currentPlayingMidi = {
                     stop: () => {
-                        activeOscillators.forEach(osc => {
-                            try { osc.stop(); } catch(e) {}
+                        activeOscillators.forEach(o => {
+                            try { o.stop(); } catch(e) {}
                         });
+                        stopTimeouts.forEach(t => clearTimeout(t));
                     }
                 };
                 
+                const stopTimeout = setTimeout(() => {
+                    btn.classList.remove('playing');
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
+                    currentPlayingMidi = null;
+                }, totalPlayTime);
+                stopTimeouts.push(stopTimeout);
+                
             } catch (error) {
                 console.error('播放MIDI失败:', error);
+                alert('播放失败: ' + error.message);
                 btn.classList.remove('playing');
                 btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
-                alert('播放失败: ' + error.message);
             }
         }
 
         function downloadSelectedMidis() {
             const selected = midiFiles.filter(m => m.selected);
-            
             if (selected.length === 0) {
                 alert('请至少选择一个MIDI文件！');
                 return;
             }
             
-            selected.forEach((midi, index) => {
-                setTimeout(() => {
-                    const link = document.createElement('a');
-                    link.href = midi.dataUrl;
-                    link.download = midi.name;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }, index * 200);
+            selected.forEach(midi => {
+                const a = document.createElement('a');
+                a.href = midi.dataUrl;
+                a.download = midi.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             });
         }
+
+        window.selectAllTracks = selectAllTracks;
+        window.deselectAllTracks = deselectAllTracks;
+        window.invertTracks = invertTracks;
+        window.selectAllMidis = selectAllMidis;
+        window.deselectAllMidis = deselectAllMidis;
+        window.invertMidis = invertMidis;
+        window.startCaptureAndConvert = startCaptureAndConvert;
+        window.playMidi = playMidi;
+        window.toggleTrack = toggleTrack;
+        window.toggleMidi = toggleMidi;
+        window.downloadSelectedMidis = downloadSelectedMidis;
     </script>
 </body>
 </html>
