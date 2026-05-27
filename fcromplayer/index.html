@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC/NES ROM 音频提取器 - 转MIDI工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsnes@2.1.0/dist/jsnes.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.0.1/build/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e7;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #f59e0b, #ef4444, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed #3b82f6;
+            border-radius: 16px;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover,
+        .upload-section.drag-over {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #60a5fa;
+            transform: scale(1.02);
+        }
+
+        .upload-section svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            color: #3b82f6;
+        }
+
+        .upload-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-section p {
+            color: #94a3b8;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .btn-warning:hover {
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-header h2 svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .list-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .list-controls .btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .sound-list, .midi-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sound-list::-webkit-scrollbar,
+        .midi-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sound-list::-webkit-scrollbar-track,
+        .midi-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .sound-list::-webkit-scrollbar-thumb,
+        .midi-list::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .sound-item, .midi-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s ease;
+            gap: 12px;
+        }
+
+        .sound-item:last-child, .midi-item:last-child {
+            border-bottom: none;
+        }
+
+        .sound-item:hover, .midi-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sound-item input[type="checkbox"],
+        .midi-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+
+        .sound-info, .midi-info {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .sound-name, .midi-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sound-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .type-pulse1 { background: #ef4444; }
+        .type-pulse2 { background: #f59e0b; }
+        .type-triangle { background: #10b981; }
+        .type-noise { background: #8b5cf6; }
+        .type-dpcm { background: #ec4899; }
+
+        .sound-meta, .midi-meta {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .play-btn {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .play-btn:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .play-btn.playing {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: white;
+        }
+
+        .convert-section {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        .convert-section .btn {
+            font-size: 1.2rem;
+            padding: 16px 40px;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .file-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-info strong {
+            color: #60a5fa;
+        }
+
+        .download-section {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-info {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .emulator-container {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .keyboard-hint {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #fbbf24;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .keyboard-hint.show {
+            display: block;
+        }
+
+        .keyboard-hint kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 FC/NES ROM 音频提取器</h1>
+            <p>上传ROM文件，提取游戏音效，转换为MIDI格式</p>
+        </header>
+
+        <div class="upload-section" id="uploadSection">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <h2>拖拽 ROM 文件到这里</h2>
+            <p>支持 .nes, .fc 格式文件，或点击下方按钮选择文件</p>
+            <input type="file" id="fileInput" accept=".nes,.fc" style="display: none;">
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                选择 ROM 文件
+            </button>
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <strong>文件名：</strong><span id="fileName"></span> | 
+            <strong>大小：</strong><span id="fileSize"></span> | 
+            <strong>PRG ROM：</strong><span id="prgSize"></span> | 
+            <strong>CHR ROM：</strong><span id="chrSize"></span> | 
+            <strong>Mapper：</strong><span id="mapper"></span>
+        </div>
+
+        <div class="keyboard-hint" id="keyboardHint">
+            <strong>🎮 控制提示：</strong>使用键盘控制游戏 - 
+            <kbd>Z</kbd> A键 | <kbd>X</kbd> B键 | <kbd>A</kbd> 选择 | <kbd>S</kbd> 开始 | 
+            <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 方向键
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                        提取的音效列表
+                        <span class="badge badge-info" id="soundCount">0</span>
+                    </h2>
+                </div>
+                <div class="list-controls">
+                    <button class="btn btn-secondary" onclick="selectAllSounds()">全选</button>
+                    <button class="btn btn-secondary" onclick="deselectAllSounds()">取消全选</button>
+                    <button class="btn btn-secondary" onclick="invertSounds()">反选</button>
+                    <button class="btn btn-warning" onclick="captureSounds()">
+                        <span id="captureBtnText">捕获音频</span>
+                    </button>
+                </div>
+                <div class="sound-list" id="soundList">
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p>上传ROM文件后，点击"捕获音频"开始提取音效</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                        转换的 MIDI 列表
+                        <span class="badge badge-info" id="midiCount">0</span>
+                    </h2>
+                </div>
+                <div class="list-controls">
+                    <button class="btn btn-secondary" onclick="selectAllMidis()">全选</button>
+                    <button class="btn btn-secondary" onclick="deselectAllMidis()">取消全选</button>
+                    <button class="btn btn-secondary" onclick="invertMidis()">反选</button>
+                    <button class="btn btn-success" onclick="downloadSelectedMidis()" id="downloadBtn" disabled>
+                        下载选中
+                    </button>
+                </div>
+                <div class="midi-list" id="midiList">
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <p>选择音效并点击"转换为MIDI"生成MIDI文件</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="convert-section">
+            <button class="btn btn-warning" id="convertBtn" onclick="convertToMidi()" disabled>
+                🎵 转换选中音效为 MIDI
+            </button>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备中...</div>
+            </div>
+        </div>
+
+        <div class="emulator-container">
+            <canvas id="nesCanvas" width="256" height="240"></canvas>
+        </div>
+
+        <footer>
+            <p>使用 jsnes 模拟器内核 | 支持标准NES/FC ROM文件 | 仅用于学习和研究目的</p>
+        </footer>
+    </div>
+
+    <script>
+        let nes = null;
+        let romData = null;
+        let romFileName = '';
+        let capturedSounds = [];
+        let midiFiles = [];
+        let isCapturing = false;
+        let audioContext = null;
+        let currentPlayingMidi = null;
+        let captureTimeout = null;
+        let audioBuffer = [];
+        let currentNotes = {};
+        let captureStartTime = 0;
+        let animationId = null;
+        let audioAnalyser = null;
+        let gainNode = null;
+        let audioScriptProcessor = null;
+        let audioPlaybackBuffer = [];
+        let lastFrameTime = 0;
+
+        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('drag-over');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('drag-over');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (!file.name.match(/\.(nes|fc)$/i)) {
+                alert('请选择 .nes 或 .fc 格式的ROM文件！');
+                return;
+            }
+            
+            romFileName = file.name.replace(/\.[^/.]+$/, '');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    romData = new Uint8Array(e.target.result);
+                    parseRomHeader(romData);
+                    initNES(romData);
+                    document.getElementById('captureBtnText').textContent = '捕获音频';
+                    document.getElementById('keyboardHint').classList.add('show');
+                } catch (error) {
+                    console.error('ROM加载失败:', error);
+                    alert('ROM加载失败: ' + error.message);
+                }
+            };
+            reader.onerror = () => {
+                alert('文件读取失败！');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseRomHeader(data) {
+            if (data[0] !== 0x4E || data[1] !== 0x45 || data[2] !== 0x53 || data[3] !== 0x1A) {
+                alert('无效的NES ROM文件！');
+                return;
+            }
+
+            const prgSize = data[4] * 16;
+            const chrSize = data[5] * 8;
+            const mapper = ((data[6] >> 4) | (data[7] & 0xF0));
+
+            document.getElementById('fileName').textContent = romFileName;
+            document.getElementById('fileSize').textContent = formatFileSize(data.length);
+            document.getElementById('prgSize').textContent = prgSize + ' KB';
+            document.getElementById('chrSize').textContent = chrSize + ' KB';
+            document.getElementById('mapper').textContent = '#' + mapper;
+            document.getElementById('fileInfo').classList.add('show');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function initNES(romData) {
+            try {
+                if (nes) {
+                    nes = null;
+                }
+
+                audioBuffer = [];
+                audioPlaybackBuffer = [];
+                capturedSounds = [];
+                midiFiles = [];
+                updateSoundList();
+                updateMidiList();
+
+                nes = new jsnes.NES({
+                    onFrame: function(frameBuffer) {
+                        try {
+                            drawFrame(frameBuffer);
+                        } catch (e) {
+                            console.error('绘制帧失败:', e);
+                        }
+                    },
+                    onAudioSample: function(left, right) {
+                        try {
+                            const sample = (left + right) / 2;
+                            if (isCapturing) {
+                                audioBuffer.push(sample);
+                            }
+                            if (audioContext && gainNode) {
+                                audioPlaybackBuffer.push(sample);
+                            }
+                        } catch (e) {
+                            console.error('音频采样失败:', e);
+                        }
+                    },
+                    onStatusUpdate: function(status) {
+                        console.log('NES Status:', status);
+                    },
+                    sampleRate: 44100,
+                    emulateSound: true
+                });
+
+                nes.loadROM(romData);
+                nes.reset();
+
+                document.getElementById('convertBtn').disabled = false;
+            } catch (error) {
+                console.error('初始化NES失败:', error);
+                alert('初始化模拟器失败: ' + error.message);
+            }
+        }
+
+        function drawFrame(frameBuffer) {
+            const canvas = document.getElementById('nesCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(256, 240);
+            const data = imageData.data;
+            
+            for (let i = 0; i < frameBuffer.length; i++) {
+                const pixel = frameBuffer[i];
+                const offset = i * 4;
+                data[offset] = (pixel >> 16) & 0xFF;
+                data[offset + 1] = (pixel >> 8) & 0xFF;
+                data[offset + 2] = pixel & 0xFF;
+                data[offset + 3] = 0xFF;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function frequencyToMidiNote(frequency) {
+            return Math.round(12 * Math.log2(frequency / 440) + 69);
+        }
+
+        function getNoteName(midiNote) {
+            return NOTE_NAMES[midiNote % 12] + (Math.floor(midiNote / 12) - 1);
+        }
+
+        function detectPitchACF(audioData, sampleRate) {
+            const n = audioData.length;
+            let rms = 0;
+            
+            for (let i = 0; i < n; i++) {
+                rms += audioData[i] * audioData[i];
+            }
+            rms = Math.sqrt(rms / n);
+            
+            if (rms < 0.01) return null;
+
+            const c = new Float32Array(n);
+            
+            for (let lag = 0; lag < n; lag++) {
+                let sum = 0;
+                for (let i = 0; i < n - lag; i++) {
+                    sum += audioData[i] * audioData[i + lag];
+                }
+                c[lag] = sum;
+            }
+
+            let d = 0;
+            while (d < n - 1 && c[d] > c[d + 1]) {
+                d++;
+            }
+
+            let maxval = -1;
+            let maxpos = -1;
+            
+            for (let i = d; i < n; i++) {
+                if (c[i] > maxval) {
+                    maxval = c[i];
+                    maxpos = i;
+                }
+            }
+
+            if (maxpos <= 0) return null;
+
+            let T0 = maxpos;
+            
+            if (maxpos > 0 && maxpos < n - 1) {
+                const x1 = c[maxpos - 1];
+                const x2 = c[maxpos];
+                const x3 = c[maxpos + 1];
+                const a = (x1 + x3 - 2 * x2) / 2;
+                const b = (x3 - x1) / 2;
+                if (a !== 0) {
+                    T0 = T0 - b / (2 * a);
+                }
+            }
+
+            const frequency = sampleRate / T0;
+            
+            if (frequency < 60 || frequency > 2000) return null;
+            
+            return frequency;
+        }
+
+        function analyzeAudioBuffer() {
+            if (audioBuffer.length < 4096) return;
+
+            const sampleRate = 44100;
+            const chunkSize = 4096;
+            const step = 2048;
+
+            for (let offset = 0; offset + chunkSize <= audioBuffer.length; offset += step) {
+                const chunk = audioBuffer.slice(offset, offset + chunkSize);
+                
+                const frequency = detectPitchACF(chunk, sampleRate);
+                
+                if (frequency) {
+                    const midiNote = frequencyToMidiNote(frequency);
+                    
+                    if (midiNote >= 24 && midiNote <= 108) {
+                        const timestamp = captureStartTime + (offset / sampleRate) * 1000;
+                        
+                        const channel = classifySoundType(frequency);
+                        
+                        if (!currentNotes[channel]) {
+                            currentNotes[channel] = {
+                                note: midiNote,
+                                startTime: timestamp,
+                                velocity: 80,
+                                samples: 1,
+                                lastSeen: timestamp,
+                                frequencies: [frequency]
+                            };
+                        } else {
+                            const cn = currentNotes[channel];
+                            if (Math.abs(cn.note - midiNote) <= 2) {
+                                cn.samples++;
+                                cn.lastSeen = timestamp;
+                                cn.frequencies.push(frequency);
+                                const avgFreq = cn.frequencies.reduce((a, b) => a + b, 0) / cn.frequencies.length;
+                                cn.note = frequencyToMidiNote(avgFreq);
+                            } else {
+                                finalizeNote(channel, timestamp);
+                                currentNotes[channel] = {
+                                    note: midiNote,
+                                    startTime: timestamp,
+                                    velocity: 80,
+                                    samples: 1,
+                                    lastSeen: timestamp,
+                                    frequencies: [frequency]
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+
+            const now = captureStartTime + (audioBuffer.length / sampleRate) * 1000;
+            Object.keys(currentNotes).forEach(channel => {
+                if (now - currentNotes[channel].lastSeen > 150) {
+                    finalizeNote(channel, now);
+                }
+            });
+        }
+
+        function classifySoundType(frequency) {
+            if (frequency < 250) return 'triangle';
+            if (frequency < 500) return 'pulse1';
+            if (frequency < 800) return 'pulse2';
+            return 'pulse1';
+        }
+
+        function finalizeNote(channel, endTime) {
+            if (!currentNotes[channel]) return;
+            
+            const note = currentNotes[channel];
+            const duration = endTime - note.startTime;
+            
+            if (duration > 40 && note.samples > 1) {
+                const midiNote = Math.round(note.note);
+                const sound = {
+                    id: Date.now() + Math.random(),
+                    channel: channel,
+                    note: midiNote,
+                    velocity: note.velocity,
+                    startTime: note.startTime,
+                    duration: duration,
+                    name: `${getChannelName(channel)} - ${getNoteName(midiNote)}`,
+                    selected: true
+                };
+                capturedSounds.push(sound);
+            }
+            
+            delete currentNotes[channel];
+        }
+
+        function getChannelName(channel) {
+            const names = {
+                'pulse1': '方波1',
+                'pulse2': '方波2',
+                'triangle': '三角波',
+                'noise': '噪声',
+                'dpcm': 'DPCM'
+            };
+            return names[channel] || channel;
+        }
+
+        function getChannelTypeClass(channel) {
+            const classes = {
+                'pulse1': 'type-pulse1',
+                'pulse2': 'type-pulse2',
+                'triangle': 'type-triangle',
+                'noise': 'type-noise',
+                'dpcm': 'type-dpcm'
+            };
+            return classes[channel] || '';
+        }
+
+        async function captureSounds() {
+            if (!nes) {
+                alert('请先上传ROM文件！');
+                return;
+            }
+
+            if (isCapturing) {
+                stopCapture();
+            } else {
+                await startCapture();
+            }
+        }
+
+        async function startCapture() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    gainNode = audioContext.createGain();
+                    gainNode.gain.value = 0.3;
+                    gainNode.connect(audioContext.destination);
+                }
+
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+            } catch (e) {
+                console.error('无法创建音频上下文:', e);
+                alert('无法初始化音频系统: ' + e.message);
+                return;
+            }
+
+            try {
+                isCapturing = true;
+                capturedSounds = [];
+                audioBuffer = [];
+                audioPlaybackBuffer = [];
+                currentNotes = {};
+                captureStartTime = Date.now();
+                lastFrameTime = performance.now();
+                
+                document.getElementById('captureBtnText').textContent = '停止捕获';
+                document.getElementById('soundList').innerHTML = '<div class="empty-state"><div class="loading"></div><p style="margin-top: 15px;">正在捕获音频数据，游戏正在运行...</p><p style="margin-top: 10px; font-size: 0.85rem;">请在游戏中操作以触发音效</p></div>';
+                
+                runEmulator();
+                
+                captureTimeout = setTimeout(() => {
+                    stopCapture();
+                }, 20000);
+            } catch (error) {
+                console.error('启动捕获失败:', error);
+                isCapturing = false;
+                alert('启动捕获失败: ' + error.message);
+            }
+        }
+
+        function stopCapture() {
+            try {
+                isCapturing = false;
+                if (captureTimeout) {
+                    clearTimeout(captureTimeout);
+                    captureTimeout = null;
+                }
+                
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                
+                document.getElementById('captureBtnText').textContent = '重新捕获';
+                
+                Object.keys(currentNotes).forEach(channel => {
+                    finalizeNote(channel, Date.now());
+                });
+                
+                analyzeAudioBuffer();
+                
+                if (capturedSounds.length === 0) {
+                    document.getElementById('soundList').innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><p>未捕获到有效音效，请确保游戏运行并产生声音</p></div>';
+                }
+                
+                updateSoundList();
+                
+                audioPlaybackBuffer = [];
+            } catch (error) {
+                console.error('停止捕获失败:', error);
+                alert('停止捕获时出错: ' + error.message);
+            }
+        }
+
+        function flushAudioBuffer() {
+            if (!audioContext || !gainNode || audioPlaybackBuffer.length === 0) return;
+            
+            const bufferSize = Math.min(audioPlaybackBuffer.length, 4096);
+            const buffer = audioContext.createBuffer(1, bufferSize, 44100);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = audioPlaybackBuffer[i];
+            }
+            
+            audioPlaybackBuffer.splice(0, bufferSize);
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(gainNode);
+            source.start();
+        }
+
+        function runEmulator() {
+            if (!nes || !isCapturing) return;
+            
+            const now = performance.now();
+            const delta = now - lastFrameTime;
+            lastFrameTime = now;
+            
+            const framesToRun = Math.max(1, Math.floor(delta / 16.67));
+            
+            for (let i = 0; i < Math.min(framesToRun, 5); i++) {
+                nes.frame();
+            }
+            
+            flushAudioBuffer();
+            
+            animationId = requestAnimationFrame(runEmulator);
+        }
+
+        function updateSoundList() {
+            const container = document.getElementById('soundList');
+            const countSpan = document.getElementById('soundCount');
+            
+            countSpan.textContent = capturedSounds.length;
+            
+            if (capturedSounds.length === 0) {
+                container.innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p>上传ROM文件后，点击"捕获音频"开始提取音效</p></div>';
+                return;
+            }
+            
+            const grouped = {};
+            capturedSounds.forEach(sound => {
+                const key = sound.channel + '_' + sound.note;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        ...sound,
+                        count: 1,
+                        instances: [sound]
+                    };
+                } else {
+                    grouped[key].count++;
+                    grouped[key].instances.push(sound);
+                    grouped[key].duration = Math.max(grouped[key].duration, sound.duration);
+                }
+            });
+            
+            let html = '';
+            Object.values(grouped).forEach((group, index) => {
+                html += `
+                    <div class="sound-item">
+                        <input type="checkbox" id="sound_${index}" ${group.selected ? 'checked' : ''} 
+                               onchange="toggleSound(${index})">
+                        <div class="sound-info" onclick="document.getElementById('sound_${index}').click()">
+                            <div class="sound-name">
+                                ${group.name}
+                                <span class="sound-type ${getChannelTypeClass(group.channel)}">${getChannelName(group.channel)}</span>
+                                <span class="badge badge-info">x${group.count}</span>
+                            </div>
+                            <div class="sound-meta">
+                                音高: MIDI ${group.note} (${getNoteName(group.note)}) | 时长: ${Math.round(group.duration)}ms | 音量: ${Math.round(group.velocity / 8)}/15
+                            </div>
+                        </div>
+                        <button class="play-btn" onclick="playSound(${index}, event)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            试听
+                        </button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function toggleSound(index) {
+            const grouped = getGroupedSounds();
+            const group = grouped[index];
+            group.selected = !group.selected;
+            group.instances.forEach(s => s.selected = group.selected);
+        }
+
+        function getGroupedSounds() {
+            const grouped = {};
+            capturedSounds.forEach(sound => {
+                const key = sound.channel + '_' + sound.note;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        ...sound,
+                        count: 1,
+                        instances: [sound]
+                    };
+                } else {
+                    grouped[key].count++;
+                    grouped[key].instances.push(sound);
+                }
+            });
+            return Object.values(grouped);
+        }
+
+        function selectAllSounds() {
+            capturedSounds.forEach(s => s.selected = true);
+            updateSoundList();
+        }
+
+        function deselectAllSounds() {
+            capturedSounds.forEach(s => s.selected = false);
+            updateSoundList();
+        }
+
+        function invertSounds() {
+            capturedSounds.forEach(s => s.selected = !s.selected);
+            updateSoundList();
+        }
+
+        function playSound(index, event) {
+            event.stopPropagation();
+            const grouped = getGroupedSounds();
+            const group = grouped[index];
+            
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            if (group.channel === 'triangle') {
+                oscillator.type = 'triangle';
+            } else if (group.channel === 'noise') {
+                oscillator.type = 'sawtooth';
+            } else {
+                oscillator.type = 'square';
+            }
+            
+            const frequency = 440 * Math.pow(2, (group.note - 69) / 12);
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(group.velocity / 255, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + group.duration / 1000);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + group.duration / 1000);
+        }
+
+        async function convertToMidi() {
+            const selectedSounds = capturedSounds.filter(s => s.selected);
+            
+            if (selectedSounds.length === 0) {
+                alert('请至少选择一个音效！');
+                return;
+            }
+            
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const convertBtn = document.getElementById('convertBtn');
+            
+            try {
+                convertBtn.disabled = true;
+                progressContainer.style.display = 'block';
+                progressFill.style.width = '0%';
+                progressText.textContent = '正在分析音效数据...';
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const groupedByChannel = {};
+                selectedSounds.forEach(sound => {
+                    if (!groupedByChannel[sound.channel]) {
+                        groupedByChannel[sound.channel] = [];
+                    }
+                    groupedByChannel[sound.channel].push(sound);
+                });
+                
+                midiFiles = [];
+                const totalChannels = Object.keys(groupedByChannel).length;
+                let currentChannel = 0;
+                
+                for (const [channel, sounds] of Object.entries(groupedByChannel)) {
+                    currentChannel++;
+                    progressFill.style.width = `${(currentChannel / totalChannels) * 50}%`;
+                    progressText.textContent = `正在转换 ${getChannelName(channel)} 通道 (${currentChannel}/${totalChannels})...`;
+                    
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    const midi = createMidiFromSounds(sounds, channel);
+                    midiFiles.push({
+                        id: Date.now() + Math.random(),
+                        name: `${romFileName}_${getChannelName(channel)}.mid`,
+                        channel: channel,
+                        midi: midi,
+                        dataUrl: midi.dataUri(),
+                        soundCount: sounds.length,
+                        selected: true
+                    });
+                }
+                
+                progressFill.style.width = '75%';
+                progressText.textContent = '正在生成合并MIDI...';
+                
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                const allMidi = createMidiFromSounds(selectedSounds, 'all');
+                midiFiles.unshift({
+                    id: Date.now() + Math.random(),
+                    name: `${romFileName}_全部音效.mid`,
+                    channel: 'all',
+                    midi: allMidi,
+                    dataUrl: allMidi.dataUri(),
+                    soundCount: selectedSounds.length,
+                    selected: true
+                });
+                
+                progressFill.style.width = '100%';
+                progressText.textContent = '转换完成！';
+                
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 1000);
+                
+                updateMidiList();
+            } catch (error) {
+                console.error('转换MIDI失败:', error);
+                alert('转换MIDI失败: ' + error.message);
+                progressContainer.style.display = 'none';
+            } finally {
+                convertBtn.disabled = false;
+            }
+        }
+
+        function createMidiFromSounds(sounds, channelName) {
+            const channelPrograms = {
+                'pulse1': 80,
+                'pulse2': 81,
+                'triangle': 38,
+                'noise': 118,
+                'dpcm': 120,
+                'all': 0
+            };
+            
+            const tracks = [];
+            const ticksPerBeat = 480;
+            
+            const minTime = Math.min(...sounds.map(s => s.startTime));
+            const maxTime = Math.max(...sounds.map(s => s.startTime + s.duration));
+            const totalDuration = maxTime - minTime;
+            
+            const scaleFactor = totalDuration > 0 ? (ticksPerBeat * 4 * 8) / totalDuration : 1;
+            
+            if (channelName === 'all') {
+                const channels = ['pulse1', 'pulse2', 'triangle', 'noise', 'dpcm'];
+                channels.forEach((ch, chIndex) => {
+                    const channelSounds = sounds.filter(s => s.channel === ch);
+                    if (channelSounds.length > 0) {
+                        const track = createChannelTrack(channelSounds, minTime, scaleFactor, channelPrograms[ch], chIndex);
+                        tracks.push(track);
+                    }
+                });
+            } else {
+                const track = createChannelTrack(sounds, minTime, scaleFactor, channelPrograms[channelName], 0);
+                tracks.push(track);
+            }
+            
+            const writer = new MidiWriter.Writer(tracks);
+            return writer;
+        }
+
+        function createChannelTrack(sounds, minTime, scaleFactor, program, channel) {
+            const events = [];
+            
+            events.push(new MidiWriter.ProgramChangeEvent({
+                instrument: program,
+                channel: channel
+            }));
+            
+            events.push(new MidiWriter.TempoEvent({
+                bpm: 120
+            }));
+            
+            const sortedSounds = [...sounds].sort((a, b) => a.startTime - b.startTime);
+            
+            let lastTick = 0;
+            sortedSounds.forEach(sound => {
+                const startTick = Math.max(0, Math.round((sound.startTime - minTime) * scaleFactor));
+                const durationTicks = Math.max(48, Math.round(sound.duration * scaleFactor));
+                
+                const waitTicks = Math.max(0, startTick - lastTick);
+                
+                if (waitTicks > 0) {
+                    events.push(new MidiWriter.NoteOnEvent({
+                        pitch: [sound.note],
+                        velocity: 0,
+                        duration: 'T' + waitTicks,
+                        channel: channel
+                    }));
+                }
+                
+                events.push(new MidiWriter.NoteOnEvent({
+                    pitch: [sound.note],
+                    velocity: sound.velocity,
+                    duration: 'T' + durationTicks,
+                    channel: channel
+                }));
+                
+                lastTick = startTick + durationTicks;
+            });
+            
+            events.push(new MidiWriter.EndOfTrackEvent());
+            
+            return events;
+        }
+
+        function updateMidiList() {
+            const container = document.getElementById('midiList');
+            const countSpan = document.getElementById('midiCount');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            countSpan.textContent = midiFiles.length;
+            downloadBtn.disabled = midiFiles.length === 0;
+            
+            if (midiFiles.length === 0) {
+                container.innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg><p>选择音效并点击"转换为MIDI"生成MIDI文件</p></div>';
+                return;
+            }
+            
+            let html = '';
+            midiFiles.forEach((midi, index) => {
+                html += `
+                    <div class="midi-item">
+                        <input type="checkbox" id="midi_${index}" ${midi.selected ? 'checked' : ''} 
+                               onchange="toggleMidi(${index})">
+                        <div class="midi-info" onclick="document.getElementById('midi_${index}').click()">
+                            <div class="sound-name">
+                                ${midi.name}
+                                <span class="sound-type ${midi.channel === 'all' ? 'type-dpcm' : getChannelTypeClass(midi.channel)}">
+                                    ${midi.channel === 'all' ? '全部' : getChannelName(midi.channel)}
+                                </span>
+                            </div>
+                            <div class="midi-meta">
+                                包含 ${midi.soundCount} 个音符 | 
+                                <a href="${midi.dataUrl}" download="${midi.name}" onclick="event.stopPropagation()" style="color: #60a5fa;">单独下载</a>
+                            </div>
+                        </div>
+                        <button class="play-btn" onclick="playMidi(${index}, event)" id="midiPlayBtn_${index}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            播放
+                        </button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function toggleMidi(index) {
+            midiFiles[index].selected = !midiFiles[index].selected;
+            updateMidiList();
+        }
+
+        function selectAllMidis() {
+            midiFiles.forEach(m => m.selected = true);
+            updateMidiList();
+        }
+
+        function deselectAllMidis() {
+            midiFiles.forEach(m => m.selected = false);
+            updateMidiList();
+        }
+
+        function invertMidis() {
+            midiFiles.forEach(m => m.selected = !m.selected);
+            updateMidiList();
+        }
+
+        function dataUriToArrayBuffer(dataUri) {
+            const base64 = dataUri.split(',')[1];
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function parseMidi(arrayBuffer) {
+            const dataView = new DataView(arrayBuffer);
+            let offset = 0;
+            
+            function readString(length) {
+                let str = '';
+                for (let i = 0; i < length; i++) {
+                    str += String.fromCharCode(dataView.getUint8(offset++));
+                }
+                return str;
+            }
+            
+            function readUint32() {
+                const val = dataView.getUint32(offset, false);
+                offset += 4;
+                return val;
+            }
+            
+            function readUint16() {
+                const val = dataView.getUint16(offset, false);
+                offset += 2;
+                return val;
+            }
+            
+            function readVarLength() {
+                let value = 0;
+                let byte;
+                do {
+                    byte = dataView.getUint8(offset++);
+                    value = (value << 7) | (byte & 0x7F);
+                } while (byte & 0x80);
+                return value;
+            }
+            
+            const headerChunkId = readString(4);
+            const headerLength = readUint32();
+            const formatType = readUint16();
+            const numTracks = readUint16();
+            const timeDivision = readUint16();
+            
+            const tracks = [];
+            
+            for (let t = 0; t < numTracks; t++) {
+                const trackChunkId = readString(4);
+                const trackLength = readUint32();
+                const trackEnd = offset + trackLength;
+                
+                const events = [];
+                let runningStatus = 0;
+                let ticks = 0;
+                
+                while (offset < trackEnd) {
+                    const deltaTime = readVarLength();
+                    ticks += deltaTime;
+                    
+                    let status = dataView.getUint8(offset);
+                    
+                    if (status < 0x80) {
+                        status = runningStatus;
+                    } else {
+                            offset++;
+                        }
+                    
+                    runningStatus = status;
+                    const type = status >> 4;
+                    const channel = status & 0x0F;
+                    
+                    if (type === 0xF) {
+                        if (status === 0xFF) {
+                            const metaType = dataView.getUint8(offset++);
+                            const metaLength = readVarLength();
+                            if (metaType === 0x51 && metaLength === 3) {
+                                const tempo = (dataView.getUint8(offset) << 16) | 
+                                             (dataView.getUint8(offset + 1) << 8) | 
+                                              dataView.getUint8(offset + 2);
+                                events.push({ type: 'setTempo', ticks, tempo });
+                            }
+                            offset += metaLength;
+                        } else if (status === 0xF0 || status === 0xF7) {
+                            const sysExLength = readVarLength();
+                            offset += sysExLength;
+                        }
+                    } else if (type === 0x8) {
+                        const noteNumber = dataView.getUint8(offset++);
+                        const velocity = dataView.getUint8(offset++);
+                        events.push({ type: 'noteOff', ticks, channel, noteNumber, velocity });
+                    } else if (type === 0x9) {
+                        const noteNumber = dataView.getUint8(offset++);
+                        const velocity = dataView.getUint8(offset++);
+                        if (velocity === 0) {
+                            events.push({ type: 'noteOff', ticks, channel, noteNumber, velocity: 0 });
+                        } else {
+                            events.push({ type: 'noteOn', ticks, channel, noteNumber, velocity });
+                        }
+                    } else if (type === 0xA || type === 0xB || type === 0xE) {
+                        offset += 2;
+                    } else if (type === 0xC || type === 0xD) {
+                        offset += 1;
+                    }
+                }
+                
+                tracks.push(events);
+            }
+            
+            return { formatType, numTracks, timeDivision, tracks };
+        }
+
+        async function playMidi(index, event) {
+            event.stopPropagation();
+            
+            const btn = document.getElementById(`midiPlayBtn_${index}`);
+            const midi = midiFiles[index];
+            
+            if (btn.classList.contains('playing')) {
+                if (currentPlayingMidi) {
+                    currentPlayingMidi.stop();
+                    currentPlayingMidi = null;
+                }
+                btn.classList.remove('playing');
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
+                return;
+            }
+            
+            if (currentPlayingMidi) {
+                currentPlayingMidi.stop();
+                currentPlayingMidi = null;
+                document.querySelectorAll('.play-btn.playing').forEach(b => {
+                    b.classList.remove('playing');
+                    b.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
+                });
+            }
+            
+            btn.classList.add('playing');
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg> 停止';
+            
+            try {
+                const arrayBuffer = dataUriToArrayBuffer(midi.dataUrl);
+                const midiData = parseMidi(arrayBuffer);
+                
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const now = audioContext.currentTime;
+                const activeOscillators = [];
+                let tempo = 500000;
+                const ticksPerBeat = midiData.timeDivision & 0x7FFF;
+                const microsecondsPerTick = tempo / ticksPerBeat;
+                const secondsPerTick = microsecondsPerTick / 1000000;
+                
+                const noteOnEvents = [];
+                const activeNotes = new Map();
+                let totalDuration = 0;
+                
+                midiData.tracks.forEach((track, trackIndex) => {
+                    track.forEach(event => {
+                        if (event.type === 'setTempo') {
+                            tempo = event.tempo;
+                        } else if (event.type === 'noteOn') {
+                            const time = event.ticks * secondsPerTick;
+                            const key = `${event.channel}-${event.noteNumber}`;
+                            activeNotes.set(key, { time, velocity: event.velocity, trackIndex });
+                        } else if (event.type === 'noteOff') {
+                            const key = `${event.channel}-${event.noteNumber}`;
+                            const noteOn = activeNotes.get(key);
+                            if (noteOn) {
+                                const offTime = event.ticks * secondsPerTick;
+                                if (noteOn) {
+                                    const duration = offTime - noteOn.time;
+                                    noteOnEvents.push({
+                                        noteNumber: event.noteNumber,
+                                        time: noteOn.time,
+                                        velocity: noteOn.velocity,
+                                        duration,
+                                        trackIndex: noteOn.trackIndex
+                                    });
+                                    activeNotes.delete(key);
+                                    totalDuration = Math.max(totalDuration, offTime);
+                                }
+                            }
+                        }
+                    });
+                });
+                
+                const programs = [80, 81, 38, 118, 120];
+                
+                noteOnEvents.forEach(note => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    
+                    const program = programs[note.trackIndex % programs.length];
+                    
+                    if (program === 38) {
+                        osc.type = 'triangle';
+                    } else if (program >= 118) {
+                        osc.type = 'sawtooth';
+                    } else {
+                        osc.type = 'square';
+                    }
+                    
+                    const frequency = 440 * Math.pow(2, (note.noteNumber - 69) / 12);
+                    osc.frequency.value = frequency;
+                    
+                    const velocity = (note.velocity / 127) * 0.3;
+                    
+                    gain.gain.setValueAtTime(0, now + note.time);
+                    gain.gain.linearRampToValueAtTime(velocity, now + note.time + 0.01);
+                    gain.gain.setValueAtTime(velocity, now + note.time + note.duration - 0.05);
+                    gain.gain.linearRampToValueAtTime(0, now + note.time + note.duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    
+                    osc.start(now + note.time);
+                    osc.stop(now + note.time + note.duration + 0.1);
+                    
+                    activeOscillators.push(osc);
+                });
+                
+                setTimeout(() => {
+                    btn.classList.remove('playing');
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
+                    currentPlayingMidi = null;
+                }, totalDuration * 1000 + 500);
+                
+                currentPlayingMidi = {
+                    stop: () => {
+                        activeOscillators.forEach(osc => {
+                            try { osc.stop(); } catch(e) {}
+                        });
+                    }
+                };
+                
+            } catch (error) {
+                console.error('播放MIDI失败:', error);
+                btn.classList.remove('playing');
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 播放';
+                alert('播放失败: ' + error.message);
+            }
+        }
+
+        function downloadSelectedMidis() {
+            const selected = midiFiles.filter(m => m.selected);
+            
+            if (selected.length === 0) {
+                alert('请至少选择一个MIDI文件！');
+                return;
+            }
+            
+            selected.forEach((midi, index) => {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = midi.dataUrl;
+                    link.download = midi.name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, index * 200);
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!nes || !isCapturing) return;
+            
+            const keyMap = {
+                'KeyZ': 0,
+                'KeyX': 1,
+                'KeyA': 2,
+                'KeyS': 3,
+                'ArrowUp': 4,
+                'ArrowDown': 5,
+                'ArrowLeft': 6,
+                'ArrowRight': 7,
+                'Enter': 8,
+                'Space': 9
+            };
+            
+            if (keyMap.hasOwnProperty(e.code)) {
+                e.preventDefault();
+                nes.buttonDown(1, keyMap[e.code]);
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (!nes) return;
+            
+            const keyMap = {
+                'KeyZ': 0,
+                'KeyX': 1,
+                'KeyA': 2,
+                'KeyS': 3,
+                'ArrowUp': 4,
+                'ArrowDown': 5,
+                'ArrowLeft': 6,
+                'ArrowRight': 7,
+                'Enter': 8,
+                'Space': 9
+            };
+            
+            if (keyMap.hasOwnProperty(e.code)) {
+                nes.buttonUp(1, keyMap[e.code]);
+            }
+        });
+    </script>
+</body>
+</html>

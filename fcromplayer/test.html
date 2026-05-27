@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>功能测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.0.1/build/index.min.js"></script>
+</head>
+<body>
+    <h1>功能测试页面</h1>
+    <div id="results"></div>
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message) {
+            results.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        function dataUriToArrayBuffer(dataUri) {
+            const base64 = dataUri.split(',')[1];
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        
+        function parseMidi(arrayBuffer) {
+            const dataView = new DataView(arrayBuffer);
+            let offset = 0;
+            
+            function readString(length) {
+                let str = '';
+                for (let i = 0; i < length; i++) {
+                    str += String.fromCharCode(dataView.getUint8(offset++));
+                }
+                return str;
+            }
+            
+            function readUint32() {
+                const val = dataView.getUint32(offset, false);
+                offset += 4;
+                return val;
+            }
+            
+            function readUint16() {
+                const val = dataView.getUint16(offset, false);
+                offset += 2;
+                return val;
+            }
+            
+            function readVarLength() {
+                let value = 0;
+                let byte;
+                do {
+                    byte = dataView.getUint8(offset++);
+                    value = (value << 7) | (byte & 0x7F);
+                } while (byte & 0x80);
+                return value;
+            }
+            
+            const headerChunkId = readString(4);
+            const headerLength = readUint32();
+            const formatType = readUint16();
+            const numTracks = readUint16();
+            const timeDivision = readUint16();
+            
+            const tracks = [];
+            
+            for (let t = 0; t < numTracks; t++) {
+                const trackChunkId = readString(4);
+                const trackLength = readUint32();
+                const trackEnd = offset + trackLength;
+                
+                const events = [];
+                let runningStatus = 0;
+                let ticks = 0;
+                
+                while (offset < trackEnd) {
+                    const deltaTime = readVarLength();
+                    ticks += deltaTime;
+                    
+                    let status = dataView.getUint8(offset);
+                    
+                    if (status < 0x80) {
+                        status = runningStatus;
+                    } else {
+                        offset++;
+                    }
+                    
+                    runningStatus = status;
+                    const type = status >> 4;
+                    const channel = status & 0x0F;
+                    
+                    if (type === 0xF) {
+                        if (status === 0xFF) {
+                            const metaType = dataView.getUint8(offset++);
+                            const metaLength = readVarLength();
+                            if (metaType === 0x51 && metaLength === 3) {
+                                const tempo = (dataView.getUint8(offset) << 16) | 
+                                             (dataView.getUint8(offset + 1) << 8) | 
+                                              dataView.getUint8(offset + 2);
+                                events.push({ type: 'setTempo', ticks, tempo });
+                            }
+                            offset += metaLength;
+                        } else if (status === 0xF0 || status === 0xF7) {
+                            const sysExLength = readVarLength();
+                            offset += sysExLength;
+                        }
+                    } else if (type === 0x8) {
+                        const noteNumber = dataView.getUint8(offset++);
+                        const velocity = dataView.getUint8(offset++);
+                        events.push({ type: 'noteOff', ticks, channel, noteNumber, velocity });
+                    } else if (type === 0x9) {
+                        const noteNumber = dataView.getUint8(offset++);
+                        const velocity = dataView.getUint8(offset++);
+                        if (velocity === 0) {
+                            events.push({ type: 'noteOff', ticks, channel, noteNumber, velocity: 0 });
+                        } else {
+                            events.push({ type: 'noteOn', ticks, channel, noteNumber, velocity });
+                        }
+                    } else if (type === 0xA || type === 0xB || type === 0xE) {
+                        offset += 2;
+                    } else if (type === 0xC || type === 0xD) {
+                        offset += 1;
+                    }
+                }
+                
+                tracks.push(events);
+            }
+            
+            return { formatType, numTracks, timeDivision, tracks };
+        }
+        
+        function testMidiWriter() {
+            try {
+                log('测试 midi-writer-js...');
+                
+                const events = [];
+                events.push(new MidiWriter.ProgramChangeEvent({ instrument: 0, channel: 0 }));
+                events.push(new MidiWriter.TempoEvent({ bpm: 120 }));
+                events.push(new MidiWriter.NoteOnEvent({ pitch: [60], velocity: 80, duration: 'T480', channel: 0 }));
+                events.push(new MidiWriter.EndOfTrackEvent());
+                
+                const writer = new MidiWriter.Writer([events]);
+                const dataUri = writer.dataUri();
+                
+                if (dataUri && dataUri.startsWith('data:audio/midi')) {
+                    log('✓ MIDI生成成功！Data URI长度: ' + dataUri.length);
+                    return { dataUri, success: true };
+                } else {
+                    log('✗ MIDI生成失败');
+                    return { success: false };
+                }
+            } catch (e) {
+                log('✗ MIDI测试失败: ' + e.message);
+                return { success: false };
+            }
+        }
+        
+        function testMidiParser(dataUri) {
+            try {
+                log('测试 MIDI 解析器...');
+                
+                const arrayBuffer = dataUriToArrayBuffer(dataUri);
+                const midiData = parseMidi(arrayBuffer);
+                
+                log(`✓ MIDI解析成功！格式: ${midiData.formatType}, 轨道数: ${midiData.numTracks}, 时间分度: ${midiData.timeDivision}`);
+                
+                let noteCount = 0;
+                midiData.tracks.forEach((track, i) => {
+                    const trackNotes = track.filter(e => e.type === 'noteOn').length;
+                    log(`  轨道 ${i}: ${trackNotes} 个音符开事件, ${track.filter(e => e.type === 'noteOff').length} 个音符关事件`);
+                    noteCount += trackNotes;
+                });
+                
+                if (noteCount > 0) {
+                    log(`✓ 总共解析到 ${noteCount} 个音符`);
+                    return true;
+                } else {
+                    log('⚠ 未解析到音符事件');
+                    return false;
+                }
+            } catch (e) {
+                log('✗ MIDI解析失败: ' + e.message);
+                console.error(e);
+                return false;
+            }
+        }
+        
+        function testPitchDetection() {
+            log('测试音高检测算法...');
+            
+            const sampleRate = 44100;
+            const frequency = 440;
+            const duration = 0.1;
+            const samples = Math.floor(sampleRate * duration);
+            const audioData = new Float32Array(samples);
+            
+            for (let i = 0; i < samples; i++) {
+                audioData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.5;
+            }
+            
+            function detectPitchACF(audioData, sampleRate) {
+                const n = audioData.length;
+                let rms = 0;
+                for (let i = 0; i < n; i++) {
+                    rms += audioData[i] * audioData[i];
+                }
+                rms = Math.sqrt(rms / n);
+                if (rms < 0.01) return null;
+
+                const c = new Float32Array(n);
+                for (let lag = 0; lag < n; lag++) {
+                    let sum = 0;
+                    for (let i = 0; i < n - lag; i++) {
+                        sum += audioData[i] * audioData[i + lag];
+                    }
+                    c[lag] = sum;
+                }
+
+                let d = 0;
+                while (d < n - 1 && c[d] > c[d + 1]) d++;
+
+                let maxval = -1, maxpos = -1;
+                for (let i = d; i < n; i++) {
+                    if (c[i] > maxval) {
+                        maxval = c[i];
+                        maxpos = i;
+                    }
+                }
+
+                if (maxpos <= 0) return null;
+                let T0 = maxpos;
+                if (maxpos > 0 && maxpos < n - 1) {
+                    const x1 = c[maxpos - 1], x2 = c[maxpos], x3 = c[maxpos + 1];
+                    const a = (x1 + x3 - 2 * x2) / 2;
+                    const b = (x3 - x1) / 2;
+                    if (a !== 0) T0 = T0 - b / (2 * a);
+                }
+
+                const detectedFreq = sampleRate / T0;
+                if (detectedFreq < 60 || detectedFreq > 2000) return null;
+                return detectedFreq;
+            }
+            
+            const detected = detectPitchACF(audioData, sampleRate);
+            if (detected) {
+                const error = Math.abs(detected - frequency);
+                if (error < 5) {
+                    log(`✓ 音高检测成功！预期: ${frequency}Hz, 检测到: ${detected.toFixed(2)}Hz, 误差: ${error.toFixed(2)}Hz`);
+                    return true;
+                } else {
+                    log(`⚠ 音高检测误差较大: 预期: ${frequency}Hz, 检测到: ${detected.toFixed(2)}Hz`);
+                    return false;
+                }
+            } else {
+                log('✗ 音高检测失败');
+                return false;
+            }
+        }
+        
+        async function runAllTests() {
+            log('=== 开始测试 ===');
+            const midiResult = testMidiWriter();
+            let parseOk = false;
+            if (midiResult.success) {
+                parseOk = testMidiParser(midiResult.dataUri);
+            }
+            const pitchOk = testPitchDetection();
+            
+            log('=== 测试总结 ===');
+            if (midiResult.success && parseOk && pitchOk) {
+                log('🎉 所有测试通过！');
+            } else {
+                log('⚠ 部分测试失败，请检查代码');
+            }
+        }
+        
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>
