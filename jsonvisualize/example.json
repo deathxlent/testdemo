@@ -1,0 +1,35 @@
+{
+  "name": "JSON 可视化工具",
+  "version": "1.0.0",
+  "description": "一个跨平台的 JSON 树状可视化工具",
+  "features": [
+    "树状结构显示",
+    "可拖动节点排序",
+    "支持编辑键值",
+    "搜索高亮功能",
+    "格式化 JSON"
+  ],
+  "author": {
+    "name": "Developer",
+    "email": "dev@example.com",
+    "social": {
+      "github": "https://github.com",
+      "twitter": "https://twitter.com"
+    }
+  },
+  "settings": {
+    "theme": "light",
+    "font_size": 12,
+    "auto_save": true,
+    "max_history": 50
+  },
+  "supported_platforms": ["Windows", "Linux", "macOS"],
+  "dependencies": {
+    "PyQt5": ">=5.15.0",
+    "Python": ">=3.7"
+  },
+  "release_date": "2024-01-15",
+  "is_active": true,
+  "downloads": 12580,
+  "rating": 4.8
+}
