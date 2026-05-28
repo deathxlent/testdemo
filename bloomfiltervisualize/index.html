@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>布隆过滤器可视化教学</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 布隆过滤器可视化教学</h1>
+            <p class="subtitle">理解空间效率极高的概率型数据结构</p>
+        </header>
+
+        <section class="intro-section">
+            <h2>📚 什么是布隆过滤器？</h2>
+            <div class="intro-content">
+                <p>布隆过滤器（Bloom Filter）是由 Howard Bloom 在 1970 年提出的一种空间效率极高的概率型数据结构。</p>
+                <div class="key-points">
+                    <div class="point">
+                        <span class="icon">✅</span>
+                        <span>用于判断元素<span class="highlight">可能存在</span>或<span class="highlight">一定不存在</span></span>
+                    </div>
+                    <div class="point">
+                        <span class="icon">📉</span>
+                        <span>空间效率极高，只存储哈希位置，不存储元素本身</span>
+                    </div>
+                    <div class="point">
+                        <span class="icon">⚡</span>
+                        <span>插入和查询时间复杂度都是 O(k)，k 为哈希函数数量</span>
+                    </div>
+                    <div class="point">
+                        <span class="icon">⚠️</span>
+                        <span>存在误判率（False Positive），但不会漏判（False Negative）</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="controls-section">
+            <h2>⚙️ 控制面板</h2>
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label for="bitSize">位数组大小:</label>
+                    <input type="number" id="bitSize" value="32" min="8" max="256">
+                </div>
+                <div class="control-group">
+                    <label for="hashCount">哈希函数数量:</label>
+                    <input type="number" id="hashCount" value="3" min="1" max="5">
+                </div>
+                <div class="control-group">
+                    <label for="hashType">哈希算法:</label>
+                    <select id="hashType">
+                        <option value="simple">简单哈希 (默认)</option>
+                        <option value="djb2">DJB2 算法</option>
+                        <option value="sdbm">SDBM 算法</option>
+                        <option value="multi">多种组合</option>
+                    </select>
+                </div>
+            </div>
+            <button id="resetBtn" class="btn btn-secondary">🔄 重置过滤器</button>
+        </section>
+
+        <section class="visualization-section">
+            <h2>📊 位数组可视化</h2>
+            <div class="bit-array-container">
+                <div id="bitArray" class="bit-array"></div>
+            </div>
+            <div class="bit-stats">
+                <span>已设置位数: <strong id="bitsSet">0</strong> / <span id="totalBits">32</span></span>
+                <span>填充率: <strong id="fillRate">0%</strong></span>
+            </div>
+        </section>
+
+        <section class="operations-section">
+            <h2>🎯 操作区</h2>
+            <div class="operation-panel">
+                <div class="input-group">
+                    <input type="text" id="elementInput" placeholder="输入元素，如: apple、hello、123..." />
+                </div>
+                <div class="button-group">
+                    <button id="addBtn" class="btn btn-primary">➕ 添加元素</button>
+                    <button id="testBtn" class="btn btn-info">🔍 测试元素</button>
+                    <button id="addRandomBtn" class="btn btn-success">🎲 添加随机</button>
+                </div>
+            </div>
+
+            <div id="hashDisplay" class="hash-display hidden">
+                <h3>哈希计算过程</h3>
+                <div id="hashResults" class="hash-results"></div>
+            </div>
+
+            <div id="resultDisplay" class="result-display hidden">
+                <div id="resultContent"></div>
+            </div>
+        </section>
+
+        <section class="history-section">
+            <h2>📝 已添加元素</h2>
+            <div id="addedElements" class="elements-list">
+                <span class="empty-hint">还没有添加任何元素</span>
+            </div>
+        </section>
+
+        <section class="demo-section">
+            <h2>🎬 演示：误判率展示</h2>
+            <p class="demo-desc">点击下方按钮测试 100 个未添加的元素，观察误判情况：</p>
+            <button id="demoBtn" class="btn btn-warning">📈 运行误判测试</button>
+            <div id="demoResults" class="demo-results hidden">
+                <div class="demo-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">测试总数:</span>
+                        <span class="stat-value" id="demoTotal">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">误判数量:</span>
+                        <span class="stat-value false-positive" id="demoFalse">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">误判率:</span>
+                        <span class="stat-value" id="demoRate">0%</span>
+                    </div>
+                </div>
+                <div id="falsePositiveList" class="false-positive-list"></div>
+            </div>
+        </section>
+
+        <section class="formula-section">
+            <h2>🧮 数学原理</h2>
+            <div class="formula-content">
+                <div class="formula-item">
+                    <h4>误判率公式:</h4>
+                    <div class="formula">p ≈ (1 - e<sup>-kn/m</sup>)<sup>k</sup></div>
+                    <p class="formula-desc">其中 m 是位数组大小，n 是元素数量，k 是哈希函数数量</p>
+                </div>
+                <div class="formula-item">
+                    <h4>最优哈希函数数量:</h4>
+                    <div class="formula">k = (m/n) × ln(2)</div>
+                    <p class="formula-desc">当 k 取此值时，误判率最小</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
