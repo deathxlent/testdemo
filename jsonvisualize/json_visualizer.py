@@ -9,8 +9,9 @@ from PyQt5.QtGui import QDrag, QDropEvent, QBrush, QColor, QFont
 
 
 class DraggableTreeWidget(QTreeWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, main_window=None):
         super().__init__(parent)
+        self.main_window = main_window
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
         self.setDragDropMode(QTreeWidget.InternalMove)
@@ -28,7 +29,8 @@ class DraggableTreeWidget(QTreeWidget):
 
     def dropEvent(self, event: QDropEvent):
         super().dropEvent(event)
-        self.parent().parent().update_json_from_tree()
+        if self.main_window:
+            self.main_window.update_json_from_tree()
 
 
 class JsonVisualizer(QMainWindow):
@@ -82,7 +84,7 @@ class JsonVisualizer(QMainWindow):
 
         splitter = QSplitter(Qt.Horizontal)
 
-        self.tree_widget = DraggableTreeWidget(self)
+        self.tree_widget = DraggableTreeWidget(self, self)
         self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_widget.customContextMenuRequested.connect(self.show_context_menu)
         self.tree_widget.itemDoubleClicked.connect(self.edit_item)
