@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam 游戏统计总览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            font-size: 3em;
+            color: #4ECDC4;
+            margin-bottom: 15px;
+            text-shadow: 0 0 30px rgba(78, 205, 196, 0.4);
+        }
+        .subtitle {
+            font-size: 1.2em;
+            color: #aaa;
+        }
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        .overview-card {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(68, 160, 141, 0.1));
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            transition: transform 0.3s;
+        }
+        .overview-card:hover {
+            transform: translateY(-5px);
+        }
+        .overview-card h3 {
+            font-size: 0.95em;
+            color: #aaa;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .overview-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4ECDC4;
+        }
+        h2 {
+            text-align: center;
+            color: #FFCE56;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+        .years-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .year-card {
+            display: block;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .year-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            background: rgba(78, 205, 196, 0.1);
+            border-color: rgba(78, 205, 196, 0.4);
+            box-shadow: 0 15px 40px rgba(78, 205, 196, 0.2);
+        }
+        .year-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .year {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4ECDC4;
+        }
+        .arrow {
+            font-size: 1.5em;
+            color: #FFCE56;
+            transition: transform 0.3s;
+        }
+        .year-card:hover .arrow {
+            transform: translateX(5px);
+        }
+        .year-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .year-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        .year-stat-label {
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .year-stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            .years-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Steam 游戏统计总览</h1>
+            <p class="subtitle">按年份浏览游戏数据统计与可视化分析</p>
+        </header>
+        
+        <div class="overview-grid">
+            <div class="overview-card">
+                <h3>统计年份</h3>
+                <div class="value">27</div>
+            </div>
+            <div class="overview-card">
+                <h3>游戏总数</h3>
+                <div class="value">111559</div>
+            </div>
+            <div class="overview-card">
+                <h3>免费游戏</h3>
+                <div class="value">30200</div>
+            </div>
+            <div class="overview-card">
+                <h3>收费游戏</h3>
+                <div class="value">81359</div>
+            </div>
+            <div class="overview-card">
+                <h3>总价值 (€)</h3>
+                <div class="value">0.0</div>
+            </div>
+            <div class="overview-card">
+                <h3>时间跨度</h3>
+                <div class="value">1997-2024</div>
+            </div>
+        </div>
+        
+        <h2>📅 按年份浏览</h2>
+        <div class="years-grid">
+            
+        <a href="stats_2024.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2024</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">22021</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">8435</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">13586</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2023.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2023</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">18215</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">5351</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">12864</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2022.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2022</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">14742</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">4158</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">10584</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2021.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2021</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">12833</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">3187</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">9646</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2020.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2020</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">10197</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">2693</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">7504</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2019.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2019</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">7901</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">1635</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">6266</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2018.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2018</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">8028</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">1545</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">6483</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2017.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2017</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">6442</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">1216</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">5226</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2016.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2016</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">4529</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">862</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">3667</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2015.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2015</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">2688</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">396</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">2292</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2014.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2014</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">1649</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">226</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">1423</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2013.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2013</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">494</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">72</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">422</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2012.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2012</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">389</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">96</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">293</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2011.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2011</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">315</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">72</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">243</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2010.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2010</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">320</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">60</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">260</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2009.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2009</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">395</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">99</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">296</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2008.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2008</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">196</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">55</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">141</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2007.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2007</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">112</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">30</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">82</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2006.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2006</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">67</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">8</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">59</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2005.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2005</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">6</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">2</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">4</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2004.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2004</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">6</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">1</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">5</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2003.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2003</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">3</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">0</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">3</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2001.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2001</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">4</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">0</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">4</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_2000.html" class="year-card">
+            <div class="year-header">
+                <span class="year">2000</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">2</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">0</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">2</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_1999.html" class="year-card">
+            <div class="year-header">
+                <span class="year">1999</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">2</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">0</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">2</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_1998.html" class="year-card">
+            <div class="year-header">
+                <span class="year">1998</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">1</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">0</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">1</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        <a href="stats_1997.html" class="year-card">
+            <div class="year-header">
+                <span class="year">1997</span>
+                <span class="arrow">→</span>
+            </div>
+            <div class="year-stats">
+                <div class="year-stat">
+                    <span class="year-stat-label">游戏数</span>
+                    <span class="year-stat-value">2</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">免费</span>
+                    <span class="year-stat-value">1</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">收费</span>
+                    <span class="year-stat-value">1</span>
+                </div>
+                <div class="year-stat">
+                    <span class="year-stat-label">总价值</span>
+                    <span class="year-stat-value">€0.0</span>
+                </div>
+            </div>
+        </a>
+        
+        </div>
+    </div>
+</body>
+</html>
+    

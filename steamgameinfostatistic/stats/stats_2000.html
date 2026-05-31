@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam 游戏统计 - 2000年</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #4ECDC4;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+        .stat-card h3 {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4ECDC4;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .chart-container h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #FFCE56;
+            font-size: 1.2em;
+        }
+        canvas {
+            max-height: 400px !important;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #4ECDC4, #44a08d);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(78, 205, 196, 0.4);
+        }
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回总览</a>
+        <header>
+            <h1>🎮 Steam 游戏统计 - 2000年</h1>
+        </header>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>游戏总数</h3>
+                <div class="value">2</div>
+            </div>
+            <div class="stat-card">
+                <h3>免费游戏</h3>
+                <div class="value">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>收费游戏</h3>
+                <div class="value">2</div>
+            </div>
+            <div class="stat-card">
+                <h3>总价值 (€)</h3>
+                <div class="value">0.0</div>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            
+    <div class="chart-container">
+        <h3>免费 vs 收费游戏占比</h3>
+        <canvas id="chart-free-paid"></canvas>
+    </div>
+    <script>
+        new Chart(document.getElementById('chart-free-paid'), {
+            type: 'pie',
+            data: {
+                labels: ["免费", "收费"],
+                datasets: [{
+                    data: [0, 2],
+                    backgroundColor: ["#FF6384", "#36A2EB"],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 15,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    
+            
+    <div class="chart-container">
+        <h3>游戏类型分布</h3>
+        <canvas id="chart-types"></canvas>
+    </div>
+    <script>
+        new Chart(document.getElementById('chart-types'), {
+            type: 'pie',
+            data: {
+                labels: [" \\\"currency\\\": \\\"EUR\\\""],
+                datasets: [{
+                    data: [2],
+                    backgroundColor: ["#FF6384"],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 15,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    
+            
+    <div class="chart-container">
+        <h3>价格区间分布 (€50为单位)</h3>
+        <canvas id="chart-price-ranges"></canvas>
+    </div>
+    <script>
+        new Chart(document.getElementById('chart-price-ranges'), {
+            type: 'bar',
+            data: {
+                labels: ["0€"],
+                datasets: [{
+                    label: '价格区间',
+                    data: [2],
+                    backgroundColor: ["#FF6384"],
+                    borderWidth: 1,
+                    borderColor: '#333'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: '游戏数量' }
+                    },
+                    y: {
+                        title: { display: true, text: '价格区间' }
+                    }
+                }
+            }
+        });
+    </script>
+    
+            
+    <div class="chart-container">
+        <h3>月度金额变化趋势</h3>
+        <canvas id="chart-monthly"></canvas>
+    </div>
+    <script>
+        new Chart(document.getElementById('chart-monthly'), {
+            type: 'line',
+            data: {
+                labels: ["2000-11"],
+                datasets: [{
+                    label: '总金额 (€)',
+                    data: [0.0],
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: '月份' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '总金额 (€)' }
+                    }
+                }
+            }
+        });
+    </script>
+    
+            
+    <div class="chart-container">
+        <h3>各语言支持占比 (Top 20)</h3>
+        <canvas id="chart-langs"></canvas>
+    </div>
+    <script>
+        new Chart(document.getElementById('chart-langs'), {
+            type: 'bar',
+            data: {
+                labels: ["\\\"initial\\\": 819", "\\\"initial\\\": 499"],
+                datasets: [{
+                    label: '语言',
+                    data: [1, 1],
+                    backgroundColor: ["#FF6384", "#36A2EB"],
+                    borderWidth: 1,
+                    borderColor: '#333'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: '游戏数量' }
+                    },
+                    y: {
+                        title: { display: true, text: '语言' }
+                    }
+                }
+            }
+        });
+    </script>
+    
+            
+    <div class="chart-container">
+        <h3>支持语言种类分布</h3>
+        <canvas id="chart-lang-support"></canvas>
+    </div>
+    <script>
+        new Chart(document.getElementById('chart-lang-support'), {
+            type: 'bar',
+            data: {
+                labels: ["1 种语言"],
+                datasets: [{
+                    label: '支持语言数',
+                    data: [2],
+                    backgroundColor: ["#FF6384"],
+                    borderWidth: 1,
+                    borderColor: '#333'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: '游戏数量' }
+                    },
+                    y: {
+                        title: { display: true, text: '支持语言数' }
+                    }
+                }
+            }
+        });
+    </script>
+    
+        </div>
+    </div>
+</body>
+</html>
+    
