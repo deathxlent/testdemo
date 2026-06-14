@@ -166,7 +166,7 @@
 <body>
     <div id="map"></div>
     
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar" style="display: none;">
         <h2>📍 Fortnite 地图</h2>
         
         <h3 id="toggle-named">命名地点 (13)</h3>
@@ -176,18 +176,16 @@
         <ul class="location-list landmark" id="landmark-list"></ul>
     </div>
     
-    <button class="toggle-btn" id="toggle-sidebar">隐藏面板</button>
-    
     <div class="info-box">
-        缩放级别: <span id="zoom-level">4</span> | 离线模式
+        缩放级别: <span id="zoom-level">2</span> | 离线模式
     </div>
 
     <script src="lib/leaflet.js"></script>
     <script>
         const map = L.map('map', {
             crs: L.CRS.Simple,
-            minZoom: 4,
-            maxZoom: 6,
+            minZoom: 1,
+            maxZoom: 4,
             zoomSnap: 0,
             zoomControl: true,
             attributionControl: false,
@@ -199,8 +197,10 @@
         L.tileLayer('tiles/{z}/{x}/{y}.webp', {
             noWrap: true,
             bounds: bounds,
-            minZoom: 4,
-            maxZoom: 6,
+            minNativeZoom: 1,
+            maxNativeZoom: 4,
+            minZoom: 1,
+            maxZoom: 4,
             tileSize: 256
         }).addTo(map);
 
@@ -283,7 +283,7 @@
         }
 
         function flyToLocation(coords) {
-            map.setView(coords, 6, { animate: true, duration: 0.8 });
+            map.setView(coords, 4, { animate: true, duration: 0.8 });
         }
 
         document.getElementById('toggle-named').addEventListener('click', function() {
@@ -294,17 +294,6 @@
         document.getElementById('toggle-landmark').addEventListener('click', function() {
             this.classList.toggle('collapsed');
             document.getElementById('landmark-list').classList.toggle('collapsed');
-        });
-
-        document.getElementById('toggle-sidebar').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar.style.display === 'none') {
-                sidebar.style.display = 'block';
-                this.textContent = '隐藏面板';
-            } else {
-                sidebar.style.display = 'none';
-                this.textContent = '显示面板';
-            }
         });
 
         map.on('zoomend', function() {
