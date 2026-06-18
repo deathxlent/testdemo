@@ -41,9 +41,9 @@ echo.
 echo Press Ctrl+C to stop the server.
 echo.
 
-python -m http.server 8000 2>nul
+python -m http.server 9740 2>nul
 if errorlevel 1 (
-    py -m http.server 8000
+    py -m http.server 9740
 )
 
 echo.
