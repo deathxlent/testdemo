@@ -1008,7 +1008,8 @@ body {
             const sel = (data.model === m) ? ' selected' : '';
             modelOptions += '<option value="' + m + '"' + sel + '>' + m + '</option>';
         });
-        const modelCustomSel = (data.model && preset.models.indexOf(data.model) === -1) ? ' selected' : '';
+        const hasPresetModels = preset.models.length > 0;
+        const modelCustomSel = (!hasPresetModels || (data.model && preset.models.indexOf(data.model) === -1)) ? ' selected' : '';
 
         const baseUrl = data.baseUrl || preset.baseUrl;
         const apiKey = data.apiKey || '';
@@ -1040,7 +1041,7 @@ body {
                     <option value="__custom__"${modelCustomSel}>自定义...</option>
                 </select>
                 <input type="text" id="cfg-model-custom" placeholder="输入自定义模型名称"
-                    style="margin-top:8px;${modelCustomSel ? '' : 'display:none;'}" value="${modelCustomSel ? model : ''}">
+                    style="margin-top:8px;${modelCustomSel ? '' : 'display:none;'}" value="${modelCustomSel ? model : (!hasPresetModels ? model : '')}">
             </div>
             <div class="form-group">
                 <label>Temperature: <span id="cfg-temp-val">${temp}</span></label>
@@ -1173,12 +1174,18 @@ body {
         const modelCustom = document.getElementById('cfg-model-custom').value.trim();
         const temperature = parseFloat(document.getElementById('cfg-temperature').value);
         const maxTokens = parseInt(document.getElementById('cfg-maxtokens').value);
-        const model = modelSel === '__custom__' ? modelCustom : modelSel;
+        let model = modelSel === '__custom__' ? modelCustom : modelSel;
 
         if (!name) { showToast('请填写配置名称', 'error'); return; }
         if (!baseUrl) { showToast('请填写 Base URL', 'error'); return; }
         if (!apiKey && type !== 'local') { showToast('请填写 API Key', 'error'); return; }
-        if (!model) { showToast('请选择或输入模型', 'error'); return; }
+        if (!model) {
+            if (type === 'local') {
+                model = PROVIDER_PRESETS[type].defaultModel;
+            } else {
+                showToast('请选择或输入模型', 'error'); return;
+            }
+        }
 
         const config = {
             id: state.editingProviderId || generateId(),
