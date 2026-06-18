@@ -654,13 +654,13 @@ body {
         },
         local: {
             display: '本地 (llama.cpp)',
-            baseUrl: 'http://localhost:9092/v1',
+            baseUrl: 'http://localhost:9091/v1',
             defaultModel: 'local-model',
             models: [],
             headers: {},
             defaultMaxTokens: 8192,
             contextWindow: 32768,
-            useCompletions: true
+            useCompletions: false
         }
     };
 
@@ -981,12 +981,12 @@ body {
         });
     }
 
-    function getProviderEndpoint(provider) {
+    function getProviderEndpoint(provider, hasImages) {
         const preset = PROVIDER_PRESETS[provider.type];
         if (preset.isAnthropic) {
             return provider.baseUrl.replace(/\/$/, '') + '/messages';
         }
-        if (provider.useCompletions) {
+        if (provider.useCompletions && !hasImages) {
             return provider.baseUrl.replace(/\/$/, '') + '/completions';
         }
         return provider.baseUrl.replace(/\/$/, '') + '/chat/completions';
@@ -1061,6 +1061,12 @@ body {
         return prompt;
     }
 
+    function hasImageMessage(messages) {
+        return messages.some(function(m) {
+            return m.images && m.images.length > 0;
+        });
+    }
+
     function buildMessageContentWithImages(msg) {
         if (!msg.images || msg.images.length === 0) {
             return msg.content || '';
@@ -1081,8 +1087,9 @@ body {
     function buildRequestBody(provider, messages, stream) {
         const preset = PROVIDER_PRESETS[provider.type];
         const maxTokens = provider.maxTokens || preset.defaultMaxTokens || 4096;
+        const hasImages = hasImageMessage(messages);
 
-        if (provider.useCompletions) {
+        if (provider.useCompletions && !hasImages) {
             return {
                 model: provider.model,
                 prompt: formatMessagesForCompletions(messages, provider),
@@ -1323,8 +1330,16 @@ body {
                 .slice(0, -1)
                 .filter(function(m) { return m.content || (m.images && m.images.length > 0); });
 
+            const hasImagesInRequest = hasImageMessage(messagesForApi);
             const body = buildRequestBody(provider, messagesForApi, true);
-            const endpoint = getProviderEndpoint(provider);
+            const endpoint = getProviderEndpoint(provider, hasImagesInRequest);
+
+            console.log('[DEBUG] API Request:', {
+                endpoint: endpoint,
+                hasImages: hasImagesInRequest,
+                useCompletions: provider.useCompletions && !hasImagesInRequest,
+                body: body
+            });
 
             const response = await fetch(endpoint, {
                 method: 'POST',
