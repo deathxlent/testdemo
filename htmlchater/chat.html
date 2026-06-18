@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Chat</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #f5f5f5;
+    height: 100vh;
+    overflow: hidden;
+}
+.app-container { display: flex; height: 100vh; }
+.sidebar {
+    width: 280px;
+    background: #202123;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #333;
+}
+.sidebar-header { padding: 16px; border-bottom: 1px solid #333; }
+.sidebar-header h1 { font-size: 18px; margin-bottom: 12px; font-weight: 600; }
+.btn {
+    padding: 10px 16px;
+    background: transparent;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+    width: 100%;
+    margin-bottom: 8px;
+}
+.btn:hover { background: #2d2d2d; }
+.btn-primary {
+    background: #1677ff;
+    border-color: #1677ff;
+    color: #fff;
+}
+.btn-primary:hover { background: #4096ff; }
+.btn-danger {
+    background: #fff;
+    color: #ff4d4f;
+    border: 1px solid #ff4d4f;
+}
+.btn-danger:hover { background: #fff1f0; }
+.session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+.session-item {
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+.session-item:hover { background: #2d2d2d; }
+.session-item.active { background: #343541; }
+.session-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    padding-right: 8px;
+}
+.session-delete {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s, background 0.2s;
+}
+.session-item:hover .session-delete { opacity: 1; }
+.session-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
+.chat-area { flex: 1; display: flex; flex-direction: column; background: #fff; }
+.chat-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.chat-header-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+.chat-title { font-size: 16px; font-weight: 600; color: #202123; }
+.active-provider {
+    font-size: 12px;
+    padding: 2px 8px;
+    background: #e6f4ff;
+    color: #1677ff;
+    border-radius: 4px;
+}
+.chat-header-right { display: flex; gap: 8px; }
+.header-btn {
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.header-btn:hover { background: #f5f5f5; }
+.header-btn.danger { color: #ff4d4f; border-color: #ff4d4f; }
+.header-btn.danger:hover { background: #fff1f0; }
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    background: #f9f9f9;
+}
+.message {
+    margin-bottom: 24px;
+    display: flex;
+    gap: 16px;
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.message.user { justify-content: flex-end; }
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.message.user .message-avatar { background: #1677ff; color: #fff; order: 2; }
+.message.assistant .message-avatar { background: #52c41a; color: #fff; }
+.message-content-wrap { position: relative; max-width: 70%; }
+.message.user .message-content-wrap { order: 1; }
+.message-content {
+    padding: 12px 16px;
+    border-radius: 8px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 14px;
+}
+.message.user .message-content { background: #1677ff; color: #fff; }
+.message.assistant .message-content { background: #fff; color: #202123; border: 1px solid #e5e5e5; }
+.message-content.cursor::after {
+    content: '▊';
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    color: #999;
+    margin-left: 2px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.message-actions {
+    position: absolute;
+    bottom: -24px;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.message:hover .message-actions { opacity: 1; }
+.message.user .message-actions { right: auto; left: 0; }
+.delete-msg-btn {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.delete-msg-btn:hover { color: #ff4d4f; background: #fff1f0; }
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+}
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #ccc;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+.input-area {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e5e5;
+    background: #fff;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+#messageInput {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    resize: none;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s;
+    max-height: 200px;
+}
+#messageInput:focus { border-color: #1677ff; }
+.send-btn {
+    padding: 12px 24px;
+    background: #1677ff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+    height: 48px;
+    min-width: 80px;
+}
+.send-btn:hover:not(:disabled) { background: #4096ff; }
+.send-btn:disabled { background: #ccc; cursor: not-allowed; }
+.stop-btn { background: #ff4d4f; }
+.stop-btn:hover:not(:disabled) { background: #ff7875; }
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+}
+.empty-state-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+.empty-state-text { font-size: 16px; }
+.modal-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-mask.show { display: flex; }
+.modal {
+    background: #fff;
+    border-radius: 8px;
+    width: 560px;
+    max-width: 92vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h2 { font-size: 18px; }
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #999;
+    padding: 4px;
+}
+.modal-close:hover { color: #333; }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-footer {
+    padding: 12px 24px;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+.modal-footer .btn { width: auto; margin-bottom: 0; }
+.form-group { margin-bottom: 16px; }
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #333;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: #1677ff; }
+.form-hint { font-size: 12px; color: #999; margin-top: 4px; }
+.provider-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+.provider-tab {
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+    transition: all 0.2s;
+}
+.provider-tab:hover { color: #1677ff; }
+.provider-tab.active {
+    color: #1677ff;
+    border-bottom-color: #1677ff;
+    font-weight: 500;
+}
+.provider-config { display: none; }
+.provider-config.active { display: block; }
+.provider-list {
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.provider-entry {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e5e5;
+    transition: background 0.2s;
+}
+.provider-entry:last-child { border-bottom: none; }
+.provider-entry.active { background: #e6f4ff; }
+.provider-entry-info { flex: 1; }
+.provider-entry-name { font-size: 14px; font-weight: 500; color: #333; }
+.provider-entry-meta { font-size: 12px; color: #999; margin-top: 2px; }
+.provider-entry-actions { display: flex; gap: 8px; }
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    background: #f0f0f0;
+    color: #666;
+    margin-right: 6px;
+}
+.badge.active { background: #1677ff; color: #fff; }
+.icon-btn {
+    background: none;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px 10px;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+.icon-btn:hover { background: #f5f5f5; }
+.icon-btn.danger { color: #ff4d4f; border-color: #ffccc7; }
+.icon-btn.danger:hover { background: #fff1f0; }
+.empty-providers {
+    text-align: center;
+    padding: 32px;
+    color: #999;
+    font-size: 14px;
+}
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 2000;
+    max-width: 80vw;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+.toast.error { background: #ff4d4f; }
+.toast.success { background: #52c41a; }
+.session-list::-webkit-scrollbar,
+.messages-container::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar { width: 6px; }
+.session-list::-webkit-scrollbar-track,
+.messages-container::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.session-list::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+.messages-container::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>LLM Chat</h1>
+            <button id="newChatBtn" class="btn" style="margin-top:8px;">+ 新会话</button>
+        </div>
+        <div class="session-list" id="sessionList"></div>
+    </aside>
+    <main class="chat-area">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <span class="chat-title" id="chatTitle">选择或创建一个会话开始聊天</span>
+                <span class="active-provider" id="activeProviderBadge" style="display:none;"></span>
+            </div>
+            <div class="chat-header-right">
+                <button id="configBtn" class="header-btn">⚙️ 配置</button>
+                <button id="deleteSessionBtn" class="header-btn danger" style="display:none;">删除会话</button>
+            </div>
+        </div>
+        <div class="messages-container" id="messagesContainer"></div>
+        <div class="input-area">
+            <textarea id="messageInput" placeholder="输入消息... (Shift+Enter 换行, Enter 发送)" rows="3"></textarea>
+            <button id="sendBtn" class="send-btn">发送</button>
+        </div>
+    </main>
+</div>
+
+<div class="modal-mask" id="configModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>API 配置</h2>
+            <button class="modal-close" id="closeConfigModal">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>已保存的配置</label>
+                <div class="provider-list" id="providerList"></div>
+            </div>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e5e5;">
+            <div class="provider-tabs" id="providerTabs">
+                <button class="provider-tab active" data-type="openai">OpenAI</button>
+                <button class="provider-tab" data-type="openrouter">OpenRouter</button>
+                <button class="provider-tab" data-type="claude">Claude</button>
+                <button class="provider-tab" data-type="qwen">通义千问</button>
+                <button class="provider-tab" data-type="local">本地 (llama.cpp)</button>
+            </div>
+            <div id="configFormArea"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" id="cancelConfigBtn" style="width:auto; color:#333; background:#fff; border:1px solid #d9d9d9;">取消</button>
+            <button class="btn btn-primary" id="saveConfigBtn" style="width:auto;">保存配置</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function() {
+    const STORAGE_KEY = 'llm_chat_data_v2';
+    const PROVIDER_PRESETS = {
+        openai: {
+            display: 'OpenAI',
+            baseUrl: 'https://api.openai.com/v1',
+            defaultModel: 'gpt-4o-mini',
+            models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
+            headers: {}
+        },
+        openrouter: {
+            display: 'OpenRouter',
+            baseUrl: 'https://openrouter.ai/api/v1',
+            defaultModel: 'openai/gpt-4o-mini',
+            models: [
+                'openai/gpt-4o-mini', 'openai/gpt-4o',
+                'anthropic/claude-3.5-sonnet', 'anthropic/claude-3-opus',
+                'google/gemini-pro-1.5', 'meta-llama/llama-3-70b-instruct'
+            ],
+            headers: {
+                'HTTP-Referer': window.location.href,
+                'X-Title': 'LLM Chat'
+            }
+        },
+        claude: {
+            display: 'Anthropic Claude',
+            baseUrl: 'https://api.anthropic.com/v1',
+            defaultModel: 'claude-3-5-sonnet-20240620',
+            models: ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
+            headers: { 'anthropic-version': '2023-06-01' },
+            isAnthropic: true
+        },
+        qwen: {
+            display: '通义千问',
+            baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            defaultModel: 'qwen-plus',
+            models: ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-max-longcontext'],
+            headers: {}
+        },
+        local: {
+            display: '本地 (llama.cpp)',
+            baseUrl: 'http://localhost:8080/v1',
+            defaultModel: 'local-model',
+            models: [],
+            headers: {}
+        }
+    };
+
+    let state = {
+        sessions: [],
+        currentSessionId: null,
+        providers: [],
+        activeProviderId: null,
+        isLoading: false,
+        abortController: null,
+        editingProviderId: null,
+        currentFormType: 'openai'
+    };
+
+    function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                state.sessions = parsed.sessions || [];
+                state.currentSessionId = parsed.currentSessionId || null;
+                state.providers = parsed.providers || [];
+                state.activeProviderId = parsed.activeProviderId || null;
+            } catch (e) {
+                console.error('Load state error:', e);
+            }
+        }
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            sessions: state.sessions,
+            currentSessionId: state.currentSessionId,
+            providers: state.providers,
+            activeProviderId: state.activeProviderId
+        }));
+    }
+
+    function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    }
+
+    function showToast(message, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast show ' + (type || '');
+        setTimeout(function() { toast.className = 'toast'; }, 2500);
+    }
+
+    function getActiveProvider() {
+        if (!state.activeProviderId) return null;
+        return state.providers.find(function(p) { return p.id === state.activeProviderId; });
+    }
+
+    function createNewSession() {
+        const session = {
+            id: generateId(),
+            title: '新会话',
+            messages: [],
+            createdAt: Date.now()
+        };
+        state.sessions.unshift(session);
+        state.currentSessionId = session.id;
+        saveState();
+        renderSessionList();
+        renderMessages();
+        updateChatHeader();
+        document.getElementById('messageInput').focus();
+        return session;
+    }
+
+    function deleteSession(sessionId) {
+        if (!confirm('确定要删除这个会话吗？所有消息都会被清除。')) return;
+        const idx = state.sessions.findIndex(function(s) { return s.id === sessionId; });
+        if (idx !== -1) {
+            state.sessions.splice(idx, 1);
+            if (state.currentSessionId === sessionId) {
+                state.currentSessionId = state.sessions.length > 0 ? state.sessions[0].id : null;
+            }
+            saveState();
+            renderSessionList();
+            renderMessages();
+            updateChatHeader();
+            showToast('会话已删除', 'success');
+        }
+    }
+
+    function selectSession(sessionId) {
+        state.currentSessionId = sessionId;
+        saveState();
+        renderSessionList();
+        renderMessages();
+        updateChatHeader();
+    }
+
+    function getCurrentSession() {
+        return state.sessions.find(function(s) { return s.id === state.currentSessionId; });
+    }
+
+    function updateChatHeader() {
+        const titleEl = document.getElementById('chatTitle');
+        const delBtn = document.getElementById('deleteSessionBtn');
+        const badge = document.getElementById('activeProviderBadge');
+        const session = getCurrentSession();
+        const provider = getActiveProvider();
+
+        if (session) {
+            titleEl.textContent = session.title;
+            delBtn.style.display = 'block';
+        } else {
+            titleEl.textContent = '选择或创建一个会话开始聊天';
+            delBtn.style.display = 'none';
+        }
+
+        if (provider) {
+            badge.style.display = 'inline-block';
+            badge.textContent = PROVIDER_PRESETS[provider.type].display + ' · ' + provider.model;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function renderSessionList() {
+        const container = document.getElementById('sessionList');
+        container.innerHTML = '';
+        if (state.sessions.length === 0) {
+            container.innerHTML = '<div style="padding:16px;color:#888;font-size:13px;text-align:center;">暂无会话</div>';
+            return;
+        }
+        state.sessions.forEach(function(session) {
+            const item = document.createElement('div');
+            item.className = 'session-item' + (session.id === state.currentSessionId ? ' active' : '');
+            item.onclick = function(e) {
+                if (!e.target.classList.contains('session-delete')) selectSession(session.id);
+            };
+
+            const title = document.createElement('span');
+            title.className = 'session-title';
+            title.textContent = session.title;
+            title.title = session.title;
+
+            const del = document.createElement('button');
+            del.className = 'session-delete';
+            del.innerHTML = '×';
+            del.title = '删除会话';
+            del.onclick = function(e) { e.stopPropagation(); deleteSession(session.id); };
+
+            item.appendChild(title);
+            item.appendChild(del);
+            container.appendChild(item);
+        });
+    }
+
+    function renderMessages() {
+        const container = document.getElementById('messagesContainer');
+        const session = getCurrentSession();
+        container.innerHTML = '';
+
+        if (!session) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-text">选择左侧会话或点击"新会话"开始聊天</div></div>';
+            return;
+        }
+
+        if (session.messages.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🤖</div><div class="empty-state-text">开始对话吧！</div></div>';
+            return;
+        }
+
+        session.messages.forEach(function(msg, idx) {
+            container.appendChild(createMessageElement(msg, idx));
+        });
+
+        scrollToBottom();
+    }
+
+    function createMessageElement(msg, idx) {
+        const div = document.createElement('div');
+        div.className = 'message ' + msg.role;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = msg.role === 'user' ? '我' : 'AI';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'message-content-wrap';
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        if (msg.streaming) content.classList.add('cursor');
+        content.textContent = msg.content;
+
+        if (msg.role === 'assistant' || !msg.streaming) {
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            const delBtn = document.createElement('button');
+            delBtn.className = 'delete-msg-btn';
+            delBtn.textContent = '删除';
+            delBtn.onclick = function() { deleteMessage(idx); };
+            actions.appendChild(delBtn);
+            wrap.appendChild(actions);
+        }
+
+        wrap.appendChild(content);
+        div.appendChild(avatar);
+        div.appendChild(wrap);
+
+        if (msg.streaming) {
+            div.dataset.streamingId = msg.id;
+        }
+
+        return div;
+    }
+
+    function deleteMessage(idx) {
+        const session = getCurrentSession();
+        if (!session) return;
+        if (!confirm('确定要删除这条消息吗？')) return;
+        session.messages.splice(idx, 1);
+        if (session.messages.length === 0) {
+            session.title = '新会话';
+        } else if (idx === 0 && session.messages.length > 0) {
+            session.title = session.messages[0].content.slice(0, 30);
+        }
+        saveState();
+        renderSessionList();
+        renderMessages();
+        updateChatHeader();
+        showToast('消息已删除', 'success');
+    }
+
+    function scrollToBottom() {
+        const c = document.getElementById('messagesContainer');
+        c.scrollTop = c.scrollHeight;
+    }
+
+    function autoResizeTextarea() {
+        const t = document.getElementById('messageInput');
+        t.style.height = 'auto';
+        t.style.height = Math.min(t.scrollHeight, 200) + 'px';
+    }
+
+    function getProviderEndpoint(provider) {
+        const preset = PROVIDER_PRESETS[provider.type];
+        if (preset.isAnthropic) {
+            return provider.baseUrl.replace(/\/$/, '') + '/messages';
+        }
+        return provider.baseUrl.replace(/\/$/, '') + '/chat/completions';
+    }
+
+    function buildRequestHeaders(provider) {
+        const preset = PROVIDER_PRESETS[provider.type];
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + provider.apiKey
+        };
+        if (preset.headers) {
+            Object.keys(preset.headers).forEach(function(k) {
+                headers[k] = preset.headers[k];
+            });
+        }
+        return headers;
+    }
+
+    function buildRequestBody(provider, messages, stream) {
+        const preset = PROVIDER_PRESETS[provider.type];
+        if (preset.isAnthropic) {
+            return {
+                model: provider.model,
+                messages: messages.map(function(m) { return { role: m.role, content: m.content }; }),
+                stream: stream,
+                max_tokens: provider.maxTokens || 4096,
+                temperature: provider.temperature != null ? provider.temperature : 0.7
+            };
+        }
+        return {
+            model: provider.model,
+            messages: messages.map(function(m) { return { role: m.role, content: m.content }; }),
+            stream: stream,
+            temperature: provider.temperature != null ? provider.temperature : 0.7,
+            max_tokens: provider.maxTokens || 4096
+        };
+    }
+
+    function parseSSEChunk(chunk, provider) {
+        const lines = chunk.split('\n');
+        const result = { content: '', done: false };
+        const preset = PROVIDER_PRESETS[provider.type];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line || !line.startsWith('data:')) continue;
+            const data = line.slice(5).trim();
+            if (!data) continue;
+            if (data === '[DONE]') { result.done = true; continue; }
+            try {
+                const json = JSON.parse(data);
+                if (preset.isAnthropic) {
+                    if (json.type === 'content_block_delta' && json.delta && json.delta.text) {
+                        result.content += json.delta.text;
+                    } else if (json.type === 'message_stop') {
+                        result.done = true;
+                    }
+                } else {
+                    if (json.choices && json.choices[0]) {
+                        const delta = json.choices[0].delta || json.choices[0].message || {};
+                        if (delta.content) result.content += delta.content;
+                        if (json.choices[0].finish_reason) result.done = true;
+                    }
+                }
+            } catch (e) {
+                // ignore parse error
+            }
+        }
+        return result;
+    }
+
+    async function sendMessage() {
+        if (state.isLoading) return;
+
+        const provider = getActiveProvider();
+        if (!provider) {
+            showToast('请先在配置中选择一个可用的 API', 'error');
+            openConfigModal();
+            return;
+        }
+
+        const input = document.getElementById('messageInput');
+        const content = input.value.trim();
+        if (!content) { showToast('请输入消息内容', 'error'); return; }
+
+        let session = getCurrentSession();
+        if (!session) session = createNewSession();
+
+        const userMsg = { id: generateId(), role: 'user', content: content, timestamp: Date.now() };
+        session.messages.push(userMsg);
+        if (session.messages.length === 1) session.title = content.slice(0, 30);
+        saveState();
+        renderSessionList();
+        renderMessages();
+        updateChatHeader();
+
+        input.value = '';
+        autoResizeTextarea();
+
+        state.isLoading = true;
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.textContent = '停止';
+        sendBtn.classList.add('stop-btn');
+
+        state.abortController = new AbortController();
+
+        const assistantMsg = {
+            id: generateId(),
+            role: 'assistant',
+            content: '',
+            timestamp: Date.now(),
+            streaming: true
+        };
+        session.messages.push(assistantMsg);
+
+        const container = document.getElementById('messagesContainer');
+        const msgEl = createMessageElement(assistantMsg, session.messages.length - 1);
+        container.appendChild(msgEl);
+        scrollToBottom();
+
+        try {
+            const messagesForApi = session.messages
+                .filter(function(m) { return m.content; })
+                .slice(0, -1);
+
+            const body = buildRequestBody(provider, messagesForApi, true);
+            const endpoint = getProviderEndpoint(provider);
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: buildRequestHeaders(provider),
+                body: JSON.stringify(body),
+                signal: state.abortController.signal
+            });
+
+            if (!response.ok) {
+                let errMsg = 'HTTP ' + response.status;
+                try {
+                    const err = await response.json();
+                    if (err.error) errMsg += ': ' + (err.error.message || JSON.stringify(err.error));
+                } catch (_) {}
+                throw new Error(errMsg);
+            }
+
+            if (!response.body) {
+                const data = await response.json();
+                const preset = PROVIDER_PRESETS[provider.type];
+                let text = '';
+                if (preset.isAnthropic) {
+                    if (data.content && data.content[0] && data.content[0].text) text = data.content[0].text;
+                } else {
+                    if (data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content || '';
+                }
+                assistantMsg.content = text;
+            } else {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    let idx;
+                    while ((idx = buffer.indexOf('\n\n')) !== -1) {
+                        const chunk = buffer.slice(0, idx);
+                        buffer = buffer.slice(idx + 2);
+                        const parsed = parseSSEChunk(chunk, provider);
+                        if (parsed.content) {
+                            assistantMsg.content += parsed.content;
+                            const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
+                            if (contentEl) contentEl.textContent = assistantMsg.content;
+                            scrollToBottom();
+                        }
+                    }
+                }
+
+                if (buffer) {
+                    const parsed = parseSSEChunk(buffer, provider);
+                    if (parsed.content) {
+                        assistantMsg.content += parsed.content;
+                        const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
+                        if (contentEl) contentEl.textContent = assistantMsg.content;
+                    }
+                }
+            }
+
+            if (!assistantMsg.content) assistantMsg.content = '(空回复)';
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                assistantMsg.content = assistantMsg.content || '(已停止生成)';
+            } else {
+                console.error('API Error:', error);
+                assistantMsg.content = '❌ 错误: ' + error.message + '\n\n请检查配置是否正确，或服务是否正常运行。';
+                showToast('请求失败: ' + error.message, 'error');
+            }
+        } finally {
+            delete assistantMsg.streaming;
+            state.isLoading = false;
+            state.abortController = null;
+            sendBtn.textContent = '发送';
+            sendBtn.classList.remove('stop-btn');
+            saveState();
+            renderMessages();
+        }
+    }
+
+    function stopGeneration() {
+        if (state.abortController) {
+            state.abortController.abort();
+        }
+    }
+
+    function getFormHtml(type) {
+        const preset = PROVIDER_PRESETS[type];
+        const editing = state.editingProviderId
+            ? state.providers.find(function(p) { return p.id === state.editingProviderId; })
+            : null;
+        const data = editing && editing.type === type ? editing : {};
+
+        let modelOptions = '';
+        preset.models.forEach(function(m) {
+            const sel = (data.model === m) ? ' selected' : '';
+            modelOptions += '<option value="' + m + '"' + sel + '>' + m + '</option>';
+        });
+        const modelCustomSel = (data.model && preset.models.indexOf(data.model) === -1) ? ' selected' : '';
+
+        const baseUrl = data.baseUrl || preset.baseUrl;
+        const apiKey = data.apiKey || '';
+        const model = data.model || preset.defaultModel;
+        const temp = data.temperature != null ? data.temperature : 0.7;
+        const maxTok = data.maxTokens || 4096;
+        const name = data.name || (editing ? '' : preset.display);
+
+        return `
+            <div class="form-group">
+                <label>配置名称</label>
+                <input type="text" id="cfg-name" placeholder="例如：我的 OpenAI Key" value="${name}">
+                <div class="form-hint">用于区分多个同类型配置</div>
+            </div>
+            <div class="form-group">
+                <label>API Base URL</label>
+                <input type="text" id="cfg-baseurl" value="${baseUrl}" placeholder="${preset.baseUrl}">
+                <div class="form-hint">${preset.display} 官方: <code>${preset.baseUrl}</code></div>
+            </div>
+            <div class="form-group">
+                <label>API Key</label>
+                <input type="password" id="cfg-apikey" placeholder="输入 API Key" value="${apiKey}">
+                <div class="form-hint">仅保存在你的浏览器中，不会上传</div>
+            </div>
+            <div class="form-group">
+                <label>模型 (Model)</label>
+                <select id="cfg-model-select">
+                    ${modelOptions}
+                    <option value="__custom__"${modelCustomSel}>自定义...</option>
+                </select>
+                <input type="text" id="cfg-model-custom" placeholder="输入自定义模型名称"
+                    style="margin-top:8px;${modelCustomSel ? '' : 'display:none;'}" value="${modelCustomSel ? model : ''}">
+            </div>
+            <div class="form-group">
+                <label>Temperature: <span id="cfg-temp-val">${temp}</span></label>
+                <input type="range" id="cfg-temperature" min="0" max="2" step="0.1" value="${temp}" style="padding:0;">
+                <div class="form-hint">0=更确定, 1=默认, 2=更随机</div>
+            </div>
+            <div class="form-group">
+                <label>Max Tokens</label>
+                <input type="number" id="cfg-maxtokens" value="${maxTok}" min="1" max="32768">
+            </div>
+        `;
+    }
+
+    function renderProviderList() {
+        const list = document.getElementById('providerList');
+        if (state.providers.length === 0) {
+            list.innerHTML = '<div class="empty-providers">还没有保存任何配置，在下方填写并保存</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        state.providers.forEach(function(p) {
+            const preset = PROVIDER_PRESETS[p.type];
+            const entry = document.createElement('div');
+            entry.className = 'provider-entry' + (p.id === state.activeProviderId ? ' active' : '');
+
+            const info = document.createElement('div');
+            info.className = 'provider-entry-info';
+            const nameLine = document.createElement('div');
+            nameLine.className = 'provider-entry-name';
+            nameLine.innerHTML =
+                '<span class="badge' + (p.id === state.activeProviderId ? ' active' : '') + '">' +
+                (p.id === state.activeProviderId ? '使用中' : preset.display) +
+                '</span>' +
+                (p.name || preset.display);
+            const meta = document.createElement('div');
+            meta.className = 'provider-entry-meta';
+            meta.textContent = p.model + ' · ' + p.baseUrl;
+            info.appendChild(nameLine);
+            info.appendChild(meta);
+
+            const actions = document.createElement('div');
+            actions.className = 'provider-entry-actions';
+
+            if (p.id !== state.activeProviderId) {
+                const useBtn = document.createElement('button');
+                useBtn.className = 'icon-btn';
+                useBtn.textContent = '使用';
+                useBtn.onclick = function() {
+                    state.activeProviderId = p.id;
+                    saveState();
+                    renderProviderList();
+                    updateChatHeader();
+                    showToast('已切换到: ' + (p.name || preset.display), 'success');
+                };
+                actions.appendChild(useBtn);
+            }
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'icon-btn';
+            editBtn.textContent = '编辑';
+            editBtn.onclick = function() {
+                state.editingProviderId = p.id;
+                state.currentFormType = p.type;
+                updateTabsAndForm();
+            };
+            actions.appendChild(editBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'icon-btn danger';
+            delBtn.textContent = '删除';
+            delBtn.onclick = function() {
+                if (!confirm('删除该配置？')) return;
+                const i = state.providers.findIndex(function(x) { return x.id === p.id; });
+                if (i !== -1) state.providers.splice(i, 1);
+                if (state.activeProviderId === p.id) state.activeProviderId = null;
+                if (state.editingProviderId === p.id) state.editingProviderId = null;
+                saveState();
+                renderProviderList();
+                updateChatHeader();
+                showToast('配置已删除', 'success');
+            };
+            actions.appendChild(delBtn);
+
+            entry.appendChild(info);
+            entry.appendChild(actions);
+            list.appendChild(entry);
+        });
+    }
+
+    function updateTabsAndForm() {
+        document.querySelectorAll('.provider-tab').forEach(function(tab) {
+            tab.classList.toggle('active', tab.dataset.type === state.currentFormType);
+        });
+        document.getElementById('configFormArea').innerHTML = getFormHtml(state.currentFormType);
+
+        const modelSelect = document.getElementById('cfg-model-select');
+        const modelCustom = document.getElementById('cfg-model-custom');
+        if (modelSelect && modelCustom) {
+            modelSelect.addEventListener('change', function() {
+                modelCustom.style.display = this.value === '__custom__' ? 'block' : 'none';
+            });
+        }
+
+        const tempInput = document.getElementById('cfg-temperature');
+        const tempVal = document.getElementById('cfg-temp-val');
+        if (tempInput && tempVal) {
+            tempInput.addEventListener('input', function() { tempVal.textContent = this.value; });
+        }
+    }
+
+    function openConfigModal() {
+        document.getElementById('configModal').classList.add('show');
+        state.editingProviderId = null;
+        state.currentFormType = 'openai';
+        renderProviderList();
+        updateTabsAndForm();
+    }
+
+    function closeConfigModal() {
+        document.getElementById('configModal').classList.remove('show');
+    }
+
+    function saveProviderConfig() {
+        const type = state.currentFormType;
+        const name = document.getElementById('cfg-name').value.trim();
+        const baseUrl = document.getElementById('cfg-baseurl').value.trim();
+        const apiKey = document.getElementById('cfg-apikey').value.trim();
+        const modelSel = document.getElementById('cfg-model-select').value;
+        const modelCustom = document.getElementById('cfg-model-custom').value.trim();
+        const temperature = parseFloat(document.getElementById('cfg-temperature').value);
+        const maxTokens = parseInt(document.getElementById('cfg-maxtokens').value);
+        const model = modelSel === '__custom__' ? modelCustom : modelSel;
+
+        if (!name) { showToast('请填写配置名称', 'error'); return; }
+        if (!baseUrl) { showToast('请填写 Base URL', 'error'); return; }
+        if (!apiKey && type !== 'local') { showToast('请填写 API Key', 'error'); return; }
+        if (!model) { showToast('请选择或输入模型', 'error'); return; }
+
+        const config = {
+            id: state.editingProviderId || generateId(),
+            type: type,
+            name: name,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            model: model,
+            temperature: temperature,
+            maxTokens: maxTokens
+        };
+
+        const idx = state.providers.findIndex(function(p) { return p.id === config.id; });
+        if (idx !== -1) {
+            state.providers[idx] = config;
+        } else {
+            state.providers.push(config);
+        }
+        if (!state.activeProviderId) state.activeProviderId = config.id;
+
+        saveState();
+        state.editingProviderId = null;
+        renderProviderList();
+        updateTabsAndForm();
+        updateChatHeader();
+        showToast('配置已保存', 'success');
+    }
+
+    function initEventListeners() {
+        document.getElementById('newChatBtn').onclick = createNewSession;
+
+        document.getElementById('deleteSessionBtn').onclick = function() {
+            const s = getCurrentSession();
+            if (s) deleteSession(s.id);
+        };
+
+        document.getElementById('configBtn').onclick = openConfigModal;
+        document.getElementById('closeConfigModal').onclick = closeConfigModal;
+        document.getElementById('cancelConfigBtn').onclick = closeConfigModal;
+        document.getElementById('configModal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfigModal();
+        });
+
+        document.querySelectorAll('.provider-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                state.currentFormType = this.dataset.type;
+                state.editingProviderId = null;
+                updateTabsAndForm();
+            });
+        });
+
+        document.getElementById('saveConfigBtn').onclick = saveProviderConfig;
+
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.addEventListener('click', function() {
+            if (state.isLoading) stopGeneration();
+            else sendMessage();
+        });
+
+        const input = document.getElementById('messageInput');
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (state.isLoading) stopGeneration();
+                else sendMessage();
+            }
+        });
+        input.addEventListener('input', autoResizeTextarea);
+    }
+
+    function init() {
+        loadState();
+        initEventListeners();
+        renderSessionList();
+        renderMessages();
+        updateChatHeader();
+        if (state.sessions.length === 0) createNewSession();
+        autoResizeTextarea();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
