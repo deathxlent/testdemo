@@ -499,7 +499,9 @@ body {
             baseUrl: 'https://api.openai.com/v1',
             defaultModel: 'gpt-4o-mini',
             models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
-            headers: {}
+            headers: {},
+            defaultMaxTokens: 4096,
+            contextWindow: 128000
         },
         openrouter: {
             display: 'OpenRouter',
@@ -511,9 +513,11 @@ body {
                 'google/gemini-pro-1.5', 'meta-llama/llama-3-70b-instruct'
             ],
             headers: {
-                'HTTP-Referer': window.location.href,
+                'HTTP-Referer': window.location.origin !== 'null' ? window.location.href : 'http://localhost/',
                 'X-Title': 'LLM Chat'
-            }
+            },
+            defaultMaxTokens: 4096,
+            contextWindow: 128000
         },
         claude: {
             display: 'Anthropic Claude',
@@ -521,21 +525,28 @@ body {
             defaultModel: 'claude-3-5-sonnet-20240620',
             models: ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
             headers: { 'anthropic-version': '2023-06-01' },
-            isAnthropic: true
+            isAnthropic: true,
+            defaultMaxTokens: 4096,
+            contextWindow: 200000
         },
         qwen: {
             display: '通义千问',
             baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             defaultModel: 'qwen-plus',
             models: ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-max-longcontext'],
-            headers: {}
+            headers: {},
+            defaultMaxTokens: 2048,
+            contextWindow: 32000
         },
         local: {
             display: '本地 (llama.cpp)',
-            baseUrl: 'http://localhost:8080/v1',
+            baseUrl: 'http://localhost:9092/v1',
             defaultModel: 'local-model',
             models: [],
-            headers: {}
+            headers: {},
+            defaultMaxTokens: 8192,
+            contextWindow: 32768,
+            useCompletions: true
         }
     };
 
@@ -782,6 +793,9 @@ body {
         if (preset.isAnthropic) {
             return provider.baseUrl.replace(/\/$/, '') + '/messages';
         }
+        if (provider.useCompletions) {
+            return provider.baseUrl.replace(/\/$/, '') + '/completions';
+        }
         return provider.baseUrl.replace(/\/$/, '') + '/chat/completions';
     }
 
@@ -799,14 +813,68 @@ body {
         return headers;
     }
 
+    function formatMessagesForCompletions(messages, provider) {
+        const template = provider.completionTemplate || 'qwen';
+        let prompt = '';
+
+        if (template === 'chatml' || template === 'qwen') {
+            messages.forEach(function(m) {
+                prompt += '<|im_start|>' + m.role + '\n' + m.content + '<|im_end|>\n';
+            });
+            prompt += '<|im_start|>assistant\n';
+        } else if (template === 'llama') {
+            prompt = '<s>';
+            messages.forEach(function(m) {
+                if (m.role === 'system') {
+                    prompt += '<<SYS>>\n' + m.content + '\n<</SYS>>\n\n';
+                } else if (m.role === 'user') {
+                    prompt += '[INST] ' + m.content + ' [/INST]';
+                } else if (m.role === 'assistant') {
+                    prompt += ' ' + m.content + ' </s><s>';
+                }
+            });
+        } else if (template === 'gemma') {
+            messages.forEach(function(m) {
+                if (m.role === 'user') {
+                    prompt += '<start_of_turn>user\n' + m.content + '<end_of_turn>\n';
+                } else if (m.role === 'assistant') {
+                    prompt += '<start_of_turn>model\n' + m.content + '<end_of_turn>\n';
+                } else if (m.role === 'system') {
+                    prompt += '<start_of_turn>system\n' + m.content + '<end_of_turn>\n';
+                }
+            });
+            prompt += '<start_of_turn>model\n';
+        } else {
+            messages.forEach(function(m) {
+                prompt += m.role + ': ' + m.content + '\n';
+            });
+            prompt += 'assistant: ';
+        }
+
+        return prompt;
+    }
+
     function buildRequestBody(provider, messages, stream) {
         const preset = PROVIDER_PRESETS[provider.type];
+        const maxTokens = provider.maxTokens || preset.defaultMaxTokens || 4096;
+
+        if (provider.useCompletions) {
+            return {
+                model: provider.model,
+                prompt: formatMessagesForCompletions(messages, provider),
+                stream: stream,
+                temperature: provider.temperature != null ? provider.temperature : 0.7,
+                max_tokens: maxTokens,
+                stop: provider.useCompletions ? ['<|im_end|>', '<|endoftext|>', '</s>', '<end_of_turn>'] : undefined
+            };
+        }
+
         if (preset.isAnthropic) {
             return {
                 model: provider.model,
                 messages: messages.map(function(m) { return { role: m.role, content: m.content }; }),
                 stream: stream,
-                max_tokens: provider.maxTokens || 4096,
+                max_tokens: maxTokens,
                 temperature: provider.temperature != null ? provider.temperature : 0.7
             };
         }
@@ -815,7 +883,7 @@ body {
             messages: messages.map(function(m) { return { role: m.role, content: m.content }; }),
             stream: stream,
             temperature: provider.temperature != null ? provider.temperature : 0.7,
-            max_tokens: provider.maxTokens || 4096
+            max_tokens: maxTokens
         };
     }
 
@@ -837,6 +905,13 @@ body {
                         result.content += json.delta.text;
                     } else if (json.type === 'message_stop') {
                         result.done = true;
+                    }
+                } else if (provider.useCompletions) {
+                    if (json.choices && json.choices[0]) {
+                        if (json.choices[0].text) {
+                            result.content += json.choices[0].text;
+                        }
+                        if (json.choices[0].finish_reason) result.done = true;
                     }
                 } else {
                     if (json.choices && json.choices[0]) {
@@ -931,6 +1006,8 @@ body {
                 let text = '';
                 if (preset.isAnthropic) {
                     if (data.content && data.content[0] && data.content[0].text) text = data.content[0].text;
+                } else if (provider.useCompletions) {
+                    if (data.choices && data.choices[0] && data.choices[0].text) text = data.choices[0].text || '';
                 } else {
                     if (data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content || '';
                 }
@@ -1015,8 +1092,34 @@ body {
         const apiKey = data.apiKey || '';
         const model = data.model || preset.defaultModel;
         const temp = data.temperature != null ? data.temperature : 0.7;
-        const maxTok = data.maxTokens || 4096;
+        const maxTok = data.maxTokens || preset.defaultMaxTokens || 4096;
         const name = data.name || (editing ? '' : preset.display);
+        const useCompletions = data.useCompletions != null ? data.useCompletions : (preset.useCompletions || false);
+        const completionTemplate = data.completionTemplate || 'qwen';
+        const ctxWindow = preset.contextWindow || 32768;
+
+        let extraOptions = '';
+        if (type === 'local') {
+            extraOptions = `
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="cfg-usecompletions" ${useCompletions ? 'checked' : ''}>
+                        使用 Completions API（绕过聊天模板问题）
+                    </label>
+                    <div class="form-hint">如果遇到 "No messages provided" 或模板解析错误，请开启此选项</div>
+                </div>
+                <div class="form-group" id="cfg-template-group" style="display:${useCompletions ? 'block' : 'none'};">
+                    <label>提示词模板</label>
+                    <select id="cfg-template">
+                        <option value="qwen" ${completionTemplate === 'qwen' ? 'selected' : ''}>Qwen / ChatML（通义千问）</option>
+                        <option value="llama" ${completionTemplate === 'llama' ? 'selected' : ''}>Llama / Alpaca</option>
+                        <option value="gemma" ${completionTemplate === 'gemma' ? 'selected' : ''}>Gemma</option>
+                        <option value="simple" ${completionTemplate === 'simple' ? 'selected' : ''}>简单格式</option>
+                    </select>
+                    <div class="form-hint">根据你的模型选择对应的提示词模板</div>
+                </div>
+            `;
+        }
 
         return `
             <div class="form-group">
@@ -1029,7 +1132,7 @@ body {
                 <input type="text" id="cfg-baseurl" value="${baseUrl}" placeholder="${preset.baseUrl}">
                 <div class="form-hint">${preset.display} 官方: <code>${preset.baseUrl}</code></div>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="display:${type === 'local' ? 'none' : 'block'};">
                 <label>API Key</label>
                 <input type="password" id="cfg-apikey" placeholder="输入 API Key" value="${apiKey}">
                 <div class="form-hint">仅保存在你的浏览器中，不会上传</div>
@@ -1043,14 +1146,16 @@ body {
                 <input type="text" id="cfg-model-custom" placeholder="输入自定义模型名称"
                     style="margin-top:8px;${modelCustomSel ? '' : 'display:none;'}" value="${modelCustomSel ? model : (!hasPresetModels ? model : '')}">
             </div>
+            ${extraOptions}
             <div class="form-group">
                 <label>Temperature: <span id="cfg-temp-val">${temp}</span></label>
                 <input type="range" id="cfg-temperature" min="0" max="2" step="0.1" value="${temp}" style="padding:0;">
                 <div class="form-hint">0=更确定, 1=默认, 2=更随机</div>
             </div>
             <div class="form-group">
-                <label>Max Tokens</label>
-                <input type="number" id="cfg-maxtokens" value="${maxTok}" min="1" max="32768">
+                <label>Max Tokens (输出长度)</label>
+                <input type="number" id="cfg-maxtokens" value="${maxTok}" min="1" max="${ctxWindow}">
+                <div class="form-hint">模型上下文窗口约 ${ctxWindow.toLocaleString()} tokens，建议留出输入空间，不要设满</div>
             </div>
         `;
     }
@@ -1151,6 +1256,14 @@ body {
         if (tempInput && tempVal) {
             tempInput.addEventListener('input', function() { tempVal.textContent = this.value; });
         }
+
+        const useCompletionsCb = document.getElementById('cfg-usecompletions');
+        const templateGroup = document.getElementById('cfg-template-group');
+        if (useCompletionsCb && templateGroup) {
+            useCompletionsCb.addEventListener('change', function() {
+                templateGroup.style.display = this.checked ? 'block' : 'none';
+            });
+        }
     }
 
     function openConfigModal() {
@@ -1169,12 +1282,18 @@ body {
         const type = state.currentFormType;
         const name = document.getElementById('cfg-name').value.trim();
         const baseUrl = document.getElementById('cfg-baseurl').value.trim();
-        const apiKey = document.getElementById('cfg-apikey').value.trim();
+        const apiKeyEl = document.getElementById('cfg-apikey');
+        const apiKey = apiKeyEl ? apiKeyEl.value.trim() : '';
         const modelSel = document.getElementById('cfg-model-select').value;
         const modelCustom = document.getElementById('cfg-model-custom').value.trim();
         const temperature = parseFloat(document.getElementById('cfg-temperature').value);
         const maxTokens = parseInt(document.getElementById('cfg-maxtokens').value);
         let model = modelSel === '__custom__' ? modelCustom : modelSel;
+
+        const useCompletionsEl = document.getElementById('cfg-usecompletions');
+        const useCompletions = useCompletionsEl ? useCompletionsEl.checked : false;
+        const templateEl = document.getElementById('cfg-template');
+        const completionTemplate = templateEl ? templateEl.value : 'qwen';
 
         if (!name) { showToast('请填写配置名称', 'error'); return; }
         if (!baseUrl) { showToast('请填写 Base URL', 'error'); return; }
@@ -1195,7 +1314,9 @@ body {
             apiKey: apiKey,
             model: model,
             temperature: temperature,
-            maxTokens: maxTokens
+            maxTokens: maxTokens,
+            useCompletions: useCompletions,
+            completionTemplate: completionTemplate
         };
 
         const idx = state.providers.findIndex(function(p) { return p.id === config.id; });
