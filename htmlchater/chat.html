@@ -1225,7 +1225,7 @@ body {
 
     function parseSSEChunk(chunk, provider) {
         const lines = chunk.split('\n');
-        const result = { content: '', done: false };
+        const result = { content: '', thinking: '', done: false };
         const preset = PROVIDER_PRESETS[provider.type];
 
         for (let i = 0; i < lines.length; i++) {
@@ -1252,13 +1252,21 @@ body {
                 } else {
                     if (json.choices && json.choices[0]) {
                         const delta = json.choices[0].delta || json.choices[0].message || {};
-                        if (delta.content) result.content += delta.content;
+                        if (delta.content && typeof delta.content === 'string') {
+                            result.content += delta.content;
+                        }
+                        if (delta.reasoning_content) {
+                            result.thinking += delta.reasoning_content;
+                        }
                         if (json.choices[0].finish_reason) result.done = true;
                     }
                 }
             } catch (e) {
-                // ignore parse error
+                console.warn('[DEBUG] Parse SSE chunk error:', e, 'data:', data);
             }
+        }
+        if (result.content || result.thinking) {
+            console.log('[DEBUG] Parsed SSE:', { content: result.content.substring(0, 50), thinking: result.thinking.substring(0, 50), done: result.done });
         }
         return result;
     }
@@ -1361,18 +1369,40 @@ body {
                 const data = await response.json();
                 const preset = PROVIDER_PRESETS[provider.type];
                 let text = '';
+                let thinking = '';
                 if (preset.isAnthropic) {
                     if (data.content && data.content[0] && data.content[0].text) text = data.content[0].text;
                 } else if (provider.useCompletions) {
                     if (data.choices && data.choices[0] && data.choices[0].text) text = data.choices[0].text || '';
                 } else {
-                    if (data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content || '';
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        text = data.choices[0].message.content || '';
+                        thinking = data.choices[0].message.reasoning_content || '';
+                    }
                 }
-                assistantMsg.content = text;
+                if (thinking) {
+                    assistantMsg.content = '<think>' + thinking + '</think>' + text;
+                } else {
+                    assistantMsg.content = text;
+                }
             } else {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
                 let buffer = '';
+                assistantMsg.thinking = '';
+
+                const updateStreamingDisplay = function() {
+                    const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
+                    if (contentEl) {
+                        let displayContent = '';
+                        if (assistantMsg.thinking) {
+                            displayContent = '<think>' + assistantMsg.thinking + '</think>';
+                        }
+                        displayContent += assistantMsg.content;
+                        renderContentToElement(contentEl, displayContent, true);
+                    }
+                    scrollToBottom();
+                };
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -1384,30 +1414,39 @@ body {
                         const chunk = buffer.slice(0, idx);
                         buffer = buffer.slice(idx + 2);
                         const parsed = parseSSEChunk(chunk, provider);
+                        let hasUpdate = false;
+                        if (parsed.thinking) {
+                            assistantMsg.thinking += parsed.thinking;
+                            hasUpdate = true;
+                        }
                         if (parsed.content) {
                             assistantMsg.content += parsed.content;
-                            const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
-                            if (contentEl) {
-                                renderContentToElement(contentEl, assistantMsg.content, true);
-                            }
-                            scrollToBottom();
+                            hasUpdate = true;
                         }
+                        if (hasUpdate) updateStreamingDisplay();
                     }
                 }
 
                 if (buffer) {
                     const parsed = parseSSEChunk(buffer, provider);
+                    let hasUpdate = false;
+                    if (parsed.thinking) {
+                        assistantMsg.thinking += parsed.thinking;
+                        hasUpdate = true;
+                    }
                     if (parsed.content) {
                         assistantMsg.content += parsed.content;
-                        const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
-                        if (contentEl) {
-                            renderContentToElement(contentEl, assistantMsg.content, true);
-                        }
+                        hasUpdate = true;
                     }
+                    if (hasUpdate) updateStreamingDisplay();
                 }
             }
 
-            if (!assistantMsg.content) assistantMsg.content = '(空回复)';
+            if (assistantMsg.thinking) {
+                assistantMsg.content = '<think>' + assistantMsg.thinking + '</think>' + assistantMsg.content;
+                delete assistantMsg.thinking;
+            }
+            if (!assistantMsg.content || assistantMsg.content.trim() === '') assistantMsg.content = '(空回复)';
 
         } catch (error) {
             if (error.name === 'AbortError') {
