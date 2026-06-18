@@ -160,6 +160,44 @@ body {
 }
 .message.user .message-content { background: #1677ff; color: #fff; }
 .message.assistant .message-content { background: #fff; color: #202123; border: 1px solid #e5e5e5; }
+.think-block {
+    font-size: 0.8em;
+    color: #999;
+    background: #f7f7f7;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    margin: 6px 0;
+    padding: 0;
+    overflow: hidden;
+}
+.think-block-header {
+    padding: 6px 10px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9em;
+    font-weight: 500;
+    background: #f0f0f0;
+}
+.think-block-header:hover { background: #e8e8e8; }
+.think-block-toggle { transition: transform 0.2s; display: inline-block; }
+.think-block.collapsed .think-block-toggle { transform: rotate(-90deg); }
+.think-block-body {
+    padding: 8px 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-height: none;
+    overflow: visible;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.think-block.collapsed .think-block-body {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+}
 .message-content.cursor::after {
     content: '▊';
     display: inline-block;
@@ -213,8 +251,77 @@ body {
     border-top: 1px solid #e5e5e5;
     background: #fff;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.input-area-bottom {
+    display: flex;
     gap: 12px;
     align-items: flex-end;
+}
+.input-area-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.image-preview-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.image-preview-item {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #d9d9d9;
+}
+.image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.image-preview-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.image-preview-remove:hover { background: rgba(0,0,0,0.7); }
+.upload-btn {
+    width: 48px;
+    height: 48px;
+    border: 1px dashed #d9d9d9;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+.upload-btn:hover {
+    border-color: #1677ff;
+    color: #1677ff;
+    background: #f0f7ff;
 }
 #messageInput {
     flex: 1;
@@ -454,8 +561,15 @@ body {
         </div>
         <div class="messages-container" id="messagesContainer"></div>
         <div class="input-area">
-            <textarea id="messageInput" placeholder="输入消息... (Shift+Enter 换行, Enter 发送)" rows="3"></textarea>
-            <button id="sendBtn" class="send-btn">发送</button>
+            <div class="image-preview-container" id="imagePreviewContainer" style="display:none;"></div>
+            <div class="input-area-bottom">
+                <button id="imageUploadBtn" class="upload-btn" title="上传图片">🖼️</button>
+                <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
+                <div class="input-area-left">
+                    <textarea id="messageInput" placeholder="输入消息... (Shift+Enter 换行, Enter 发送)" rows="3"></textarea>
+                </div>
+                <button id="sendBtn" class="send-btn">发送</button>
+            </div>
         </div>
     </main>
 </div>
@@ -558,7 +672,8 @@ body {
         isLoading: false,
         abortController: null,
         editingProviderId: null,
-        currentFormType: 'openai'
+        currentFormType: 'openai',
+        pendingImages: []
     };
 
     function loadState() {
@@ -742,7 +857,30 @@ body {
         const content = document.createElement('div');
         content.className = 'message-content';
         if (msg.streaming) content.classList.add('cursor');
-        content.textContent = msg.content;
+
+        if (msg.images && msg.images.length > 0) {
+            const imagesContainer = document.createElement('div');
+            imagesContainer.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;';
+            msg.images.forEach(function(imgData) {
+                const img = document.createElement('img');
+                img.src = imgData;
+                img.style.cssText = 'max-width:200px;max-height:200px;border-radius:4px;cursor:pointer;';
+                img.onclick = function() {
+                    window.open(imgData, '_blank');
+                };
+                imagesContainer.appendChild(img);
+            });
+            content.appendChild(imagesContainer);
+        }
+
+        if (msg.role === 'assistant') {
+            renderContentToElement(content, msg.content, msg.streaming);
+        } else {
+            const textSpan = document.createElement('span');
+            textSpan.textContent = msg.content;
+            textSpan.style.whiteSpace = 'pre-wrap';
+            content.appendChild(textSpan);
+        }
 
         if (msg.role === 'assistant' || !msg.streaming) {
             const actions = document.createElement('div');
@@ -792,6 +930,55 @@ body {
         const t = document.getElementById('messageInput');
         t.style.height = 'auto';
         t.style.height = Math.min(t.scrollHeight, 200) + 'px';
+    }
+
+    function renderImagePreview() {
+        const container = document.getElementById('imagePreviewContainer');
+        if (state.pendingImages.length === 0) {
+            container.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+        container.style.display = 'flex';
+        container.innerHTML = '';
+        state.pendingImages.forEach(function(imgData, idx) {
+            const item = document.createElement('div');
+            item.className = 'image-preview-item';
+            const img = document.createElement('img');
+            img.src = imgData;
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'image-preview-remove';
+            removeBtn.textContent = '×';
+            removeBtn.title = '移除图片';
+            removeBtn.onclick = function() {
+                state.pendingImages.splice(idx, 1);
+                renderImagePreview();
+            };
+            item.appendChild(img);
+            item.appendChild(removeBtn);
+            container.appendChild(item);
+        });
+    }
+
+    function handleImageFiles(files) {
+        const remainingSlots = 4 - state.pendingImages.length;
+        if (remainingSlots <= 0) {
+            showToast('最多只能上传 4 张图片', 'error');
+            return;
+        }
+        const filesToProcess = Array.from(files).slice(0, remainingSlots);
+        filesToProcess.forEach(function(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('只支持上传图片文件', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                state.pendingImages.push(e.target.result);
+                renderImagePreview();
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     function getProviderEndpoint(provider) {
@@ -874,6 +1061,23 @@ body {
         return prompt;
     }
 
+    function buildMessageContentWithImages(msg) {
+        if (!msg.images || msg.images.length === 0) {
+            return msg.content || '';
+        }
+        const content = [];
+        if (msg.content) {
+            content.push({ type: 'text', text: msg.content });
+        }
+        msg.images.forEach(function(imgData) {
+            content.push({
+                type: 'image_url',
+                image_url: { url: imgData }
+            });
+        });
+        return content;
+    }
+
     function buildRequestBody(provider, messages, stream) {
         const preset = PROVIDER_PRESETS[provider.type];
         const maxTokens = provider.maxTokens || preset.defaultMaxTokens || 4096;
@@ -883,7 +1087,7 @@ body {
                 model: provider.model,
                 prompt: formatMessagesForCompletions(messages, provider),
                 stream: stream,
-                temperature: provider.temperature != null ? provider.temperature : 0.7,
+                temperature: provider.temperature != null ? provider.temperature : 0.75,
                 max_tokens: maxTokens,
                 stop: provider.useCompletions ? ['<|im_end|>', '<|endoftext|>', '</s>', '<end_of_turn>', '<|eot_id|>'] : undefined
             };
@@ -892,22 +1096,34 @@ body {
         if (preset.isAnthropic) {
             return {
                 model: provider.model,
-                messages: messages.map(function(m) { return { role: m.role, content: m.content }; }),
+                messages: messages.map(function(m) {
+                    return {
+                        role: m.role,
+                        content: buildMessageContentWithImages(m)
+                    };
+                }),
                 stream: stream,
                 max_tokens: maxTokens,
-                temperature: provider.temperature != null ? provider.temperature : 0.7
+                temperature: provider.temperature != null ? provider.temperature : 0.75
             };
         }
 
-        const processedMessages = (provider.type === 'local')
-            ? ensureSystemMessage(messages).map(function(m) { return { role: m.role, content: m.content }; })
-            : messages.map(function(m) { return { role: m.role, content: m.content }; });
+        const sourceMessages = provider.type === 'local' ? ensureSystemMessage(messages) : messages;
+        const processedMessages = sourceMessages.map(function(m) {
+            if (m.role === 'system') {
+                return { role: m.role, content: m.content };
+            }
+            return {
+                role: m.role,
+                content: buildMessageContentWithImages(m)
+            };
+        });
 
         const body = {
             model: provider.model,
             messages: processedMessages,
             stream: stream,
-            temperature: provider.temperature != null ? provider.temperature : 0.7,
+            temperature: provider.temperature != null ? provider.temperature : 0.75,
             max_tokens: maxTokens
         };
 
@@ -918,13 +1134,86 @@ body {
         return body;
     }
 
-    function stripThinkingTags(text) {
-        if (!text) return text;
-        let result = text;
-        result = result.replace(/<think>[\s\S]*?<\/think>/g, '');
-        result = result.replace(/<think>[\s\S]*$/g, '');
-        result = result.replace(/^[\s\S]*?<\/think>/g, '');
-        return result.trim();
+    function renderContentToElement(container, content, isStreaming) {
+        container.innerHTML = '';
+        if (!content) return;
+
+        const segments = [];
+        let remaining = content;
+        const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = thinkRegex.exec(content)) !== null) {
+            if (match.index > lastIndex) {
+                segments.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+            }
+            segments.push({ type: 'think', content: match[1], complete: true });
+            lastIndex = match.index + match[0].length;
+        }
+
+        if (lastIndex < content.length) {
+            const tail = content.slice(lastIndex);
+            const openThinkMatch = tail.match(/<think>([\s\S]*)$/);
+            if (openThinkMatch) {
+                if (openThinkMatch.index > 0) {
+                    segments.push({ type: 'text', content: tail.slice(0, openThinkMatch.index) });
+                }
+                segments.push({ type: 'think', content: openThinkMatch[1], complete: false });
+            } else {
+                segments.push({ type: 'text', content: tail });
+            }
+        }
+
+        if (segments.length === 0) {
+            const openThinkMatch = content.match(/<think>([\s\S]*)$/);
+            if (openThinkMatch) {
+                if (openThinkMatch.index > 0) {
+                    segments.push({ type: 'text', content: content.slice(0, openThinkMatch.index) });
+                }
+                segments.push({ type: 'think', content: openThinkMatch[1], complete: false });
+            } else {
+                segments.push({ type: 'text', content: content });
+            }
+        }
+
+        segments.forEach(function(seg, idx) {
+            if (seg.type === 'text') {
+                let text = seg.content;
+                if (idx === 0) text = text.replace(/^\s+/, '');
+                if (text) {
+                    const textNode = document.createElement('span');
+                    textNode.textContent = text;
+                    textNode.style.whiteSpace = 'pre-wrap';
+                    container.appendChild(textNode);
+                }
+            } else if (seg.type === 'think') {
+                const thinkBlock = document.createElement('div');
+                thinkBlock.className = 'think-block' + (seg.complete && !isStreaming ? ' collapsed' : '');
+
+                const header = document.createElement('div');
+                header.className = 'think-block-header';
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = '💭 思考过程' + (seg.complete ? '' : ' (思考中...)');
+                const toggleSpan = document.createElement('span');
+                toggleSpan.className = 'think-block-toggle';
+                toggleSpan.textContent = '▼';
+                header.appendChild(titleSpan);
+                header.appendChild(toggleSpan);
+
+                header.onclick = function() {
+                    thinkBlock.classList.toggle('collapsed');
+                };
+
+                const body = document.createElement('div');
+                body.className = 'think-block-body';
+                body.textContent = seg.content;
+
+                thinkBlock.appendChild(header);
+                thinkBlock.appendChild(body);
+                container.appendChild(thinkBlock);
+            }
+        });
     }
 
     function parseSSEChunk(chunk, provider) {
@@ -979,20 +1268,33 @@ body {
 
         const input = document.getElementById('messageInput');
         const content = input.value.trim();
-        if (!content) { showToast('请输入消息内容', 'error'); return; }
+        const hasImages = state.pendingImages.length > 0;
+        if (!content && !hasImages) { showToast('请输入消息内容或上传图片', 'error'); return; }
 
         let session = getCurrentSession();
         if (!session) session = createNewSession();
 
-        const userMsg = { id: generateId(), role: 'user', content: content, timestamp: Date.now() };
+        const userMsg = {
+            id: generateId(),
+            role: 'user',
+            content: content,
+            timestamp: Date.now()
+        };
+        if (hasImages) {
+            userMsg.images = state.pendingImages.slice();
+        }
         session.messages.push(userMsg);
-        if (session.messages.length === 1) session.title = content.slice(0, 30);
+        if (session.messages.length === 1) {
+            session.title = content ? content.slice(0, 30) : '[图片]';
+        }
         saveState();
         renderSessionList();
         renderMessages();
         updateChatHeader();
 
         input.value = '';
+        state.pendingImages = [];
+        renderImagePreview();
         autoResizeTextarea();
 
         state.isLoading = true;
@@ -1019,7 +1321,7 @@ body {
         try {
             const messagesForApi = session.messages
                 .slice(0, -1)
-                .filter(function(m) { return m.content; });
+                .filter(function(m) { return m.content || (m.images && m.images.length > 0); });
 
             const body = buildRequestBody(provider, messagesForApi, true);
             const endpoint = getProviderEndpoint(provider);
@@ -1051,7 +1353,7 @@ body {
                 } else {
                     if (data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content || '';
                 }
-                assistantMsg.content = provider.stripThinking ? stripThinkingTags(text) : text;
+                assistantMsg.content = text;
             } else {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
@@ -1071,8 +1373,7 @@ body {
                             assistantMsg.content += parsed.content;
                             const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
                             if (contentEl) {
-                                const displayContent = provider.stripThinking ? stripThinkingTags(assistantMsg.content) : assistantMsg.content;
-                                contentEl.textContent = displayContent;
+                                renderContentToElement(contentEl, assistantMsg.content, true);
                             }
                             scrollToBottom();
                         }
@@ -1085,14 +1386,9 @@ body {
                         assistantMsg.content += parsed.content;
                         const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
                         if (contentEl) {
-                            const displayContent = provider.stripThinking ? stripThinkingTags(assistantMsg.content) : assistantMsg.content;
-                            contentEl.textContent = displayContent;
+                            renderContentToElement(contentEl, assistantMsg.content, true);
                         }
                     }
-                }
-
-                if (provider.stripThinking) {
-                    assistantMsg.content = stripThinkingTags(assistantMsg.content);
                 }
             }
 
@@ -1141,7 +1437,7 @@ body {
         const baseUrl = data.baseUrl || preset.baseUrl;
         const apiKey = data.apiKey || '';
         const model = data.model || preset.defaultModel;
-        const temp = data.temperature != null ? data.temperature : 0.7;
+        const temp = data.temperature != null ? data.temperature : 0.75;
         const maxTok = data.maxTokens || preset.defaultMaxTokens || 4096;
         const name = data.name || (editing ? '' : preset.display);
         const useCompletions = data.useCompletions != null ? data.useCompletions : (preset.useCompletions || false);
@@ -1208,8 +1504,8 @@ body {
             ${extraOptions}
             <div class="form-group">
                 <label>Temperature: <span id="cfg-temp-val">${temp}</span></label>
-                <input type="range" id="cfg-temperature" min="0" max="2" step="0.1" value="${temp}" style="padding:0;">
-                <div class="form-hint">0=更确定, 1=默认, 2=更随机</div>
+                <input type="range" id="cfg-temperature" min="0" max="2" step="0.05" value="${temp}" style="padding:0;">
+                <div class="form-hint">0=更确定, 0.75=默认, 2=更随机</div>
             </div>
             <div class="form-group">
                 <label>Max Tokens (输出长度)</label>
@@ -1437,6 +1733,16 @@ body {
             }
         });
         input.addEventListener('input', autoResizeTextarea);
+
+        const imageUploadBtn = document.getElementById('imageUploadBtn');
+        const imageInput = document.getElementById('imageInput');
+        imageUploadBtn.addEventListener('click', function() {
+            imageInput.click();
+        });
+        imageInput.addEventListener('change', function(e) {
+            handleImageFiles(e.target.files);
+            e.target.value = '';
+        });
     }
 
     function init() {
