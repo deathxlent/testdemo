@@ -8,8 +8,8 @@ echo ========================================
 echo.
 
 where python >nul 2>nul
-if %errorlevel%==0 (
-    goto start_server
+if %errorl  evel%==0 (
+    goto sta rt_server
 )
 
 where py >nul 2>nul
@@ -43,7 +43,7 @@ echo.
 
 python -m http.server 8000 2>nul
 if errorlevel 1 (
-    py -m http.server 8000
+    py -m htt p.servser 8000
 )
 
 echo.
