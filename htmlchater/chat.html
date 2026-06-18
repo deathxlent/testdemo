@@ -918,6 +918,15 @@ body {
         return body;
     }
 
+    function stripThinkingTags(text) {
+        if (!text) return text;
+        let result = text;
+        result = result.replace(/<think>[\s\S]*?<\/think>/g, '');
+        result = result.replace(/<think>[\s\S]*$/g, '');
+        result = result.replace(/^[\s\S]*?<\/think>/g, '');
+        return result.trim();
+    }
+
     function parseSSEChunk(chunk, provider) {
         const lines = chunk.split('\n');
         const result = { content: '', done: false };
@@ -1009,8 +1018,8 @@ body {
 
         try {
             const messagesForApi = session.messages
-                .filter(function(m) { return m.content; })
-                .slice(0, -1);
+                .slice(0, -1)
+                .filter(function(m) { return m.content; });
 
             const body = buildRequestBody(provider, messagesForApi, true);
             const endpoint = getProviderEndpoint(provider);
@@ -1042,7 +1051,7 @@ body {
                 } else {
                     if (data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content || '';
                 }
-                assistantMsg.content = text;
+                assistantMsg.content = provider.stripThinking ? stripThinkingTags(text) : text;
             } else {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
@@ -1061,7 +1070,10 @@ body {
                         if (parsed.content) {
                             assistantMsg.content += parsed.content;
                             const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
-                            if (contentEl) contentEl.textContent = assistantMsg.content;
+                            if (contentEl) {
+                                const displayContent = provider.stripThinking ? stripThinkingTags(assistantMsg.content) : assistantMsg.content;
+                                contentEl.textContent = displayContent;
+                            }
                             scrollToBottom();
                         }
                     }
@@ -1072,8 +1084,15 @@ body {
                     if (parsed.content) {
                         assistantMsg.content += parsed.content;
                         const contentEl = container.querySelector('[data-streaming-id="' + assistantMsg.id + '"] .message-content');
-                        if (contentEl) contentEl.textContent = assistantMsg.content;
+                        if (contentEl) {
+                            const displayContent = provider.stripThinking ? stripThinkingTags(assistantMsg.content) : assistantMsg.content;
+                            contentEl.textContent = displayContent;
+                        }
                     }
+                }
+
+                if (provider.stripThinking) {
+                    assistantMsg.content = stripThinkingTags(assistantMsg.content);
                 }
             }
 
@@ -1129,6 +1148,8 @@ body {
         const completionTemplate = data.completionTemplate || 'qwen';
         const ctxWindow = preset.contextWindow || 32768;
 
+        const stripThinking = data.stripThinking != null ? data.stripThinking : false;
+
         let extraOptions = '';
         if (type === 'local') {
             extraOptions = `
@@ -1148,6 +1169,13 @@ body {
                         <option value="simple" ${completionTemplate === 'simple' ? 'selected' : ''}>简单格式</option>
                     </select>
                     <div class="form-hint">根据你的模型选择对应的提示词模板</div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="cfg-stripthinking" ${stripThinking ? 'checked' : ''}>
+                        过滤思考过程（移除 &lt;think&gt; 标签内容）
+                    </label>
+                    <div class="form-hint">适用于 DeepSeek-R1 等会输出思考过程的推理模型</div>
                 </div>
             `;
         }
@@ -1325,6 +1353,8 @@ body {
         const useCompletions = useCompletionsEl ? useCompletionsEl.checked : false;
         const templateEl = document.getElementById('cfg-template');
         const completionTemplate = templateEl ? templateEl.value : 'qwen';
+        const stripThinkingEl = document.getElementById('cfg-stripthinking');
+        const stripThinking = stripThinkingEl ? stripThinkingEl.checked : false;
 
         if (!name) { showToast('请填写配置名称', 'error'); return; }
         if (!baseUrl) { showToast('请填写 Base URL', 'error'); return; }
@@ -1347,7 +1377,8 @@ body {
             temperature: temperature,
             maxTokens: maxTokens,
             useCompletions: useCompletions,
-            completionTemplate: completionTemplate
+            completionTemplate: completionTemplate,
+            stripThinking: stripThinking
         };
 
         const idx = state.providers.findIndex(function(p) { return p.id === config.id; });
