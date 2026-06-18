@@ -598,7 +598,13 @@ body {
 
     function getActiveProvider() {
         if (!state.activeProviderId) return null;
-        return state.providers.find(function(p) { return p.id === state.activeProviderId; });
+        const p = state.providers.find(function(p) { return p.id === state.activeProviderId; });
+        if (!p) return null;
+        const preset = PROVIDER_PRESETS[p.type];
+        if (p.useCompletions == null && preset.useCompletions != null) {
+            p.useCompletions = preset.useCompletions;
+        }
+        return p;
     }
 
     function createNewSession() {
@@ -813,28 +819,42 @@ body {
         return headers;
     }
 
+    function ensureSystemMessage(messages) {
+        const hasSystem = messages.some(function(m) { return m.role === 'system'; });
+        if (hasSystem) return messages;
+        return [{ role: 'system', content: 'You are a helpful assistant.' }].concat(messages);
+    }
+
     function formatMessagesForCompletions(messages, provider) {
         const template = provider.completionTemplate || 'qwen';
+        const msgs = ensureSystemMessage(messages);
         let prompt = '';
 
         if (template === 'chatml' || template === 'qwen') {
-            messages.forEach(function(m) {
+            msgs.forEach(function(m) {
                 prompt += '<|im_start|>' + m.role + '\n' + m.content + '<|im_end|>\n';
             });
             prompt += '<|im_start|>assistant\n';
         } else if (template === 'llama') {
             prompt = '<s>';
-            messages.forEach(function(m) {
-                if (m.role === 'system') {
-                    prompt += '<<SYS>>\n' + m.content + '\n<</SYS>>\n\n';
-                } else if (m.role === 'user') {
+            let sysMsg = '';
+            const otherMsgs = [];
+            msgs.forEach(function(m) {
+                if (m.role === 'system') sysMsg = m.content;
+                else otherMsgs.push(m);
+            });
+            if (sysMsg) {
+                prompt += '<<SYS>>\n' + sysMsg + '\n<</SYS>>\n\n';
+            }
+            otherMsgs.forEach(function(m, i) {
+                if (m.role === 'user') {
                     prompt += '[INST] ' + m.content + ' [/INST]';
                 } else if (m.role === 'assistant') {
                     prompt += ' ' + m.content + ' </s><s>';
                 }
             });
         } else if (template === 'gemma') {
-            messages.forEach(function(m) {
+            msgs.forEach(function(m) {
                 if (m.role === 'user') {
                     prompt += '<start_of_turn>user\n' + m.content + '<end_of_turn>\n';
                 } else if (m.role === 'assistant') {
@@ -845,7 +865,7 @@ body {
             });
             prompt += '<start_of_turn>model\n';
         } else {
-            messages.forEach(function(m) {
+            msgs.forEach(function(m) {
                 prompt += m.role + ': ' + m.content + '\n';
             });
             prompt += 'assistant: ';
@@ -865,7 +885,7 @@ body {
                 stream: stream,
                 temperature: provider.temperature != null ? provider.temperature : 0.7,
                 max_tokens: maxTokens,
-                stop: provider.useCompletions ? ['<|im_end|>', '<|endoftext|>', '</s>', '<end_of_turn>'] : undefined
+                stop: provider.useCompletions ? ['<|im_end|>', '<|endoftext|>', '</s>', '<end_of_turn>', '<|eot_id|>'] : undefined
             };
         }
 
@@ -878,13 +898,24 @@ body {
                 temperature: provider.temperature != null ? provider.temperature : 0.7
             };
         }
-        return {
+
+        const processedMessages = (provider.type === 'local')
+            ? ensureSystemMessage(messages).map(function(m) { return { role: m.role, content: m.content }; })
+            : messages.map(function(m) { return { role: m.role, content: m.content }; });
+
+        const body = {
             model: provider.model,
-            messages: messages.map(function(m) { return { role: m.role, content: m.content }; }),
+            messages: processedMessages,
             stream: stream,
             temperature: provider.temperature != null ? provider.temperature : 0.7,
             max_tokens: maxTokens
         };
+
+        if (provider.type === 'local') {
+            body.stop = ['<|im_end|>', '<|endoftext|>', '</s>', '<end_of_turn>', '<|eot_id|>'];
+        }
+
+        return body;
     }
 
     function parseSSEChunk(chunk, provider) {
