@@ -35,7 +35,7 @@ echo ========================================
 echo   Server started successfully!
 echo.
 echo   Open this URL in your browser:
-echo   http://localhost:8000/chat.html
+echo   http://localhost:9740/chat.html
 echo ========================================
 echo.
 echo Press Ctrl+C to stop the server.
