@@ -176,11 +176,11 @@
         var els = App.els();
         els.mirrorHBtn.addEventListener('click', function () {
             if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
-            if (App.ImageTransform) App.ImageTransform.doMirrorH();
+            if (App.ImageTransform) App.ImageTransform.mirrorHorizontal();
         });
         els.mirrorVBtn.addEventListener('click', function () {
             if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
-            if (App.ImageTransform) App.ImageTransform.doMirrorV();
+            if (App.ImageTransform) App.ImageTransform.mirrorVertical();
         });
     }
 
@@ -963,7 +963,8 @@
         if (channel === 'g') return '#55dd55';
         if (channel === 'b') return '#5599ff';
         if (channel === 'a') return '#dddddd';
-        return '#e0e0e0';
+        if (channel === 'rgb') return '#cccccc';
+        return '#d0d0d0';
     }
 
     function renderHistogram(channel) {

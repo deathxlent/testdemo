@@ -193,18 +193,20 @@
 
         render: function () {
             var imgObj = App.getActiveImage();
-            var panel = document.getElementById('historyPanel');
             var listEl = document.getElementById('historyList');
-            if (!panel || !listEl) return;
-            if (!imgObj) { panel.style.display = 'none'; return; }
+            if (!listEl) return;
+            var historyTitleBar = listEl.previousElementSibling;
+            if (!imgObj) {
+                listEl.innerHTML = '<div class="object-empty">暂无历史记录</div>';
+                return;
+            }
             var id = imgObj.id;
             var list = this.perImage[id] || [];
             var ptr = this.currentPointer[id];
             if (list.length === 0) {
-                panel.style.display = 'none';
+                listEl.innerHTML = '<div class="object-empty">暂无历史记录</div>';
                 return;
             }
-            panel.style.display = 'flex';
             listEl.innerHTML = '';
             for (var i = 0; i < list.length; i++) {
                 var item = list[i];

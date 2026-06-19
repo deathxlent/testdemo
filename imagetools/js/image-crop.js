@@ -266,6 +266,7 @@
     function applyCropToImage(c) {
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
+        if (App.History) App.History.push('裁剪 (' + c.w + '×' + c.h + ')');
         var canvas = document.createElement('canvas');
         canvas.width = c.w;
         canvas.height = c.h;

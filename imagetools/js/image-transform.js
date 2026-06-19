@@ -148,6 +148,7 @@
             return;
         }
 
+        if (App.History) App.History.push('旋转 ' + angle + '°');
         var cx = App.state.rotateCenterX;
         var cy = App.state.rotateCenterY;
         var rad = angle * Math.PI / 180;
@@ -266,6 +267,7 @@
     function mirrorHorizontal() {
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
+        if (App.History) App.History.push('水平翻转');
         var canvas = document.createElement('canvas');
         canvas.width = imgObj.width;
         canvas.height = imgObj.height;
@@ -291,6 +293,7 @@
     function mirrorVertical() {
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
+        if (App.History) App.History.push('垂直翻转');
         var canvas = document.createElement('canvas');
         canvas.width = imgObj.width;
         canvas.height = imgObj.height;

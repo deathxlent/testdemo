@@ -67,7 +67,7 @@
         var newW = parseInt(els.resizeWidth.value);
         var newH = parseInt(els.resizeHeight.value);
         if (!newW || !newH || newW <= 0 || newH <= 0) { alert('请输入有效的宽高'); return; }
-
+        if (App.History) App.History.push('调整尺寸 (' + newW + '×' + newH + ')');
         var oldW = imgObj._prevW || imgObj.width;
         var oldH = imgObj._prevH || imgObj.height;
 
