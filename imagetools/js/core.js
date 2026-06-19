@@ -193,7 +193,11 @@ var App = (function () {
             zoomDisplay: document.getElementById('zoomDisplay'),
             objectList: document.getElementById('objectList'),
             fileInput: document.getElementById('fileInput'),
-            watermarkInput: document.getElementById('watermarkInput')
+            watermarkInput: document.getElementById('watermarkInput'),
+            infoBtn: document.getElementById('infoBtn'),
+            infoModal: document.getElementById('infoModal'),
+            histogramBtn: document.getElementById('histogramBtn'),
+            histogramModal: document.getElementById('histogramModal')
         };
     }
 

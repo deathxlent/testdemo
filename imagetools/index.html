@@ -11,11 +11,11 @@
         <div class="left-panel">
             <div class="panel-section">
                 <div class="panel-title">文件</div>
-                <button class="panel-btn" id="uploadBtn">
+                <button class="panel-btn" id="uploadBtn" data-tip="打开图片|从本地选择一张或多张图片进行编辑，支持拖拽图片到画布区域">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v1H3v10h10V7h1v6.5a.5.5 0 01-.5.5h-11a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5H2z"/><path d="M11 1h4v4h-1V2.7l-4.5 4.5-.7-.7L13.3 2H11V1z"/></svg>
                     <span>打开图片</span>
                 </button>
-                <button class="panel-btn" id="exportBtn">
+                <button class="panel-btn" id="exportBtn" data-tip="导出图片|将编辑后的图片保存到本地，支持 PNG/JPG/WebP 等格式">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v1H3v10h10V7h1v6.5a.5.5 0 01-.5.5h-11a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5H2z"/><path d="M8 1v8.3L5.4 6.7l-.7.7 4 4 4-4-.7-.7L9 9.3V1H8z"/></svg>
                     <span>导出图片</span>
                 </button>
@@ -23,57 +23,55 @@
             <div class="panel-section">
                 <div class="panel-title">工具</div>
                 <div class="tool-grid">
-                    <button class="tool-icon active" id="selectTool" title="选择工具 (V)">
+                    <button class="tool-icon active" id="selectTool" data-tip="选择工具 (V)|用于选择和移动画布上的文字、水印等对象，点击空白处可取消选择">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M3 2l1-1 9 7.5L8 9l2.5 6.5-1.5.6L6.5 9.5 3 12V2z"/></svg>
                     </button>
-                    <button class="tool-icon" id="textTool" title="文字工具 (T)">
+                    <button class="tool-icon" id="textTool" data-tip="文字工具 (T)|在画布上点击并拖拽创建文字框，双击文字可进入编辑模式修改内容">
                         <span style="font-weight:700;font-size:16px;font-family:serif">T</span>
                     </button>
-                    <button class="tool-icon" id="watermarkTool" title="图片水印">
+                    <button class="tool-icon" id="watermarkTool" data-tip="图片水印|点击后选择水印图片，可拖拽移动、调整大小和旋转，支持调整透明度">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M2 13l4-4 3 3 2-2 5 5"/><circle cx="7" cy="6" r="1.5"/></svg>
                     </button>
-                    <button class="tool-icon" id="resizeTool" title="调整大小">
+                    <button class="tool-icon" id="resizeTool" data-tip="调整大小|修改整张图片的像素尺寸，可锁定宽高比例，输入数值后点击应用">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10V3h7M15 8v7H8M3 3l7 7M15 15L8 8"/></svg>
                     </button>
-                    <button class="tool-icon" id="cropTool" title="自由裁剪">
+                    <button class="tool-icon" id="cropTool" data-tip="自由裁剪|在画布上拖拽任意区域进行裁剪，调整裁剪框后双击或点应用按钮执行">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 1h2v2H5zM1 5h2v2H1zM11 15h2v2h-2zM15 11h2v2h-2zM5 5h10v10H5z"/></svg>
                     </button>
-                    <button class="tool-icon" id="rectCropTool" title="长方形抠图">
+                    <button class="tool-icon" id="rectCropTool" data-tip="长方形抠图|指定宽高创建固定比例抠图框，拖拽定位后双击执行抠图，常用于证件照等">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="12" height="8" rx="0.5" stroke-dasharray="2,2"/><path d="M3 9h12M9 5v8"/></svg>
                     </button>
-                    <button class="tool-icon" id="maskTool" title="蒙版">
+                    <button class="tool-icon" id="maskTool" data-tip="蒙版|支持长方形/圆形/椭圆/自定义多边形蒙版，只保留选区内的图像内容">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><path d="M3 9h12M9 3v12M4.7 4.7l8.6 8.6M13.3 4.7L4.7 13.3"/></svg>
                     </button>
-                    <button class="tool-icon" id="rotateTool" title="旋转">
+                    <button class="tool-icon" id="rotateTool" data-tip="旋转|自由旋转图片角度，可拖拽红点调整旋转中心，支持一键顺时针/逆时针90度">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3v3l2.5-2L9 2z"/><path d="M15 9a6 6 0 11-2.5-4.9"/></svg>
                     </button>
-                    <button class="tool-icon" id="mirrorHBtn" title="左右镜像">
+                    <button class="tool-icon" id="mirrorHBtn" data-tip="左右镜像|将图片沿垂直轴翻转，左右内容互换，立即生效无需确认">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2v14M14 5l-3 4 3 4zM7 5l3 4-3 4z"/></svg>
                     </button>
-                    <button class="tool-icon" id="mirrorVBtn" title="上下镜像">
+                    <button class="tool-icon" id="mirrorVBtn" data-tip="上下镜像|将图片沿水平轴翻转，上下内容互换，立即生效无需确认">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 9h14M5 14l4-3 4 3zM5 7l4 3 4-3z"/></svg>
                     </button>
-                    <div class="tool-divider"></div>
-                    <button class="tool-icon" id="sharpenTool" title="锐化">
+                    <button class="tool-icon" id="sharpenTool" data-tip="锐化|增强图像边缘清晰度，可先创建选区局部应用，调整强度后双击应用">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2l3 6 6 1-4.5 4 1 6L9 15l-5.5 4 1-6L0 9l6-1z"/></svg>
                     </button>
-                    <button class="tool-icon" id="blurTool" title="模糊化">
+                    <button class="tool-icon" id="blurTool" data-tip="模糊化|对图像进行高斯模糊处理，可创建选区局部模糊，常用于遮挡敏感内容">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="5" stroke-dasharray="2,2"/><path d="M6 6c.5-.5 1-.8 1.5-1M12 12c-.5.5-1 .8-1.5 1M5 12c.5-.5 1-.8 1.5-1M13 6c-.5.5-1 .8-1.5 1"/></svg>
                     </button>
-                    <button class="tool-icon" id="mosaicTool" title="马赛克化">
+                    <button class="tool-icon" id="mosaicTool" data-tip="马赛克化|对选区进行像素化马赛克处理，可调整马赛克块大小，常用于隐私保护">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><rect x="2" y="2" width="4" height="4" opacity="0.7"/><rect x="7" y="2" width="4" height="4" opacity="0.9"/><rect x="12" y="2" width="4" height="4" opacity="0.5"/><rect x="2" y="7" width="4" height="4" opacity="0.4"/><rect x="7" y="7" width="4" height="4" opacity="0.8"/><rect x="12" y="7" width="4" height="4" opacity="0.6"/><rect x="2" y="12" width="4" height="4" opacity="0.9"/><rect x="7" y="12" width="4" height="4" opacity="0.5"/><rect x="12" y="12" width="4" height="4" opacity="0.7"/></svg>
                     </button>
-                    <button class="tool-icon" id="negativeTool" title="底片化（颜色反转）">
+                    <button class="tool-icon" id="negativeTool" data-tip="底片化（颜色反转）|将所有颜色反转为互补色，类似胶片底片效果，对全图立即生效">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="12" height="14" rx="1" fill="currentColor" fill-opacity="0.08"/><path d="M3 9h12"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
                     </button>
-                    <button class="tool-icon" id="hslTool" title="色度/饱和度/亮度">
+                    <button class="tool-icon" id="hslTool" data-tip="色度/饱和度/亮度|整体调整图片的色相（-180°~180°）、饱和度和亮度，调整后点击应用">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><circle cx="9" cy="9" r="2.5" stroke-dasharray="1.5,1.5"/></svg>
                     </button>
-                    <button class="tool-icon" id="localZoomTool" title="局部放大">
+                    <button class="tool-icon" id="localZoomTool" data-tip="局部放大|在画布上创建选区后将其内容放大显示，可调整放大倍数、边框样式，生成可移动的放大图层">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="10" y="7" width="6" height="8" rx="1"/><path d="M9 6l3 4M7 10l4 2"/></svg>
                     </button>
-                    <div class="tool-divider"></div>
-                    <button class="tool-icon" id="pencilTool" title="铅笔工具">
+                    <button class="tool-icon" id="pencilTool" data-tip="铅笔工具|自由绘制线条。普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式，可调节锚点">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 16l3-1L14 6l-2-2L3 13l-1 3z"/><path d="M12 4l2 2"/></svg>
                     </button>
                 </div>
@@ -493,27 +491,64 @@
                 </div>
             </div>
             <div class="zoom-bar" id="zoomBar" style="display:none">
-                <button class="zoom-btn" id="zoomOutBtn" title="缩小">−</button>
+                <button class="zoom-btn" id="infoBtn" data-tip="图片信息|查看图片分辨率、格式、大小等详细元数据">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v.01M7.5 7.5h.5v4h.5"/></svg>
+                </button>
+                <button class="zoom-btn" id="histogramBtn" data-tip="直方图|查看图片亮度和RGB颜色通道分布统计">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V8M5 14V5M8 14V2M11 14V6M14 14V4"/></svg>
+                </button>
+                <div class="zoom-sep"></div>
+                <button class="zoom-btn" id="zoomOutBtn" data-tip="缩小|将画面显示比例缩小10%，快捷键：Ctrl + 滚轮">−</button>
                 <div class="zoom-slider-wrap">
-                    <input type="range" id="zoomSlider" min="5" max="500" value="100" step="1">
+                    <input type="range" id="zoomSlider" min="5" max="500" value="100" step="1" data-tip="缩放滑块|拖动调整画面显示比例（5%-500%）">
                 </div>
-                <button class="zoom-btn" id="zoomInBtn" title="放大">+</button>
+                <button class="zoom-btn" id="zoomInBtn" data-tip="放大|将画面显示比例放大10%，快捷键：Ctrl + 滚轮">+</button>
                 <span class="zoom-display" id="zoomDisplay">100%</span>
-                <button class="zoom-btn" id="zoomFitBtn" title="适应窗口">⊡</button>
-            </div>
-
-            <div class="history-panel" id="historyPanel" style="display:none">
-                <div class="history-title">
-                    <span>操作步骤 (最多 8 步)</span>
-                    <button class="history-clear" id="historyClearBtn" title="清除历史记录">清空</button>
-                </div>
-                <div class="history-list" id="historyList"></div>
+                <button class="zoom-btn" id="zoomFitBtn" data-tip="适应窗口|自动调整缩放使图片完整显示在画布区域">⊡</button>
             </div>
         </div>
 
         <div class="right-panel">
-            <div class="panel-title">对象</div>
+            <div class="panel-title right-panel-title">对象</div>
             <div class="object-list" id="objectList"></div>
+
+            <div class="panel-title right-panel-title history-title-bar">
+                <span>操作步骤</span>
+                <button class="history-clear" id="historyClearBtn" title="清除历史记录">清空</button>
+            </div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="infoModal" style="display:none">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>图片信息</span>
+                <button class="modal-close" id="infoModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="infoModalBody"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="histogramModal" style="display:none">
+        <div class="modal-box modal-wide">
+            <div class="modal-header">
+                <span>颜色直方图</span>
+                <button class="modal-close" id="histogramModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="histogram-tabs">
+                    <button class="hist-tab active" data-channel="luminance">亮度</button>
+                    <button class="hist-tab" data-channel="red">红色</button>
+                    <button class="hist-tab" data-channel="green">绿色</button>
+                    <button class="hist-tab" data-channel="blue">蓝色</button>
+                    <button class="hist-tab" data-channel="rgb">RGB 叠加</button>
+                </div>
+                <div class="histogram-wrap">
+                    <canvas id="histogramCanvas"></canvas>
+                </div>
+                <div class="histogram-stats" id="histogramStats"></div>
+            </div>
         </div>
     </div>
 

@@ -616,11 +616,512 @@
         });
     }
 
+    function setupTooltipSystem() {
+        var tooltip = document.createElement('div');
+        tooltip.className = 'custom-tooltip';
+        document.body.appendChild(tooltip);
+
+        var showDelay = 250;
+        var hideDelay = 100;
+        var showTimer = null;
+        var hideTimer = null;
+
+        function showTip(target, e) {
+            var tip = target.dataset.tip;
+            if (!tip) return;
+            var parts = tip.split('|');
+            var title = parts[0] || '';
+            var desc = parts[1] || '';
+
+            tooltip.innerHTML =
+                '<div class="tip-title">' + title + '</div>' +
+                (desc ? '<div class="tip-desc">' + desc + '</div>' : '');
+
+            clearTimeout(hideTimer);
+            clearTimeout(showTimer);
+
+            showTimer = setTimeout(function () {
+                var rect = target.getBoundingClientRect();
+                var tipRect = tooltip.getBoundingClientRect();
+                var x = rect.left + (rect.width / 2) - (tipRect.width / 2);
+                var y = rect.bottom + 10;
+
+                if (x < 8) x = 8;
+                if (x + tipRect.width > window.innerWidth - 8) {
+                    x = window.innerWidth - tipRect.width - 8;
+                }
+                if (y + tipRect.height > window.innerHeight - 8) {
+                    y = rect.top - tipRect.height - 10;
+                }
+
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+                tooltip.classList.add('visible');
+            }, showDelay);
+        }
+
+        function hideTip() {
+            clearTimeout(showTimer);
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function () {
+                tooltip.classList.remove('visible');
+            }, hideDelay);
+        }
+
+        document.addEventListener('mouseover', function (e) {
+            var target = e.target.closest('[data-tip]');
+            if (target) showTip(target, e);
+        });
+
+        document.addEventListener('mouseout', function (e) {
+            var target = e.target.closest('[data-tip]');
+            if (target) hideTip();
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (tooltip.classList.contains('visible')) {
+                var target = e.target.closest('[data-tip]');
+                if (!target) hideTip();
+            }
+        });
+    }
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        var k = 1024;
+        var sizes = ['B', 'KB', 'MB', 'GB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function getImageMetadata() {
+        var img = App.getActiveImage();
+        if (!img) return null;
+
+        var meta = {
+            basic: {},
+            file: {},
+            display: {},
+            pixels: {}
+        };
+
+        meta.basic = {
+            width: img.width + ' px',
+            height: img.height + ' px',
+            resolution: img.width + ' × ' + img.height,
+            aspectRatio: (img.width / img.height).toFixed(4) + ' : 1',
+            totalPixels: (img.width * img.height).toLocaleString(),
+            megapixels: (img.width * img.height / 1000000).toFixed(2) + ' MP'
+        };
+
+        if (img.file) {
+            var f = img.file;
+            var fname = f.name || '';
+            var ext = fname.indexOf('.') > -1 ? fname.split('.').pop().toUpperCase() : 'UNKNOWN';
+            var lastMod = f.lastModified ? new Date(f.lastModified) : null;
+
+            meta.file = {
+                fileName: f.name || '（已修改，未保存）',
+                fileType: f.type || 'image/' + ext.toLowerCase(),
+                fileFormat: ext,
+                fileSize: f.size ? formatBytes(f.size) : '—',
+                rawSize: f.size ? f.size.toLocaleString() + ' bytes' : '—',
+                lastModified: lastMod ? lastMod.toLocaleString('zh-CN') : '—'
+            };
+        } else {
+            meta.file = {
+                fileName: '（新文件，未保存）',
+                fileType: '—',
+                fileFormat: '—',
+                fileSize: '—',
+                rawSize: '—',
+                lastModified: '—'
+            };
+        }
+
+        var zoom = App.state.zoom || 100;
+        var dispW = Math.round(img.width * zoom / 100);
+        var dispH = Math.round(img.height * zoom / 100);
+
+        meta.display = {
+            zoomLevel: zoom + '%',
+            displaySize: dispW + ' × ' + dispH + ' px',
+            fitMode: '自适应窗口',
+            colorDepth: '24-bit RGB (每通道8位)',
+            colorChannels: 'R · G · B (Alpha: ' + (img.hasTransparency ? '是' : '否') + ')'
+        };
+
+        var canvas = App.els().mainCanvas;
+        if (canvas) {
+            try {
+                var ctx = canvas.getContext('2d', { willReadFrequently: true });
+                var w = Math.min(img.width, 300);
+                var h = Math.min(img.height, 300);
+                var sx = img.width > w ? Math.floor((img.width - w) / 2) : 0;
+                var sy = img.height > h ? Math.floor((img.height - h) / 2) : 0;
+                var sw = Math.min(w, img.width);
+                var sh = Math.min(h, img.height);
+                var data = ctx.getImageData(sx, sy, sw, sh).data;
+                var total = data.length / 4;
+                var rSum = 0, gSum = 0, bSum = 0;
+                var opaque = 0;
+                for (var i = 0; i < data.length; i += 4) {
+                    rSum += data[i];
+                    gSum += data[i + 1];
+                    bSum += data[i + 2];
+                    if (data[i + 3] > 0) opaque++;
+                }
+                meta.pixels = {
+                    sampledPixels: total.toLocaleString() + ' (采样)',
+                    avgBrightness: Math.round((rSum + gSum + bSum) / (3 * total)),
+                    avgR: Math.round(rSum / total),
+                    avgG: Math.round(gSum / total),
+                    avgB: Math.round(bSum / total),
+                    avgColor: 'rgb(' + Math.round(rSum / total) + ', ' + Math.round(gSum / total) + ', ' + Math.round(bSum / total) + ')',
+                    opaqueRatio: ((opaque / total) * 100).toFixed(1) + '%'
+                };
+            } catch (err) {
+                meta.pixels = {
+                    sampledPixels: '（无法读取）',
+                    avgBrightness: '—',
+                    avgR: '—',
+                    avgG: '—',
+                    avgB: '—',
+                    avgColor: '—',
+                    opaqueRatio: '—'
+                };
+            }
+        }
+
+        return meta;
+    }
+
+    function buildInfoHtml(meta) {
+        function section(title) {
+            return '<div class="info-section-title">' + title + '</div>';
+        }
+        function row(label, value) {
+            return '<div class="info-row"><div class="info-label">' + label + '</div><div class="info-value">' + value + '</div></div>';
+        }
+        function grid(rows) {
+            return '<div class="info-grid">' + rows + '</div>';
+        }
+
+        var html = '';
+        html += section('基础信息');
+        html += grid(
+            row('宽度', meta.basic.width) +
+            row('高度', meta.basic.height) +
+            row('分辨率', meta.basic.resolution) +
+            row('宽高比', meta.basic.aspectRatio) +
+            row('总像素', meta.basic.totalPixels) +
+            row('百万像素', meta.basic.megapixels)
+        );
+
+        html += section('文件信息');
+        html += grid(
+            row('文件名', meta.file.fileName) +
+            row('格式', meta.file.fileFormat) +
+            row('MIME类型', meta.file.fileType) +
+            row('文件大小', meta.file.fileSize) +
+            row('原始大小', meta.file.rawSize) +
+            row('修改时间', meta.file.lastModified)
+        );
+
+        html += section('显示信息');
+        html += grid(
+            row('缩放比例', meta.display.zoomLevel) +
+            row('显示尺寸', meta.display.displaySize) +
+            row('适配模式', meta.display.fitMode) +
+            row('色彩深度', meta.display.colorDepth) +
+            row('颜色通道', meta.display.colorChannels)
+        );
+
+        html += section('像素统计');
+        html += grid(
+            row('采样像素', meta.pixels.sampledPixels) +
+            row('平均亮度', meta.pixels.avgBrightness + ' / 255') +
+            row('平均 R', meta.pixels.avgR) +
+            row('平均 G', meta.pixels.avgG) +
+            row('平均 B', meta.pixels.avgB) +
+            row('平均色', meta.pixels.avgColor) +
+            row('不透明率', meta.pixels.opaqueRatio)
+        );
+
+        return html;
+    }
+
+    function setupInfoModal() {
+        var els = App.els();
+        if (!els.infoBtn || !els.infoModal) return;
+
+        function openInfo() {
+            var img = App.getActiveImage();
+            if (!img) { App.showToast('请先打开一张图片'); return; }
+
+            var meta = getImageMetadata();
+            if (!meta) return;
+
+            els.infoModal.querySelector('.modal-body').innerHTML = buildInfoHtml(meta);
+            els.infoModal.style.display = 'flex';
+        }
+
+        function closeInfo() {
+            els.infoModal.style.display = 'none';
+        }
+
+        els.infoBtn.addEventListener('click', openInfo);
+        els.infoModal.addEventListener('click', function (e) {
+            if (e.target === els.infoModal || e.target.classList.contains('modal-close')) {
+                closeInfo();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && els.infoModal.style.display === 'flex') {
+                closeInfo();
+            }
+        });
+    }
+
+    function computeHistogramData(channel) {
+        var img = App.getActiveImage();
+        var canvas = App.els().mainCanvas;
+        if (!img || !canvas) return null;
+
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        var data;
+        try {
+            data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        } catch (err) {
+            return null;
+        }
+
+        var hist = new Array(256).fill(0);
+        var total = 0;
+        var minV = 255, maxV = 0;
+        var sumV = 0;
+
+        for (var i = 0; i < data.length; i += 4) {
+            var v;
+            if (channel === 'r') v = data[i];
+            else if (channel === 'g') v = data[i + 1];
+            else if (channel === 'b') v = data[i + 2];
+            else if (channel === 'a') v = data[i + 3];
+            else v = Math.round((data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114));
+
+            hist[v]++;
+            total++;
+            if (v < minV) minV = v;
+            if (v > maxV) maxV = v;
+            sumV += v;
+        }
+
+        var meanV = total > 0 ? sumV / total : 0;
+        var variance = 0;
+        var medianV = 0;
+        var p25 = 0, p75 = 0;
+        if (total > 0) {
+            for (var j = 0; j < 256; j++) {
+                variance += hist[j] * (j - meanV) * (j - meanV);
+            }
+            variance = variance / total;
+
+            var acc = 0;
+            var p25Count = Math.floor(total * 0.25);
+            var p50Count = Math.floor(total * 0.5);
+            var p75Count = Math.floor(total * 0.75);
+            for (var k = 0; k < 256; k++) {
+                acc += hist[k];
+                if (p25 === 0 && acc >= p25Count) p25 = k;
+                if (medianV === 0 && acc >= p50Count) medianV = k;
+                if (p75 === 0 && acc >= p75Count) { p75 = k; break; }
+            }
+        }
+
+        var maxCount = 0;
+        for (var m = 0; m < 256; m++) {
+            if (hist[m] > maxCount) maxCount = hist[m];
+        }
+
+        return {
+            hist: hist,
+            max: maxCount,
+            min: minV,
+            maxV: maxV,
+            mean: meanV,
+            median: medianV,
+            std: Math.sqrt(variance),
+            p25: p25,
+            p75: p75,
+            total: total
+        };
+    }
+
+    function getChannelColor(channel) {
+        if (channel === 'r') return '#ff5555';
+        if (channel === 'g') return '#55dd55';
+        if (channel === 'b') return '#5599ff';
+        if (channel === 'a') return '#dddddd';
+        return '#e0e0e0';
+    }
+
+    function renderHistogram(channel) {
+        var data = computeHistogramData(channel);
+        var canvas = document.getElementById('histogramCanvas');
+        if (!canvas || !data) return;
+
+        var dpr = window.devicePixelRatio || 1;
+        var w = canvas.clientWidth;
+        var h = canvas.clientHeight;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        var ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        for (var gx = 0; gx <= 4; gx++) {
+            var x = (w - 1) * (gx / 4);
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+        }
+        for (var gy = 0; gy <= 4; gy++) {
+            var y = (h - 1) * (gy / 4);
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+        }
+
+        var color = getChannelColor(channel);
+        var hist = data.hist;
+        var maxCount = data.max || 1;
+        var padding = 2;
+
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.85;
+
+        if (channel === 'rgb') {
+            var rData = computeHistogramData('r');
+            var gData = computeHistogramData('g');
+            var bData = computeHistogramData('b');
+            if (rData && gData && bData) {
+                ctx.globalAlpha = 0.5;
+                ctx.fillStyle = '#ff5555';
+                for (var i = 0; i < 256; i++) {
+                    var bh = Math.max(1, (rData.hist[i] / maxCount) * (h - padding * 2));
+                    var bx = (i / 255) * (w - 2) + 1;
+                    ctx.fillRect(bx - 0.5, h - padding - bh, 2, bh);
+                }
+                ctx.fillStyle = '#55dd55';
+                for (var i2 = 0; i2 < 256; i2++) {
+                    var bh2 = Math.max(1, (gData.hist[i2] / maxCount) * (h - padding * 2));
+                    var bx2 = (i2 / 255) * (w - 2) + 1;
+                    ctx.fillRect(bx2 - 0.5, h - padding - bh2, 2, bh2);
+                }
+                ctx.fillStyle = '#5599ff';
+                for (var i3 = 0; i3 < 256; i3++) {
+                    var bh3 = Math.max(1, (bData.hist[i3] / maxCount) * (h - padding * 2));
+                    var bx3 = (i3 / 255) * (w - 2) + 1;
+                    ctx.fillRect(bx3 - 0.5, h - padding - bh3, 2, bh3);
+                }
+            }
+        } else {
+            for (var n = 0; n < 256; n++) {
+                var barH = Math.max(1, (hist[n] / maxCount) * (h - padding * 2));
+                var barX = (n / 255) * (w - 2) + 1;
+                ctx.fillRect(barX - 0.5, h - padding - barH, 2, barH);
+            }
+        }
+
+        ctx.globalAlpha = 1;
+        var meanX = (data.mean / 255) * (w - 2) + 1;
+        ctx.strokeStyle = 'rgba(255,215,0,0.6)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(meanX, 4);
+        ctx.lineTo(meanX, h - 4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        var stats = document.getElementById('histogramStats');
+        if (stats) {
+            stats.innerHTML =
+                '<div class="stats-row">' +
+                '<div class="stat-item"><div class="stat-label">最小值</div><div class="stat-value">' + data.min + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">最大值</div><div class="stat-value">' + data.maxV + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">均值</div><div class="stat-value">' + data.mean.toFixed(1) + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">中位数</div><div class="stat-value">' + data.median + '</div></div>' +
+                '</div>' +
+                '<div class="stats-row" style="margin-top:10px;">' +
+                '<div class="stat-item"><div class="stat-label">标准差</div><div class="stat-value">' + data.std.toFixed(1) + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">25%分位</div><div class="stat-value">' + data.p25 + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">75%分位</div><div class="stat-value">' + data.p75 + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">像素总数</div><div class="stat-value">' + data.total.toLocaleString() + '</div></div>' +
+                '</div>';
+        }
+    }
+
+    function setupHistogramModal() {
+        var els = App.els();
+        if (!els.histogramBtn || !els.histogramModal) return;
+
+        var currentChannel = 'luma';
+
+        function setActiveTab(channel) {
+            currentChannel = channel;
+            var tabs = document.querySelectorAll('.hist-tab');
+            tabs.forEach(function (tab) {
+                tab.classList.toggle('active', tab.dataset.channel === channel);
+            });
+            renderHistogram(channel);
+        }
+
+        function openHist() {
+            var img = App.getActiveImage();
+            if (!img) { App.showToast('请先打开一张图片'); return; }
+            els.histogramModal.style.display = 'flex';
+            setActiveTab(currentChannel);
+        }
+
+        function closeHist() {
+            els.histogramModal.style.display = 'none';
+        }
+
+        els.histogramBtn.addEventListener('click', openHist);
+        els.histogramModal.addEventListener('click', function (e) {
+            if (e.target === els.histogramModal || e.target.classList.contains('modal-close')) {
+                closeHist();
+            }
+            if (e.target.classList.contains('hist-tab')) {
+                setActiveTab(e.target.dataset.channel);
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && els.histogramModal.style.display === 'flex') {
+                closeHist();
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            if (els.histogramModal.style.display === 'flex') {
+                renderHistogram(currentChannel);
+            }
+        });
+    }
+
     function init() {
         App.initEls();
         App.showUploadHint();
         setTool('select');
 
+        setupTooltipSystem();
         setupImageEvents();
         setupToolEvents();
         setupMirrorEvents();
@@ -629,6 +1130,9 @@
         setupPencilEvents();
         setupCanvasEvents();
         setupGlobalListeners();
+
+        setupInfoModal();
+        setupHistogramModal();
 
         App.TextStyle.setupEvents();
         App.Watermark.setupEvents();
