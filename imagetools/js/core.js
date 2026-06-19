@@ -37,7 +37,18 @@ var App = (function () {
         isDrawingPolygon: false,
         activeCrop: null,
         activeRectCrop: null,
-        activeMask: null
+        activeMask: null,
+        filterKind: null,
+        activeFilterSel: null,
+        filterPolygonPoints: [],
+        activeLzSel: null,
+        pencilActive: false,
+        pencilDrawing: false,
+        pencilMode: 'free',
+        pencilStartPoint: null,
+        pencilLastPoint: null,
+        pencilCurvePoints: [],
+        pencilCurveAnchors: []
     };
 
     var els = {};
@@ -56,6 +67,13 @@ var App = (function () {
             rotateTool: document.getElementById('rotateTool'),
             mirrorHBtn: document.getElementById('mirrorHBtn'),
             mirrorVBtn: document.getElementById('mirrorVBtn'),
+            sharpenTool: document.getElementById('sharpenTool'),
+            blurTool: document.getElementById('blurTool'),
+            mosaicTool: document.getElementById('mosaicTool'),
+            negativeTool: document.getElementById('negativeTool'),
+            hslTool: document.getElementById('hslTool'),
+            localZoomTool: document.getElementById('localZoomTool'),
+            pencilTool: document.getElementById('pencilTool'),
             textPropsSection: document.getElementById('textPropsSection'),
             watermarkPropsSection: document.getElementById('watermarkPropsSection'),
             resizePropsSection: document.getElementById('resizePropsSection'),
@@ -63,6 +81,44 @@ var App = (function () {
             rectCropPropsSection: document.getElementById('rectCropPropsSection'),
             maskPropsSection: document.getElementById('maskPropsSection'),
             rotatePropsSection: document.getElementById('rotatePropsSection'),
+            filterPropsSection: document.getElementById('filterPropsSection'),
+            filterTitle: document.getElementById('filterTitle'),
+            filterSelType: document.getElementById('filterSelType'),
+            filterSizeContent: document.getElementById('filterSizeContent'),
+            createFilterSel: document.getElementById('createFilterSel'),
+            clearFilterSel: document.getElementById('clearFilterSel'),
+            filterStrengthGroup: document.getElementById('filterStrengthGroup'),
+            filterStrengthDisp: document.getElementById('filterStrengthDisp'),
+            filterStrength: document.getElementById('filterStrength'),
+            filterMosaicGroup: document.getElementById('filterMosaicGroup'),
+            mosaicSizeDisp: document.getElementById('mosaicSizeDisp'),
+            mosaicSize: document.getElementById('mosaicSize'),
+            applyFilter: document.getElementById('applyFilter'),
+            hslPropsSection: document.getElementById('hslPropsSection'),
+            hueAdjust: document.getElementById('hueAdjust'),
+            hueDisp: document.getElementById('hueDisp'),
+            satAdjust: document.getElementById('satAdjust'),
+            satDisp: document.getElementById('satDisp'),
+            lumAdjust: document.getElementById('lumAdjust'),
+            lumDisp: document.getElementById('lumDisp'),
+            resetHsl: document.getElementById('resetHsl'),
+            applyHsl: document.getElementById('applyHsl'),
+            localZoomPropsSection: document.getElementById('localZoomPropsSection'),
+            lzShape: document.getElementById('lzShape'),
+            createLzSel: document.getElementById('createLzSel'),
+            lzBorderColor: document.getElementById('lzBorderColor'),
+            lzBorderWidth: document.getElementById('lzBorderWidth'),
+            lzBorderStyle: document.getElementById('lzBorderStyle'),
+            lzZoom: document.getElementById('lzZoom'),
+            lzZoomDisp: document.getElementById('lzZoomDisp'),
+            pencilPropsSection: document.getElementById('pencilPropsSection'),
+            pencilColor: document.getElementById('pencilColor'),
+            pencilColorText: document.getElementById('pencilColorText'),
+            pencilWidth: document.getElementById('pencilWidth'),
+            pencilOpacity: document.getElementById('pencilOpacity'),
+            pencilOpacityDisp: document.getElementById('pencilOpacityDisp'),
+            pencilCap: document.getElementById('pencilCap'),
+            clearPencilLayer: document.getElementById('clearPencilLayer'),
             uploadWatermarkBtn: document.getElementById('uploadWatermarkBtn'),
             fontFamily: document.getElementById('fontFamily'),
             fontSize: document.getElementById('fontSize'),
@@ -116,6 +172,9 @@ var App = (function () {
             rotateRight90: document.getElementById('rotateRight90'),
             rotateReset: document.getElementById('rotateReset'),
             applyRotate: document.getElementById('applyRotate'),
+            historyPanel: document.getElementById('historyPanel'),
+            historyList: document.getElementById('historyList'),
+            historyClearBtn: document.getElementById('historyClearBtn'),
             tabBar: document.getElementById('tabBar'),
             canvasContainer: document.getElementById('canvasContainer'),
             canvasScrollContent: document.getElementById('canvasScrollContent'),
@@ -186,6 +245,9 @@ var App = (function () {
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, imgObj.width, imgObj.height);
         ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
+        if (imgObj.pencilCanvas) {
+            ctx.drawImage(imgObj.pencilCanvas, 0, 0);
+        }
 
         els.canvasWrapper.style.width = toDisplay(imgObj.width) + 'px';
         els.canvasWrapper.style.height = toDisplay(imgObj.height) + 'px';
@@ -222,6 +284,45 @@ var App = (function () {
         document.dispatchEvent(ev);
     }
 
+    function setActiveImgTool(tool) {
+        deactivateAllImgTools();
+        state.activeImgTool = tool;
+    }
+
+    function deactivateAllImgTools() {
+        if (state.activeImgTool === 'resize' && App.ImageResize) App.ImageResize.deactivate();
+        else if ((state.activeImgTool === 'crop' || state.activeImgTool === 'rectcrop') && App.ImageCrop) App.ImageCrop.deactivate();
+        else if (state.activeImgTool === 'mask' && App.ImageMask) App.ImageMask.deactivate();
+        else if (state.activeImgTool === 'rotate' && App.ImageTransform) App.ImageTransform.deactivateRotate();
+        else if ((state.activeImgTool === 'filter') && App.Filters) App.Filters.deactivate();
+        else if (state.activeImgTool === 'hsl' && App.Filters) App.Filters.deactivateHsl();
+        else if (state.activeImgTool === 'localzoom' && App.LocalZoom) App.LocalZoom.deactivate();
+        else if (state.activeImgTool === 'pencil' && App.Pencil) App.Pencil.deactivate();
+        state.activeImgTool = null;
+        if (els.rotateCenterHandle) els.rotateCenterHandle.style.display = 'none';
+    }
+
+    var _toastTimer = null;
+    function showToast(msg, duration) {
+        var old = document.getElementById('__app_toast');
+        if (old) old.parentNode.removeChild(old);
+        var t = document.createElement('div');
+        t.id = '__app_toast';
+        t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;z-index:99999;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.4);';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        if (_toastTimer) clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(function () {
+            if (t.parentNode) t.parentNode.removeChild(t);
+        }, duration || 2000);
+    }
+
+    function renderAll() {
+        renderCanvas();
+        if (App.Text) App.Text.renderAllObjects();
+        if (App.Objects) App.Objects.renderObjectList();
+    }
+
     return {
         state: state,
         els: function () { return els; },
@@ -239,6 +340,10 @@ var App = (function () {
         showCanvasArea: showCanvasArea,
         updateZoomUI: updateZoomUI,
         clearOperationLayer: clearOperationLayer,
-        trigger: trigger
+        trigger: trigger,
+        setActiveImgTool: setActiveImgTool,
+        deactivateAllImgTools: deactivateAllImgTools,
+        showToast: showToast,
+        renderAll: renderAll
     };
 })();

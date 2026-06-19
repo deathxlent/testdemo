@@ -5,16 +5,23 @@
         if (!imgObj) { els.objectLayer.innerHTML = ''; return; }
 
         var existing = {};
-        els.objectLayer.querySelectorAll('.text-box, .watermark-box').forEach(function (el) {
-            existing[el.dataset.id] = el;
+        els.objectLayer.querySelectorAll('.text-box, .watermark-box, .localzoom-box, .localzoom-source').forEach(function (el) {
+            if (!existing[el.dataset.objId]) existing[el.dataset.objId] = [];
+            existing[el.dataset.objId].push(el);
         });
 
         var fragment = document.createDocumentFragment();
         imgObj.objects.forEach(function (obj) {
-            if (existing[obj.id]) {
-                if (obj.type === 'text') updateTextBoxDOM(existing[obj.id], obj);
-                else updateWatermarkBoxDOM(existing[obj.id], obj);
-                fragment.appendChild(existing[obj.id]);
+            if (obj.type === 'localzoom') {
+                if (App.LocalZoom) {
+                    App.LocalZoom.drawToObjectLayer(obj, fragment);
+                }
+                if (existing[obj.id]) delete existing[obj.id];
+            } else if (existing[obj.id] && existing[obj.id].length) {
+                var el = existing[obj.id][0];
+                if (obj.type === 'text') updateTextBoxDOM(el, obj);
+                else updateWatermarkBoxDOM(el, obj);
+                fragment.appendChild(el);
                 delete existing[obj.id];
             } else {
                 if (obj.type === 'text') fragment.appendChild(createTextBoxDOM(obj));
@@ -23,8 +30,11 @@
         });
 
         Object.keys(existing).forEach(function (id) {
-            var el = existing[id];
-            if (el.parentNode) el.parentNode.removeChild(el);
+            if (existing[id]) {
+                existing[id].forEach(function (el) {
+                    if (el.parentNode) el.parentNode.removeChild(el);
+                });
+            }
         });
 
         els.objectLayer.innerHTML = '';

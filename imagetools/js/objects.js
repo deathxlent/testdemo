@@ -18,6 +18,9 @@
             if (obj.type === 'text') {
                 iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><text x="3" y="18" font-family="serif" font-weight="bold" font-size="20">T</text></svg>';
                 label = obj.text;
+            } else if (obj.type === 'localzoom') {
+                iconSvg = '<svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="10" y="7" width="6" height="8" rx="1"/><path d="M9 6l3 4M7 10l4 2"/></svg>';
+                label = (obj.name || '局部放大') + ' ' + obj.scale.toFixed(1) + '×';
             } else {
                 iconSvg = '<svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M2 13l4-4 3 3 2-2 5 5"/><circle cx="7" cy="6" r="1.5"/></svg>';
                 label = obj.name || '水印';
@@ -34,7 +37,7 @@
 
             item.addEventListener('click', function (e) {
                 if (e.target.classList.contains('object-btn')) return;
-                App.Text.selectObject(obj.id);
+                selectObject(obj.id);
             });
 
             item.querySelectorAll('.object-btn').forEach(function (btn) {
@@ -49,22 +52,47 @@
         });
     }
 
+    function selectObject(id) {
+        App.Text.selectObject(id);
+    }
+
+    function refreshList() {
+        renderObjectList();
+    }
+
+    function moveLayer(imgObj, objId, delta) {
+        var idx = imgObj.objects.findIndex(function (o) { return o.id === objId; });
+        if (idx === -1) return;
+        var target = idx + delta;
+        if (target < 0 || target >= imgObj.objects.length) return;
+        var arr = imgObj.objects;
+        var tmp = arr[idx];
+        arr[idx] = arr[target];
+        arr[target] = tmp;
+        App.trigger('objects:changed');
+    }
+
     function handleObjectAction(id, action) {
+        var imgObj = App.getActiveImage();
+        if (!imgObj) return;
         switch (action) {
             case 'delete':
                 App.Text.deleteObject(id);
                 break;
             case 'up':
-                App.Watermark.moveLayer(1);
+                moveLayer(imgObj, id, 1);
                 break;
             case 'down':
-                App.Watermark.moveLayer(-1);
+                moveLayer(imgObj, id, -1);
                 break;
         }
     }
 
     App.Objects = {
         renderObjectList: renderObjectList,
-        handleObjectAction: handleObjectAction
+        handleObjectAction: handleObjectAction,
+        selectObject: selectObject,
+        refreshList: refreshList,
+        moveLayer: moveLayer
     };
 })();

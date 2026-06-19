@@ -4,6 +4,9 @@
         reader.onload = function (e) {
             var img = new Image();
             img.onload = function () {
+                var pencilCanvas = document.createElement('canvas');
+                pencilCanvas.width = img.naturalWidth;
+                pencilCanvas.height = img.naturalHeight;
                 var imageObj = {
                     id: 'img_' + App.state.nextImageId++,
                     name: file.name,
@@ -15,11 +18,15 @@
                     _origW: img.naturalWidth,
                     _origH: img.naturalHeight,
                     _prevW: img.naturalWidth,
-                    _prevH: img.naturalHeight
+                    _prevH: img.naturalHeight,
+                    pencilCanvas: pencilCanvas
                 };
                 App.state.images.push(imageObj);
                 switchImage(imageObj.id);
                 fitToView();
+                setTimeout(function () {
+                    if (App.History) App.History.initForImage(imageObj);
+                }, 10);
             };
             img.src = e.target.result;
         };
@@ -121,12 +128,46 @@
         App.trigger('zoom:changed');
     }
 
+    function resizePencilCanvas(imgObj, oldW, oldH, newW, newH, cropX, cropY) {
+        if (!imgObj) return;
+        cropX = cropX || 0;
+        cropY = cropY || 0;
+        var src = imgObj.pencilCanvas;
+        var dst = document.createElement('canvas');
+        dst.width = newW;
+        dst.height = newH;
+        var ctx = dst.getContext('2d');
+        if (src) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            try {
+                ctx.drawImage(src, cropX, cropY, oldW, oldH, 0, 0, newW, newH);
+            } catch (e) {}
+        }
+        imgObj.pencilCanvas = dst;
+    }
+
+    function resizeCanvas() {
+        var imgObj = App.getActiveImage();
+        if (!imgObj) return;
+        App.renderCanvas();
+        App.updateZoomUI();
+        App.trigger('zoom:changed');
+    }
+
     App.Images = {
         addImage: addImage,
         renderTabs: renderTabs,
         switchImage: switchImage,
         closeImage: closeImage,
         fitToView: fitToView,
-        setZoom: setZoom
+        setZoom: setZoom,
+        resizePencilCanvas: resizePencilCanvas,
+        resizeCanvas: resizeCanvas,
+        get tabs() {
+            return App.state.images.map(function (img) {
+                return { id: img.id, image: img };
+            });
+        }
     };
 })();

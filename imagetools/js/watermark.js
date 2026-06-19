@@ -18,6 +18,7 @@
                     name: file.name,
                     img: img,
                     src: e.target.result,
+                    _imgDataURL: e.target.result,
                     x: (imgObj.width - defW) / 2,
                     y: (imgObj.height - defH) / 2,
                     width: defW,

@@ -13,11 +13,17 @@
 
         ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
 
+        if (imgObj.pencilCanvas) {
+            ctx.drawImage(imgObj.pencilCanvas, 0, 0);
+        }
+
         imgObj.objects.forEach(function (obj) {
             if (obj.type === 'watermark') {
                 renderWatermark(ctx, obj);
             } else if (obj.type === 'text') {
                 renderText(ctx, obj);
+            } else if (obj.type === 'localzoom') {
+                renderLocalZoom(ctx, obj, imgObj);
             }
         });
 
@@ -88,6 +94,44 @@
             ctx.fillStyle = obj.color;
             ctx.fillText(line, x, y);
         });
+    }
+
+    function drawBorder(ctx, x, y, w, h, border) {
+        if (!border || !border.width || border.style === 'none') return;
+        ctx.save();
+        ctx.strokeStyle = border.color;
+        ctx.lineWidth = border.width;
+        var b = border.width / 2;
+        if (border.style === 'dashed') ctx.setLineDash([border.width * 2, border.width]);
+        else if (border.style === 'dotted') ctx.setLineDash([border.width, border.width]);
+        else if (border.style === 'double') ctx.lineWidth = border.width * 3;
+        ctx.strokeRect(x + b, y + b, w - 2 * b, h - 2 * b);
+        ctx.restore();
+    }
+
+    function renderLocalZoom(ctx, obj, imgObj) {
+        drawBorder(ctx, obj.srcX, obj.srcY, obj.srcW, obj.srcH, obj.srcBorder);
+        var bw = Math.round(obj.srcW * obj.scale);
+        var bh = Math.round(obj.srcH * obj.scale);
+        var tmp = document.createElement('canvas');
+        tmp.width = bw;
+        tmp.height = bh;
+        var tctx = tmp.getContext('2d');
+        tctx.save();
+        if (obj.srcShape === 'ellipse') {
+            tctx.beginPath();
+            tctx.ellipse(bw / 2, bh / 2, bw / 2, bh / 2, 0, 0, Math.PI * 2);
+            tctx.clip();
+        }
+        tctx.imageSmoothingQuality = 'high';
+        tctx.drawImage(
+            imgObj.img,
+            obj.srcX, obj.srcY, obj.srcW, obj.srcH,
+            0, 0, bw, bh
+        );
+        tctx.restore();
+        ctx.drawImage(tmp, obj.x, obj.y, bw, bh);
+        drawBorder(ctx, obj.x, obj.y, bw, bh, obj.srcBorder);
     }
 
     function setupEvents() {
