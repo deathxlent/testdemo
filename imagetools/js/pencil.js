@@ -19,7 +19,7 @@
             App.state.pencilCurvePoints = [];
             App.state.pencilCurveAnchors = [];
             App.clearOperationLayer();
-            if (App.els.pencilPropsSection) App.els.pencilPropsSection.style.display = 'block';
+            if (App.els().pencilPropsSection) App.els().pencilPropsSection.style.display = 'block';
             this.refreshOpacityLabel();
             this.initPreviewCanvas();
             this.renderAnchors();
@@ -36,12 +36,12 @@
                 this.previewCanvas = null;
                 this.previewCtx = null;
             }
-            if (App.els.pencilPropsSection) App.els.pencilPropsSection.style.display = 'none';
+            if (App.els().pencilPropsSection) App.els().pencilPropsSection.style.display = 'none';
         },
 
         refreshOpacityLabel: function () {
-            if (App.els.pencilOpacityDisp) {
-                App.els.pencilOpacityDisp.textContent = App.els.pencilOpacity.value;
+            if (App.els().pencilOpacityDisp) {
+                App.els().pencilOpacityDisp.textContent = App.els().pencilOpacity.value;
             }
         },
 
@@ -63,7 +63,7 @@
         initPreviewCanvas: function () {
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
-            var layer = App.els.imgOperationLayer;
+            var layer = App.els().imgOperationLayer;
             var zoom = App.state.zoom / 100;
             if (this.previewCanvas && this.previewCanvas.parentNode) {
                 this.previewCanvas.parentNode.removeChild(this.previewCanvas);
@@ -85,10 +85,10 @@
         },
 
         strokeStyle: function (ctx) {
-            ctx.strokeStyle = App.els.pencilColor.value || '#000000';
-            ctx.lineWidth = parseFloat(App.els.pencilWidth.value) || 2;
-            ctx.globalAlpha = Math.max(0.01, (parseFloat(App.els.pencilOpacity.value) || 100) / 100);
-            var cap = App.els.pencilCap.value || 'round';
+            ctx.strokeStyle = App.els().pencilColor.value || '#000000';
+            ctx.lineWidth = parseFloat(App.els().pencilWidth.value) || 2;
+            ctx.globalAlpha = Math.max(0.01, (parseFloat(App.els().pencilOpacity.value) || 100) / 100);
+            var cap = App.els().pencilCap.value || 'round';
             ctx.lineCap = cap;
             ctx.lineJoin = cap;
         },
@@ -128,9 +128,9 @@
             var ctx = App.getActiveImage().pencilCanvas.getContext('2d');
             this.strokeStyle(ctx);
             ctx.beginPath();
-            ctx.arc(imgX, imgY, (parseFloat(App.els.pencilWidth.value) || 2) / 2, 0, Math.PI * 2);
-            ctx.fillStyle = App.els.pencilColor.value || '#000';
-            ctx.globalAlpha = Math.max(0.01, (parseFloat(App.els.pencilOpacity.value) || 100) / 100);
+            ctx.arc(imgX, imgY, (parseFloat(App.els().pencilWidth.value) || 2) / 2, 0, Math.PI * 2);
+            ctx.fillStyle = App.els().pencilColor.value || '#000';
+            ctx.globalAlpha = Math.max(0.01, (parseFloat(App.els().pencilOpacity.value) || 100) / 100);
             ctx.fill();
             App.renderCanvas();
         },
@@ -272,7 +272,7 @@
         },
 
         renderAnchors: function () {
-            var layer = App.els.imgOperationLayer;
+            var layer = App.els().imgOperationLayer;
             if (!layer) return;
             var zoom = App.state.zoom / 100;
             var self = this;
@@ -303,7 +303,7 @@
         },
 
         renderControlHandle: function (anchor, pt, kind, idx) {
-            var layer = App.els.imgOperationLayer;
+            var layer = App.els().imgOperationLayer;
             var zoom = App.state.zoom / 100;
             var h = document.createElement('div');
             h.className = 'pencil-path-anchor is-control';
@@ -320,7 +320,7 @@
         },
 
         renderControlLine: function (x1, y1, x2, y2) {
-            var layer = App.els.imgOperationLayer;
+            var layer = App.els().imgOperationLayer;
             var zoom = App.state.zoom / 100;
             var line = document.createElement('div');
             line.className = 'pencil-path-control-line';

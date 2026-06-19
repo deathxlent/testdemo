@@ -15,14 +15,14 @@
             App.state.filterPolygonPoints = [];
 
             var titles = { sharpen: '锐化', blur: '模糊化', mosaic: '马赛克化', negative: '底片化' };
-            if (App.els.filterTitle) App.els.filterTitle.textContent = titles[kind] || '滤镜';
-            if (App.els.filterPropsSection) App.els.filterPropsSection.style.display = 'block';
-            if (App.els.filterStrengthGroup && (kind === 'sharpen' || kind === 'blur')) {
-                App.els.filterStrengthGroup.style.display = 'block';
-            } else if (App.els.filterStrengthGroup) {
-                App.els.filterStrengthGroup.style.display = 'none';
+            if (App.els().filterTitle) App.els().filterTitle.textContent = titles[kind] || '滤镜';
+            if (App.els().filterPropsSection) App.els().filterPropsSection.style.display = 'block';
+            if (App.els().filterStrengthGroup && (kind === 'sharpen' || kind === 'blur')) {
+                App.els().filterStrengthGroup.style.display = 'block';
+            } else if (App.els().filterStrengthGroup) {
+                App.els().filterStrengthGroup.style.display = 'none';
             }
-            if (App.els.filterMosaicGroup) App.els.filterMosaicGroup.style.display = (kind === 'mosaic') ? 'block' : 'none';
+            if (App.els().filterMosaicGroup) App.els().filterMosaicGroup.style.display = (kind === 'mosaic') ? 'block' : 'none';
             if (kind === 'negative') {
                 this.applyNegative();
                 App.deactivateAllImgTools();
@@ -37,7 +37,7 @@
             App.state.activeFilterSel = null;
             App.state.filterPolygonPoints = [];
             App.clearOperationLayer();
-            if (App.els.filterPropsSection) App.els.filterPropsSection.style.display = 'none';
+            if (App.els().filterPropsSection) App.els().filterPropsSection.style.display = 'none';
         },
 
         activateHsl: function () {
@@ -45,35 +45,35 @@
             App.Text.deselectAll();
             App.clearOperationLayer();
             App.setActiveImgTool('hsl');
-            if (App.els.hslPropsSection) App.els.hslPropsSection.style.display = 'block';
+            if (App.els().hslPropsSection) App.els().hslPropsSection.style.display = 'block';
             this.resetHslVals();
             this.refreshHslLabels();
         },
 
         deactivateHsl: function () {
             App.clearOperationLayer();
-            if (App.els.hslPropsSection) App.els.hslPropsSection.style.display = 'none';
+            if (App.els().hslPropsSection) App.els().hslPropsSection.style.display = 'none';
         },
 
         resetHslVals: function () {
-            if (App.els.hueAdjust) App.els.hueAdjust.value = 0;
-            if (App.els.satAdjust) App.els.satAdjust.value = 0;
-            if (App.els.lumAdjust) App.els.lumAdjust.value = 0;
+            if (App.els().hueAdjust) App.els().hueAdjust.value = 0;
+            if (App.els().satAdjust) App.els().satAdjust.value = 0;
+            if (App.els().lumAdjust) App.els().lumAdjust.value = 0;
         },
 
         refreshHslLabels: function () {
-            if (App.els.hueDisp) App.els.hueDisp.textContent = App.els.hueAdjust.value;
-            if (App.els.satDisp) App.els.satDisp.textContent = App.els.satAdjust.value;
-            if (App.els.lumDisp) App.els.lumDisp.textContent = App.els.lumAdjust.value;
+            if (App.els().hueDisp) App.els().hueDisp.textContent = App.els().hueAdjust.value;
+            if (App.els().satDisp) App.els().satDisp.textContent = App.els().satAdjust.value;
+            if (App.els().lumDisp) App.els().lumDisp.textContent = App.els().lumAdjust.value;
         },
 
         applyHsl: function () {
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
             if (App.History) App.History.push('色彩调整');
-            var h = parseFloat(App.els.hueAdjust.value) || 0;
-            var s = parseFloat(App.els.satAdjust.value) || 0;
-            var l = parseFloat(App.els.lumAdjust.value) || 0;
+            var h = parseFloat(App.els().hueAdjust.value) || 0;
+            var s = parseFloat(App.els().satAdjust.value) || 0;
+            var l = parseFloat(App.els().lumAdjust.value) || 0;
             var canvas = document.createElement('canvas');
             canvas.width = imgObj.width;
             canvas.height = imgObj.height;
@@ -95,9 +95,9 @@
         },
 
         renderSizeInputs: function () {
-            var el = App.els.filterSizeContent;
+            var el = App.els().filterSizeContent;
             if (!el) return;
-            var type = App.els.filterSelType.value;
+            var type = App.els().filterSelType.value;
             var html = '';
             if (type === 'rect') {
                 html += '<div class="prop-group two-col"><div><label>宽</label><input type="number" id="fw" min="1" value="' + Math.round(App.getActiveImage().width * 0.5) + '"></div>';
@@ -117,13 +117,13 @@
                 html = '<div class="panel-tip" style="margin:4px 0 8px">在图片上点击以增加多边形节点，至少 3 个节点，双击任意空白处或点应用按钮执行。</div>';
             }
             el.innerHTML = html;
-            if (App.els.clearFilterSel) App.els.clearFilterSel.style.display = (type === 'polygon') ? 'block' : 'none';
+            if (App.els().clearFilterSel) App.els().clearFilterSel.style.display = (type === 'polygon') ? 'block' : 'none';
         },
 
         createSelection: function () {
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
-            var type = App.els.filterSelType.value;
+            var type = App.els().filterSelType.value;
             var sel = { type: type };
             if (type === 'rect') {
                 sel.x = parseInt(document.getElementById('fx').value) || 0;
@@ -152,7 +152,7 @@
         },
 
         render: function () {
-            var layer = App.els.imgOperationLayer;
+            var layer = App.els().imgOperationLayer;
             if (!layer) return;
             layer.innerHTML = '';
             layer.classList.add('active');
@@ -344,7 +344,7 @@
         },
 
         onImageClick: function (x, y) {
-            if (App.els.filterSelType.value !== 'polygon') return;
+            if (App.els().filterSelType.value !== 'polygon') return;
             if (!App.state.activeFilterSel || App.state.activeFilterSel.type !== 'polygon') {
                 App.state.activeFilterSel = { type: 'polygon' };
                 App.state.filterPolygonPoints = [];
@@ -354,7 +354,7 @@
         },
 
         onImageDblClick: function () {
-            if (App.state.filterKind && App.els.filterSelType.value === 'polygon' && App.state.filterPolygonPoints.length >= 3) {
+            if (App.state.filterKind && App.els().filterSelType.value === 'polygon' && App.state.filterPolygonPoints.length >= 3) {
                 this.apply();
             }
         },
@@ -461,13 +461,13 @@
             ctx2.putImageData(imgData, 0, 0);
             var outData = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
             if (kind === 'sharpen') {
-                var strength = (parseInt(App.els.filterStrength.value) || 50) / 100;
+                var strength = (parseInt(App.els().filterStrength.value) || 50) / 100;
                 applySharpen(outData, strength);
             } else if (kind === 'blur') {
-                var passes = Math.max(1, Math.round((parseInt(App.els.filterStrength.value) || 50) / 12));
+                var passes = Math.max(1, Math.round((parseInt(App.els().filterStrength.value) || 50) / 12));
                 for (var i = 0; i < passes; i++) applyBoxBlur(outData);
             } else if (kind === 'mosaic') {
-                var size = Math.max(2, parseInt(App.els.mosaicSize.value) || 10);
+                var size = Math.max(2, parseInt(App.els().mosaicSize.value) || 10);
                 applyMosaic(outData, size);
             }
             return outData;

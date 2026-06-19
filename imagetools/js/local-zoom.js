@@ -8,25 +8,25 @@
             App.clearOperationLayer();
             App.setActiveImgTool('localzoom');
             App.state.activeLzSel = null;
-            if (App.els.localZoomPropsSection) App.els.localZoomPropsSection.style.display = 'block';
+            if (App.els().localZoomPropsSection) App.els().localZoomPropsSection.style.display = 'block';
             this.refreshZoomLabel();
         },
 
         deactivate: function () {
             App.state.activeLzSel = null;
             App.clearOperationLayer();
-            if (App.els.localZoomPropsSection) App.els.localZoomPropsSection.style.display = 'none';
+            if (App.els().localZoomPropsSection) App.els().localZoomPropsSection.style.display = 'none';
         },
 
         refreshZoomLabel: function () {
-            if (!App.els.lzZoomDisp) return;
-            App.els.lzZoomDisp.textContent = parseFloat(App.els.lzZoom.value).toFixed(2);
+            if (!App.els().lzZoomDisp) return;
+            App.els().lzZoomDisp.textContent = parseFloat(App.els().lzZoom.value).toFixed(2);
         },
 
         createSelection: function () {
             var img = App.getActiveImage();
             if (!img) return;
-            var shape = App.els.lzShape.value;
+            var shape = App.els().lzShape.value;
             var w = Math.round(img.width * 0.3);
             var h = Math.round(img.height * 0.3);
             var x = Math.round((img.width - w) / 2);
@@ -36,7 +36,7 @@
         },
 
         render: function () {
-            var layer = App.els.imgOperationLayer;
+            var layer = App.els().imgOperationLayer;
             if (!layer) return;
             layer.innerHTML = '';
             layer.classList.add('active');
@@ -131,10 +131,10 @@
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
             if (App.History) App.History.push('局部放大');
-            var scale = parseFloat(App.els.lzZoom.value) || 2;
-            var borderColor = App.els.lzBorderColor.value || '#ff0000';
-            var borderWidth = parseInt(App.els.lzBorderWidth.value) || 0;
-            var borderStyle = App.els.lzBorderStyle.value || 'solid';
+            var scale = parseFloat(App.els().lzZoom.value) || 2;
+            var borderColor = App.els().lzBorderColor.value || '#ff0000';
+            var borderWidth = parseInt(App.els().lzBorderWidth.value) || 0;
+            var borderStyle = App.els().lzBorderStyle.value || 'solid';
             var bw = sel.w * scale;
             var bh = sel.h * scale;
             var lx = sel.x + sel.w + 20;
