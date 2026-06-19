@@ -1,10 +1,26 @@
 (function () {
+    function deactivateAllImgTools() {
+        if (App.state.activeImgTool === 'resize') { App.ImageResize.deactivate(); }
+        else if (App.state.activeImgTool === 'crop') { App.ImageCrop.deactivate(); }
+        else if (App.state.activeImgTool === 'rectcrop') { App.ImageCrop.deactivate(); }
+        else if (App.state.activeImgTool === 'mask') { App.ImageMask.deactivate(); }
+        else if (App.state.activeImgTool === 'rotate') { App.ImageTransform.deactivateRotate(); }
+        App.state.activeImgTool = null;
+        if (App.els().rotateCenterHandle) App.els().rotateCenterHandle.style.display = 'none';
+    }
+
     function setTool(tool) {
+        deactivateAllImgTools();
         App.state.activeTool = tool;
         var els = App.els();
         els.selectTool.classList.toggle('active', tool === 'select');
         els.textTool.classList.toggle('active', tool === 'text');
         els.watermarkTool.classList.toggle('active', tool === 'watermark');
+        els.resizeTool.classList.toggle('active', false);
+        els.cropTool.classList.toggle('active', false);
+        els.rectCropTool.classList.toggle('active', false);
+        els.maskTool.classList.toggle('active', false);
+        els.rotateTool.classList.toggle('active', false);
 
         var wrapper = els.canvasWrapper;
         if (tool === 'text') {
@@ -16,12 +32,56 @@
         }
     }
 
+    function activateImgTool(tool) {
+        deactivateAllImgTools();
+        setTool('select');
+        App.Text.deselectAll();
+        var els = App.els();
+        if (tool === 'resize') {
+            if (App.ImageResize.activate()) els.resizeTool.classList.add('active');
+        } else if (tool === 'crop') {
+            if (App.ImageCrop.activateCrop()) els.cropTool.classList.add('active');
+        } else if (tool === 'rectcrop') {
+            if (App.ImageCrop.activateRectCrop()) els.rectCropTool.classList.add('active');
+        } else if (tool === 'mask') {
+            if (App.ImageMask.activate()) els.maskTool.classList.add('active');
+        } else if (tool === 'rotate') {
+            if (App.ImageTransform.activateRotate()) els.rotateTool.classList.add('active');
+        }
+    }
+
     function updateRightPanel() {
         var els = App.els();
         var obj = App.getActiveObj();
 
         els.textPropsSection.style.display = (obj && obj.type === 'text') ? 'block' : 'none';
         els.watermarkPropsSection.style.display = (obj && obj.type === 'watermark') ? 'block' : 'none';
+
+        if (App.state.activeImgTool === 'resize') {
+            // keep shown
+        } else {
+            els.resizePropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'crop') {
+            // keep shown
+        } else {
+            els.cropPropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'rectcrop') {
+            // keep shown
+        } else {
+            els.rectCropPropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'mask') {
+            // keep shown
+        } else {
+            els.maskPropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'rotate') {
+            // keep shown
+        } else {
+            els.rotatePropsSection.style.display = 'none';
+        }
 
         if (obj && obj.type === 'text') {
             App.TextStyle.updateUIForSelected();
@@ -81,6 +141,11 @@
             setTool('watermark');
             els.watermarkInput.click();
         });
+        els.resizeTool.addEventListener('click', function () { activateImgTool('resize'); });
+        els.cropTool.addEventListener('click', function () { activateImgTool('crop'); });
+        els.rectCropTool.addEventListener('click', function () { activateImgTool('rectcrop'); });
+        els.maskTool.addEventListener('click', function () { activateImgTool('mask'); });
+        els.rotateTool.addEventListener('click', function () { activateImgTool('rotate'); });
 
         document.addEventListener('keydown', function (e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
@@ -88,6 +153,9 @@
             else if (e.key === 't' || e.key === 'T') { setTool('text'); }
             else if (e.key === 'Delete' || e.key === 'Backspace') {
                 if (App.state.selectedObjId) App.Text.deleteObject(App.state.selectedObjId);
+            } else if (e.key === 'Escape') {
+                deactivateAllImgTools();
+                App.Text.deselectAll();
             }
         });
     }
@@ -135,10 +203,21 @@
                 return;
             }
 
+            if (App.state.activeImgTool === 'mask') {
+                App.ImageMask.onImgClick(e);
+                return;
+            }
+
             if (App.state.activeTool === 'text') {
                 App.Text.startDrawingRect(e);
             } else if (App.state.activeTool === 'select' && !box) {
                 App.Text.deselectAll();
+            }
+        });
+
+        els.canvasWrapper.addEventListener('dblclick', function (e) {
+            if (App.state.activeImgTool === 'mask') {
+                App.ImageMask.onImgDblClick(e);
             }
         });
 
@@ -326,6 +405,10 @@
         App.TextStyle.setupEvents();
         App.Watermark.setupEvents();
         App.Export.setupEvents();
+        App.ImageResize.setupEvents();
+        App.ImageCrop.setupEvents();
+        App.ImageMask.setupEvents();
+        App.ImageTransform.setupEvents();
 
         App.Objects.renderObjectList();
         updateRightPanel();

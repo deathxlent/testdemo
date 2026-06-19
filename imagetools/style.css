@@ -753,3 +753,229 @@ html, body {
 .canvas-container::-webkit-scrollbar-corner {
     background: #1a1a1a;
 }
+
+.chk-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #bbb;
+    user-select: none;
+}
+
+.chk-label input {
+    accent-color: #0078d7;
+    cursor: pointer;
+}
+
+.panel-tip {
+    margin-top: 6px;
+    padding: 5px 8px;
+    background: #262626;
+    border-left: 2px solid #0078d7;
+    border-radius: 2px;
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+}
+
+.img-operation-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+    overflow: visible;
+}
+
+.img-operation-layer.active {
+    pointer-events: auto;
+}
+
+.crop-dim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.crop-dim-top, .crop-dim-bottom,
+.crop-dim-left, .crop-dim-right {
+    position: absolute;
+    background: rgba(0,0,0,0.55);
+}
+
+.crop-dim-top { top: 0; left: 0; right: 0; }
+.crop-dim-bottom { bottom: 0; left: 0; right: 0; }
+.crop-dim-left { top: 0; left: 0; }
+.crop-dim-right { top: 0; right: 0; }
+
+.crop-box, .rectcrop-box {
+    position: absolute;
+    border: 1px solid #0078d7;
+    background: transparent;
+    box-sizing: border-box;
+    cursor: move;
+    pointer-events: auto;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset;
+}
+
+.crop-box::before, .rectcrop-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(to right, rgba(0,120,215,0.3) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,120,215,0.3) 1px, transparent 1px);
+    background-size: 33.33% 33.33%;
+    pointer-events: none;
+}
+
+.crop-box .resize-handle,
+.rectcrop-box .resize-handle,
+.mask-shape .resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border: 1.5px solid #0078d7;
+    border-radius: 50%;
+    display: block;
+    z-index: 5;
+}
+
+.crop-box .h-nw, .rectcrop-box .h-nw, .mask-shape .h-nw { top: -5px; left: -5px; cursor: nw-resize; }
+.crop-box .h-ne, .rectcrop-box .h-ne, .mask-shape .h-ne { top: -5px; right: -5px; cursor: ne-resize; }
+.crop-box .h-sw, .rectcrop-box .h-sw, .mask-shape .h-sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+.crop-box .h-se, .rectcrop-box .h-se, .mask-shape .h-se { bottom: -5px; right: -5px; cursor: se-resize; }
+.crop-box .h-n, .rectcrop-box .h-n, .mask-shape .h-n { top: -5px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.crop-box .h-s, .rectcrop-box .h-s, .mask-shape .h-s { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+.crop-box .h-w, .rectcrop-box .h-w, .mask-shape .h-w { top: 50%; left: -5px; transform: translateY(-50%); cursor: w-resize; }
+.crop-box .h-e, .rectcrop-box .h-e, .mask-shape .h-e { top: 50%; right: -5px; transform: translateY(-50%); cursor: e-resize; }
+
+.mask-shape {
+    position: absolute;
+    pointer-events: auto;
+    cursor: move;
+}
+
+.mask-shape.rect-mask {
+    border: 1.5px dashed #0078d7;
+    background: rgba(0,120,215,0.1);
+}
+
+.mask-shape.circle-mask,
+.mask-shape.ellipse-mask {
+    overflow: hidden;
+}
+
+.mask-shape.circle-mask::before,
+.mask-shape.ellipse-mask::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1.5px dashed #0078d7;
+    background: rgba(0,120,215,0.1);
+    pointer-events: none;
+}
+
+.mask-shape.circle-mask::before {
+    border-radius: 50%;
+}
+
+.mask-shape.ellipse-mask::before {
+    border-radius: 50%;
+}
+
+.polygon-draw-hint {
+    position: absolute;
+    padding: 4px 10px;
+    background: rgba(0,120,215,0.85);
+    color: #fff;
+    font-size: 11px;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translate(-50%, -150%);
+    z-index: 30;
+}
+
+.polygon-point {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffd700;
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 25;
+    pointer-events: auto;
+    transition: background 0.1s, transform 0.1s;
+}
+
+.polygon-point:hover {
+    background: #ffa500;
+    transform: translate(-50%, -50%) scale(1.3);
+}
+
+.polygon-point.first-point {
+    background: #ff4444;
+    box-shadow: 0 0 0 2px rgba(255,68,68,0.3);
+}
+
+.polygon-line {
+    position: absolute;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.rotate-center-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e74c3c;
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    cursor: grab;
+    box-shadow: 0 0 6px rgba(231,76,60,0.6);
+    pointer-events: auto;
+}
+
+.rotate-center-handle::before,
+.rotate-center-handle::after {
+    content: "";
+    position: absolute;
+    background: rgba(231,76,60,0.4);
+    pointer-events: none;
+}
+
+.rotate-center-handle::before {
+    top: 50%;
+    left: -200px;
+    right: -200px;
+    height: 1px;
+}
+
+.rotate-center-handle::after {
+    left: 50%;
+    top: -200px;
+    bottom: -200px;
+    width: 1px;
+}
+
+.rotate-center-handle:active {
+    cursor: grabbing;
+}
+
+.rotating-image #mainCanvas {
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.4));
+    transform-origin: 0 0;
+}

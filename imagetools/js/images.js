@@ -11,7 +11,11 @@
                     width: img.naturalWidth,
                     height: img.naturalHeight,
                     objects: [],
-                    _lastZoom: 100
+                    _lastZoom: 100,
+                    _origW: img.naturalWidth,
+                    _origH: img.naturalHeight,
+                    _prevW: img.naturalWidth,
+                    _prevH: img.naturalHeight
                 };
                 App.state.images.push(imageObj);
                 switchImage(imageObj.id);

@@ -4,6 +4,7 @@ var App = (function () {
         activeImageId: null,
         selectedObjId: null,
         activeTool: 'select',
+        activeImgTool: null,
         zoom: 100,
         nextImageId: 1,
         nextTextId: 1,
@@ -25,7 +26,18 @@ var App = (function () {
         resizeOrigH: 0,
         isRotating: false,
         rotateOrigAngle: 0,
-        rotateStartAngle: 0
+        rotateStartAngle: 0,
+        rotateAngle: 0,
+        rotateCenterX: null,
+        rotateCenterY: null,
+        isMovingRotateCenter: false,
+        mirrorH: false,
+        mirrorV: false,
+        polygonPoints: [],
+        isDrawingPolygon: false,
+        activeCrop: null,
+        activeRectCrop: null,
+        activeMask: null
     };
 
     var els = {};
@@ -37,8 +49,20 @@ var App = (function () {
             selectTool: document.getElementById('selectTool'),
             textTool: document.getElementById('textTool'),
             watermarkTool: document.getElementById('watermarkTool'),
+            resizeTool: document.getElementById('resizeTool'),
+            cropTool: document.getElementById('cropTool'),
+            rectCropTool: document.getElementById('rectCropTool'),
+            maskTool: document.getElementById('maskTool'),
+            rotateTool: document.getElementById('rotateTool'),
+            mirrorHBtn: document.getElementById('mirrorHBtn'),
+            mirrorVBtn: document.getElementById('mirrorVBtn'),
             textPropsSection: document.getElementById('textPropsSection'),
             watermarkPropsSection: document.getElementById('watermarkPropsSection'),
+            resizePropsSection: document.getElementById('resizePropsSection'),
+            cropPropsSection: document.getElementById('cropPropsSection'),
+            rectCropPropsSection: document.getElementById('rectCropPropsSection'),
+            maskPropsSection: document.getElementById('maskPropsSection'),
+            rotatePropsSection: document.getElementById('rotatePropsSection'),
             uploadWatermarkBtn: document.getElementById('uploadWatermarkBtn'),
             fontFamily: document.getElementById('fontFamily'),
             fontSize: document.getElementById('fontSize'),
@@ -65,6 +89,33 @@ var App = (function () {
             wmLayerDown: document.getElementById('wmLayerDown'),
             wmLayerTop: document.getElementById('wmLayerTop'),
             wmLayerBottom: document.getElementById('wmLayerBottom'),
+            resizeWidth: document.getElementById('resizeWidth'),
+            resizeHeight: document.getElementById('resizeHeight'),
+            resizeLock: document.getElementById('resizeLock'),
+            applyResize: document.getElementById('applyResize'),
+            cropX: document.getElementById('cropX'),
+            cropY: document.getElementById('cropY'),
+            cropW: document.getElementById('cropW'),
+            cropH: document.getElementById('cropH'),
+            resetCropBtn: document.getElementById('resetCropBtn'),
+            applyCrop: document.getElementById('applyCrop'),
+            rectCropW: document.getElementById('rectCropW'),
+            rectCropH: document.getElementById('rectCropH'),
+            rectCropLock: document.getElementById('rectCropLock'),
+            createRectCrop: document.getElementById('createRectCrop'),
+            maskType: document.getElementById('maskType'),
+            maskSizeInfo: document.getElementById('maskSizeInfo'),
+            maskSizeContent: document.getElementById('maskSizeContent'),
+            createMaskBtn: document.getElementById('createMaskBtn'),
+            clearMaskPoints: document.getElementById('clearMaskPoints'),
+            rotateAngle: document.getElementById('rotateAngle'),
+            rotateAngleDisp: document.getElementById('rotateAngleDisp'),
+            rotateCX: document.getElementById('rotateCX'),
+            rotateCY: document.getElementById('rotateCY'),
+            rotateLeft90: document.getElementById('rotateLeft90'),
+            rotateRight90: document.getElementById('rotateRight90'),
+            rotateReset: document.getElementById('rotateReset'),
+            applyRotate: document.getElementById('applyRotate'),
             tabBar: document.getElementById('tabBar'),
             canvasContainer: document.getElementById('canvasContainer'),
             canvasScrollContent: document.getElementById('canvasScrollContent'),
@@ -73,6 +124,8 @@ var App = (function () {
             mainCanvas: document.getElementById('mainCanvas'),
             objectLayer: document.getElementById('objectLayer'),
             selectionRect: document.getElementById('selectionRect'),
+            imgOperationLayer: document.getElementById('imgOperationLayer'),
+            rotateCenterHandle: document.getElementById('rotateCenterHandle'),
             zoomBar: document.getElementById('zoomBar'),
             zoomSlider: document.getElementById('zoomSlider'),
             zoomOutBtn: document.getElementById('zoomOutBtn'),
@@ -138,10 +191,19 @@ var App = (function () {
         els.canvasWrapper.style.height = toDisplay(imgObj.height) + 'px';
     }
 
+    function clearOperationLayer() {
+        if (els.imgOperationLayer) {
+            els.imgOperationLayer.innerHTML = '';
+            els.imgOperationLayer.classList.remove('active');
+        }
+    }
+
     function showUploadHint() {
         els.uploadHint.style.display = 'flex';
         els.canvasWrapper.style.display = 'none';
         els.zoomBar.style.display = 'none';
+        clearOperationLayer();
+        if (els.rotateCenterHandle) els.rotateCenterHandle.style.display = 'none';
     }
 
     function showCanvasArea() {
@@ -176,6 +238,7 @@ var App = (function () {
         showUploadHint: showUploadHint,
         showCanvasArea: showCanvasArea,
         updateZoomUI: updateZoomUI,
+        clearOperationLayer: clearOperationLayer,
         trigger: trigger
     };
 })();
