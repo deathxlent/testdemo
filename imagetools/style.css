@@ -137,6 +137,26 @@ html, body {
     border-color: #0078d7;
 }
 
+.prop-group input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #3d3d3d;
+    border-radius: 2px;
+    outline: none;
+}
+
+.prop-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #0078d7;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 .btn-row {
     display: flex;
     gap: 2px;
@@ -155,6 +175,7 @@ html, body {
     cursor: pointer;
     font-size: 13px;
     font-family: inherit;
+    flex: 1;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
@@ -198,6 +219,85 @@ html, body {
 
 .color-row input[type="text"]:focus {
     border-color: #0078d7;
+}
+
+.two-col {
+    display: flex;
+    gap: 4px;
+}
+
+.two-col > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.prop-group-sub {
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+
+.sub-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    background: #262626;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sub-header span {
+    font-size: 12px;
+    color: #aaa;
+}
+
+.sub-content {
+    padding: 6px 8px;
+}
+
+.toggle {
+    position: relative;
+    display: inline-block;
+    width: 28px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle span {
+    position: absolute;
+    inset: 0;
+    background-color: #444;
+    border-radius: 10px;
+    transition: 0.2s;
+}
+
+.toggle span:before {
+    content: "";
+    position: absolute;
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    top: 2px;
+    background-color: #999;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+.toggle input:checked + span {
+    background-color: #0078d7;
+}
+
+.toggle input:checked + span:before {
+    transform: translateX(12px);
+    background-color: #fff;
 }
 
 .center-area {
@@ -292,12 +392,18 @@ html, body {
     background-position: 0 0, 0 10px, 10px -10px, -10px 0;
 }
 
+.canvas-container.drag-over {
+    outline: 3px dashed #0078d7;
+    outline-offset: -3px;
+}
+
 .canvas-scroll-content {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 100%;
     min-height: 100%;
+    padding: 20px;
 }
 
 .upload-hint {
@@ -345,24 +451,24 @@ html, body {
     display: block;
 }
 
-.text-layer {
+.object-layer {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: visible;
 }
 
-.text-layer.cursor-text {
+.object-layer.cursor-text {
     cursor: text;
 }
 
-.text-layer.cursor-crosshair {
+.object-layer.cursor-crosshair {
     cursor: crosshair;
 }
 
-.text-box {
+.text-box, .watermark-box {
     position: absolute;
     border: 1px solid transparent;
     cursor: move;
@@ -372,11 +478,15 @@ html, body {
     min-height: 16px;
 }
 
-.text-box:hover {
+.watermark-box {
+    overflow: visible;
+}
+
+.text-box:hover, .watermark-box:hover {
     border-color: rgba(0,120,215,0.4);
 }
 
-.text-box.selected {
+.text-box.selected, .watermark-box.selected {
     border-color: #0078d7;
     outline: 1px solid #0078d7;
 }
@@ -402,6 +512,36 @@ html, body {
     overflow: visible;
 }
 
+.watermark-box img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+.watermark-rotate {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #0078d7;
+    border: 1px solid #fff;
+    cursor: grab;
+    display: none;
+    z-index: 6;
+}
+
+.watermark-box.selected .watermark-rotate {
+    display: block;
+}
+
+.watermark-rotate:active {
+    cursor: grabbing;
+}
+
 .resize-handle {
     position: absolute;
     width: 8px;
@@ -413,7 +553,8 @@ html, body {
     z-index: 5;
 }
 
-.text-box.selected .resize-handle {
+.text-box.selected .resize-handle,
+.watermark-box.selected .resize-handle {
     display: block;
 }
 
@@ -516,6 +657,7 @@ html, body {
     color: #999;
     user-select: none;
     transition: background 0.15s, color 0.15s;
+    border: 1px solid transparent;
 }
 
 .object-item:hover {
@@ -523,47 +665,58 @@ html, body {
     color: #ccc;
 }
 
-.object-item.selected {
+.object-item.active {
     background: #0078d7;
     color: #fff;
+    border-color: #0068c7;
 }
 
-.object-item .obj-icon {
-    font-weight: 700;
-    font-family: serif;
-    font-size: 13px;
+.object-item .object-icon {
     flex-shrink: 0;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid currentColor;
-    border-radius: 2px;
+    color: currentColor;
 }
 
-.object-item .obj-name {
+.object-item .object-name {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.object-item .obj-delete {
+.object-item .object-actions {
+    display: flex;
+    gap: 1px;
     opacity: 0;
-    font-size: 14px;
-    padding: 0 2px;
-    border-radius: 2px;
     transition: opacity 0.15s;
 }
 
-.object-item:hover .obj-delete {
-    opacity: 0.6;
+.object-item:hover .object-actions {
+    opacity: 1;
 }
 
-.object-item .obj-delete:hover {
-    opacity: 1;
-    background: #555;
+.object-item .object-actions .object-btn {
+    width: 20px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: currentColor;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+}
+
+.object-item .object-actions .object-btn:hover {
+    background: rgba(255,255,255,0.15);
 }
 
 .object-empty {
@@ -584,11 +737,6 @@ html, body {
 .object-list::-webkit-scrollbar-thumb {
     background: #555;
     border-radius: 2px;
-}
-
-.canvas-container.drag-over {
-    outline: 3px dashed #0078d7;
-    outline-offset: -3px;
 }
 
 .canvas-container::-webkit-scrollbar {
