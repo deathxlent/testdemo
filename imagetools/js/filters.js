@@ -48,7 +48,11 @@
             App.Text.deselectAll();
             App.clearOperationLayer();
             App.setActiveImgTool('hsl');
-            if (App.els().hslPropsSection) App.els().hslPropsSection.style.display = 'block';
+            var els = App.els();
+            if (els.hslPropsSection) els.hslPropsSection.style.display = 'block';
+            if (els.hslSelType) els.hslSelType.value = 'full';
+            if (els.hslSelSizeSub) els.hslSelSizeSub.style.display = 'none';
+            if (els.createHslSel) els.createHslSel.style.display = 'none';
             this.resetHslVals();
             this.refreshHslLabels();
             this.clearHslPreview();
@@ -1375,10 +1379,11 @@
     Filters.clearCurvePolygon = function() { App.state.curvePolygonPoints = []; App.state.activeCurveSel = null; renderCurve(); Filters.updateCurvePreview(); };
     Filters.clearBalancePolygon = function() { App.state.balancePolygonPoints = []; App.state.activeBalanceSel = null; renderBalance(); Filters.updateBalancePreview(); };
 
-    /* renderHsl 之前已实现，这里是 renderCurve / renderBalance */
+    /* renderHsl / renderCurve / renderBalance 统一声明为独立函数 */
+    function renderHsl() { renderGenericSelBox('hsl'); bindGenericSelEvents('hsl'); }
     function renderCurve() { renderGenericSelBox('curve'); bindGenericSelEvents('curve'); }
     function renderBalance() { renderGenericSelBox('balance'); bindGenericSelEvents('balance'); }
-    Filters.renderHsl = function() { renderGenericSelBox('hsl'); bindGenericSelEvents('hsl'); };
+    Filters.renderHsl = renderHsl;
 
     function renderGenericSelBox(kind) {
         var layer = App.els().imgOperationLayer; if (!layer) return;
@@ -1772,9 +1777,9 @@
             var rc = sh[0]*mk.s + mi[0]*mk.m + hi[0]*mk.h;
             var gc = sh[1]*mk.s + mi[1]*mk.m + hi[1]*mk.h;
             var bc = sh[2]*mk.s + mi[2]*mk.m + hi[2]*mk.h;
-            var nr = r0 + rc * 1.275;
-            var ng = g0 + gc * 1.275;
-            var nb = b0 + bc * 1.275;
+            var nr = r0 + rc * 0.5;
+            var ng = g0 + gc * 0.5;
+            var nb = b0 + bc * 0.5;
             if (preserve) {
                 var newLum = 0.299*nr + 0.587*ng + 0.114*nb;
                 if (newLum > 0) {
@@ -1798,9 +1803,9 @@
     function getBalanceParamsFromUI() {
         var els = App.els();
         return {
-            shadow:  [ +els.shRCyan.value/100, +els.shGMagenta.value/100, +els.shBYellow.value/100 ],
-            mid:     [ +els.miRCyan.value/100, +els.miGMagenta.value/100, +els.miBYellow.value/100 ],
-            high:    [ +els.hiRCyan.value/100, +els.hiGMagenta.value/100, +els.hiBYellow.value/100 ],
+            shadow:  [ +els.shRCyan.value, +els.shGMagenta.value, +els.shBYellow.value ],
+            mid:     [ +els.miRCyan.value, +els.miGMagenta.value, +els.miBYellow.value ],
+            high:    [ +els.hiRCyan.value, +els.hiGMagenta.value, +els.hiBYellow.value ],
             preserveLuminosity: els.balanceLuminosity ? els.balanceLuminosity.checked : true
         };
     }
@@ -1950,7 +1955,7 @@
             }
             ctx.closePath(); ctx.fill();
         }
-        return ctx.getImageData(0, 0, w, h);
+        return ctx.getImageData(0, 0, w, h).data;
     }
 
     /* ============================================================
