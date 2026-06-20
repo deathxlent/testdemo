@@ -752,6 +752,24 @@
                 App.state.hslPolygonPoints.push({ x: x, y: y });
                 this.renderHsl();
                 this.updateHslPreview();
+            } else if (tool === 'curve') {
+                if (App.els().curveSelType.value !== 'polygon') return;
+                if (!App.state.activeCurveSel || App.state.activeCurveSel.type !== 'polygon') {
+                    App.state.activeCurveSel = { type: 'polygon' };
+                    App.state.curvePolygonPoints = [];
+                }
+                App.state.curvePolygonPoints.push({ x: x, y: y });
+                this.renderCurve();
+                this.updateCurvePreview();
+            } else if (tool === 'balance') {
+                if (App.els().balanceSelType.value !== 'polygon') return;
+                if (!App.state.activeBalanceSel || App.state.activeBalanceSel.type !== 'polygon') {
+                    App.state.activeBalanceSel = { type: 'polygon' };
+                    App.state.balancePolygonPoints = [];
+                }
+                App.state.balancePolygonPoints.push({ x: x, y: y });
+                this.renderBalance();
+                this.updateBalancePreview();
             }
         },
 
@@ -763,6 +781,8 @@
                 }
             } else if (tool === 'hsl') {
                 // 双击不直接应用，HSL有应用按钮
+            } else if (tool === 'curve' || tool === 'balance') {
+                // 双击不直接应用，有应用按钮
             }
         },
 
