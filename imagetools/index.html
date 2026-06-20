@@ -374,7 +374,29 @@
             </div>
 
             <div class="panel-section" id="hslPropsSection" style="display:none">
-                <div class="panel-title">色彩调整 (全图)</div>
+                <div class="panel-title">色彩调整</div>
+                <div class="prop-group">
+                    <label>选区范围</label>
+                    <select id="hslSelType">
+                        <option value="full">全图</option>
+                        <option value="rect">长方形</option>
+                        <option value="circle">圆形</option>
+                        <option value="ellipse">椭圆形</option>
+                        <option value="polygon">自定义多边形</option>
+                    </select>
+                </div>
+                <div class="prop-group-sub" id="hslSelSizeSub" style="display:none">
+                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-content" id="hslSelSizeContent"></div>
+                </div>
+                <button class="panel-btn" id="createHslSel" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
+                    <span>创建选区</span>
+                </button>
+                <button class="panel-btn" id="clearHslSel" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
+                    <span>清除多边形点</span>
+                </button>
                 <div class="prop-group">
                     <label>色相 (<span id="hueDisp">0</span>°)</label>
                     <input type="range" id="hueAdjust" min="-180" max="180" value="0">

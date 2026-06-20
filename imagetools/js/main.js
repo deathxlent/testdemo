@@ -217,23 +217,61 @@
         }
 
         if (els.hueAdjust) {
-            els.hueAdjust.addEventListener('input', function () { App.Filters.refreshHslLabels(); });
+            els.hueAdjust.addEventListener('input', function () {
+                App.Filters.refreshHslLabels();
+                App.Filters.updateHslPreview();
+            });
         }
         if (els.satAdjust) {
-            els.satAdjust.addEventListener('input', function () { App.Filters.refreshHslLabels(); });
+            els.satAdjust.addEventListener('input', function () {
+                App.Filters.refreshHslLabels();
+                App.Filters.updateHslPreview();
+            });
         }
         if (els.lumAdjust) {
-            els.lumAdjust.addEventListener('input', function () { App.Filters.refreshHslLabels(); });
+            els.lumAdjust.addEventListener('input', function () {
+                App.Filters.refreshHslLabels();
+                App.Filters.updateHslPreview();
+            });
         }
         if (els.resetHsl) {
             els.resetHsl.addEventListener('click', function () {
                 App.Filters.resetHslVals();
                 App.Filters.refreshHslLabels();
+                App.Filters.clearHslPreview();
             });
         }
         if (els.applyHsl) {
             els.applyHsl.addEventListener('click', function () {
                 App.Filters.applyHsl();
+            });
+        }
+        if (els.hslSelType) {
+            els.hslSelType.addEventListener('change', function () {
+                var type = els.hslSelType.value;
+                if (type === 'full') {
+                    if (els.hslSelSizeSub) els.hslSelSizeSub.style.display = 'none';
+                    if (els.createHslSel) els.createHslSel.style.display = 'none';
+                    App.state.activeHslSel = null;
+                    App.state.hslPolygonPoints = [];
+                    App.Filters.renderHsl();
+                    App.Filters.updateHslPreview();
+                } else {
+                    if (els.hslSelSizeSub) els.hslSelSizeSub.style.display = 'block';
+                    if (els.createHslSel) els.createHslSel.style.display = type === 'polygon' ? 'none' : 'block';
+                    App.Filters.renderHslSizeInputs();
+                }
+            });
+        }
+        if (els.createHslSel) {
+            els.createHslSel.addEventListener('click', function () {
+                App.Filters.createHslSelection();
+            });
+        }
+        if (els.clearHslSel) {
+            els.clearHslSel.addEventListener('click', function () {
+                App.Filters.clearHslPolygon();
+                App.Filters.updateHslPreview();
             });
         }
     }
@@ -377,10 +415,10 @@
                 return;
             }
 
-            if (App.state.activeImgTool === 'filter' && App.Filters) {
+            if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl') && App.Filters) {
                 e.preventDefault();
                 e.stopPropagation();
-                App.Filters.onImageClick(coords.x, coords.y);
+                App.Filters.onImageClick(coords.x, coords.y, App.state.activeImgTool);
                 return;
             }
 
@@ -427,8 +465,8 @@
                 return;
             }
 
-            if (App.state.activeImgTool === 'filter' && App.Filters) {
-                App.Filters.onImageDblClick();
+            if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl') && App.Filters) {
+                App.Filters.onImageDblClick(App.state.activeImgTool);
                 return;
             }
 

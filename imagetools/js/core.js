@@ -95,6 +95,11 @@ var App = (function () {
             mosaicSize: document.getElementById('mosaicSize'),
             applyFilter: document.getElementById('applyFilter'),
             hslPropsSection: document.getElementById('hslPropsSection'),
+            hslSelType: document.getElementById('hslSelType'),
+            hslSelSizeContent: document.getElementById('hslSelSizeContent'),
+            hslSelSizeSub: document.getElementById('hslSelSizeSub'),
+            createHslSel: document.getElementById('createHslSel'),
+            clearHslSel: document.getElementById('clearHslSel'),
             hueAdjust: document.getElementById('hueAdjust'),
             hueDisp: document.getElementById('hueDisp'),
             satAdjust: document.getElementById('satAdjust'),
@@ -248,7 +253,8 @@ var App = (function () {
 
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, imgObj.width, imgObj.height);
-        ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
+        var imgSrc = imgObj._hslPreview ? imgObj._hslPreview : imgObj.img;
+        ctx.drawImage(imgSrc, 0, 0, imgObj.width, imgObj.height);
         if (imgObj.pencilCanvas) {
             ctx.drawImage(imgObj.pencilCanvas, 0, 0);
         }

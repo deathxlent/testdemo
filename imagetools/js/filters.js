@@ -1,6 +1,9 @@
 (function () {
     'use strict';
 
+    var _hslPreviewCanvas = null;
+    var _hslPreviewActive = false;
+
     var Filters = {
         activeKind: null,
 
@@ -48,9 +51,14 @@
             if (App.els().hslPropsSection) App.els().hslPropsSection.style.display = 'block';
             this.resetHslVals();
             this.refreshHslLabels();
+            this.clearHslPreview();
+            App.state.activeHslSel = null;
+            App.state.hslPolygonPoints = [];
+            this.renderHslSizeInputs();
         },
 
         deactivateHsl: function () {
+            this.clearHslPreview();
             App.clearOperationLayer();
             if (App.els().hslPropsSection) App.els().hslPropsSection.style.display = 'none';
         },
@@ -67,31 +75,409 @@
             if (App.els().lumDisp) App.els().lumDisp.textContent = App.els().lumAdjust.value;
         },
 
-        applyHsl: function () {
+        renderHslSizeInputs: function () {
+            var el = App.els().hslSelSizeContent;
+            if (!el) return;
+            var type = App.els().hslSelType.value;
+            var html = '';
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
-            if (App.History) App.History.push('色彩调整');
+            if (type === 'rect') {
+                html += '<div class="prop-group two-col"><div><label>宽</label><input type="number" id="hfw" min="1" value="' + Math.round(imgObj.width * 0.5) + '"></div>';
+                html += '<div><label>高</label><input type="number" id="hfh" min="1" value="' + Math.round(imgObj.height * 0.5) + '"></div></div>';
+                html += '<div class="prop-group two-col"><div><label>X</label><input type="number" id="hfx" min="0" value="' + Math.round(imgObj.width * 0.25) + '"></div>';
+                html += '<div><label>Y</label><input type="number" id="hfy" min="0" value="' + Math.round(imgObj.height * 0.25) + '"></div></div>';
+            } else if (type === 'circle') {
+                html += '<div class="prop-group"><label>半径</label><input type="number" id="hfr" min="1" value="' + Math.round(Math.min(imgObj.width, imgObj.height) * 0.25) + '"></div>';
+                html += '<div class="prop-group two-col"><div><label>中心 X</label><input type="number" id="hfcx" min="0" value="' + Math.round(imgObj.width / 2) + '"></div>';
+                html += '<div><label>中心 Y</label><input type="number" id="hfcy" min="0" value="' + Math.round(imgObj.height / 2) + '"></div></div>';
+            } else if (type === 'ellipse') {
+                html += '<div class="prop-group two-col"><div><label>宽半径</label><input type="number" id="hferx" min="1" value="' + Math.round(imgObj.width * 0.3) + '"></div>';
+                html += '<div><label>高半径</label><input type="number" id="hfery" min="1" value="' + Math.round(imgObj.height * 0.3) + '"></div></div>';
+                html += '<div class="prop-group two-col"><div><label>中心 X</label><input type="number" id="hfecx" min="0" value="' + Math.round(imgObj.width / 2) + '"></div>';
+                html += '<div><label>中心 Y</label><input type="number" id="hfecy" min="0" value="' + Math.round(imgObj.height / 2) + '"></div></div>';
+            } else {
+                html = '<div class="panel-tip" style="margin:4px 0 8px">在图片上点击以增加多边形节点，至少 3 个节点后再调整。</div>';
+            }
+            el.innerHTML = html;
+            if (App.els().clearHslSel) App.els().clearHslSel.style.display = (type === 'polygon') ? 'block' : 'none';
+        },
+
+        createHslSelection: function () {
+            var imgObj = App.getActiveImage();
+            if (!imgObj) return;
+            var type = App.els().hslSelType.value;
+            var sel = { type: type };
+            if (type === 'rect') {
+                sel.x = parseInt(document.getElementById('hfx').value) || 0;
+                sel.y = parseInt(document.getElementById('hfy').value) || 0;
+                sel.w = parseInt(document.getElementById('hfw').value) || 0;
+                sel.h = parseInt(document.getElementById('hfh').value) || 0;
+            } else if (type === 'circle') {
+                sel.cx = parseInt(document.getElementById('hfcx').value) || 0;
+                sel.cy = parseInt(document.getElementById('hfcy').value) || 0;
+                sel.r = parseInt(document.getElementById('hfr').value) || 0;
+            } else if (type === 'ellipse') {
+                sel.cx = parseInt(document.getElementById('hfecx').value) || 0;
+                sel.cy = parseInt(document.getElementById('hfecy').value) || 0;
+                sel.rx = parseInt(document.getElementById('hferx').value) || 0;
+                sel.ry = parseInt(document.getElementById('hfery').value) || 0;
+            } else {
+                return;
+            }
+            App.state.activeHslSel = sel;
+            this.renderHsl();
+            this.updateHslPreview();
+        },
+
+        clearHslPolygon: function () {
+            App.state.hslPolygonPoints = [];
+            this.renderHsl();
+        },
+
+        renderHsl: function () {
+            var layer = App.els().imgOperationLayer;
+            if (!layer) return;
+            layer.innerHTML = '';
+            layer.classList.add('active');
+            var zoom = App.state.zoom / 100;
+            var sel = App.state.activeHslSel;
+            if (sel && sel.type !== 'polygon') {
+                var el = document.createElement('div');
+                el.className = 'crop-box';
+                if (sel.type === 'rect') {
+                    el.style.left = (sel.x * zoom) + 'px';
+                    el.style.top = (sel.y * zoom) + 'px';
+                    el.style.width = (sel.w * zoom) + 'px';
+                    el.style.height = (sel.h * zoom) + 'px';
+                    el.style.background = 'rgba(255,150,0,0.15)';
+                } else if (sel.type === 'circle') {
+                    var R = sel.r;
+                    el.style.left = ((sel.cx - R) * zoom) + 'px';
+                    el.style.top = ((sel.cy - R) * zoom) + 'px';
+                    el.style.width = (R * 2 * zoom) + 'px';
+                    el.style.height = (R * 2 * zoom) + 'px';
+                    el.style.borderRadius = '50%';
+                    el.style.background = 'rgba(255,150,0,0.15)';
+                } else if (sel.type === 'ellipse') {
+                    el.style.left = ((sel.cx - sel.rx) * zoom) + 'px';
+                    el.style.top = ((sel.cy - sel.ry) * zoom) + 'px';
+                    el.style.width = (sel.rx * 2 * zoom) + 'px';
+                    el.style.height = (sel.ry * 2 * zoom) + 'px';
+                    el.style.borderRadius = '50%';
+                    el.style.background = 'rgba(255,150,0,0.15)';
+                }
+                this.bindHslBoxEvents(el, sel);
+                for (var i = 0; i < 8; i++) {
+                    var h = document.createElement('span');
+                    var dirs = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+                    h.className = 'resize-handle h-' + dirs[i];
+                    el.appendChild(h);
+                }
+                this.bindHslHandles(el, sel);
+                layer.appendChild(el);
+            }
+            if (sel && sel.type === 'polygon' && App.state.hslPolygonPoints.length >= 3) {
+                this.renderHslPolygonMask(layer);
+            }
+            this.renderHslPolygonPoints(layer);
+        },
+
+        renderHslPolygonPoints: function (layer) {
+            var pts = App.state.hslPolygonPoints || [];
+            var zoom = App.state.zoom / 100;
+            for (var i = 0; i < pts.length; i++) {
+                var p = pts[i];
+                var el = document.createElement('div');
+                el.className = 'polygon-point';
+                el.style.left = (p.x * zoom) + 'px';
+                el.style.top = (p.y * zoom) + 'px';
+                el.dataset.idx = i;
+                (function (idx, node) {
+                    node.addEventListener('mousedown', function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var startX = e.clientX, startY = e.clientY;
+                        var ox = pts[idx].x, oy = pts[idx].y;
+                        function onMove(ev) {
+                            var dx = (ev.clientX - startX) * 100 / App.state.zoom;
+                            var dy = (ev.clientY - startY) * 100 / App.state.zoom;
+                            pts[idx].x = Math.max(0, Math.min(App.getActiveImage().width, ox + dx));
+                            pts[idx].y = Math.max(0, Math.min(App.getActiveImage().height, oy + dy));
+                            Filters.renderHsl();
+                            Filters.updateHslPreview();
+                        }
+                        function onUp() {
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('mouseup', onUp);
+                        }
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('mouseup', onUp);
+                    });
+                })(i, el);
+                layer.appendChild(el);
+            }
+        },
+
+        renderHslPolygonMask: function (layer) {
+            var pts = App.state.hslPolygonPoints;
+            var zoom = App.state.zoom / 100;
+            var svgNS = 'http://www.w3.org/2000/svg';
+            var svg = document.createElementNS(svgNS, 'svg');
+            var img = App.getActiveImage();
+            svg.setAttribute('width', img.width * zoom);
+            svg.setAttribute('height', img.height * zoom);
+            svg.style.position = 'absolute';
+            svg.style.left = '0';
+            svg.style.top = '0';
+            svg.style.pointerEvents = 'none';
+            var path = document.createElementNS(svgNS, 'polygon');
+            var coords = pts.map(function (p) { return (p.x * zoom) + ',' + (p.y * zoom); }).join(' ');
+            path.setAttribute('points', coords);
+            path.setAttribute('fill', 'rgba(255,150,0,0.15)');
+            path.setAttribute('stroke', '#ff9600');
+            path.setAttribute('stroke-dasharray', '4 4');
+            path.setAttribute('stroke-width', '1.5');
+            svg.appendChild(path);
+            layer.appendChild(svg);
+        },
+
+        bindHslBoxEvents: function (el, sel) {
+            var self = this;
+            el.addEventListener('mousedown', function (e) {
+                if (e.target.classList.contains('resize-handle')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                var startX = e.clientX, startY = e.clientY;
+                var sx, sy, srx, sry;
+                if (sel.type === 'rect') { sx = sel.x; sy = sel.y; }
+                else if (sel.type === 'circle' || sel.type === 'ellipse') { srx = sel.cx; sry = sel.cy; }
+                function onMove(ev) {
+                    var dx = (ev.clientX - startX) * 100 / App.state.zoom;
+                    var dy = (ev.clientY - startY) * 100 / App.state.zoom;
+                    if (sel.type === 'rect') {
+                        sel.x = Math.max(0, Math.min(App.getActiveImage().width - sel.w, sx + dx));
+                        sel.y = Math.max(0, Math.min(App.getActiveImage().height - sel.h, sy + dy));
+                    } else if (sel.type === 'circle') {
+                        sel.cx = Math.max(sel.r, Math.min(App.getActiveImage().width - sel.r, srx + dx));
+                        sel.cy = Math.max(sel.r, Math.min(App.getActiveImage().height - sel.r, sry + dy));
+                    } else if (sel.type === 'ellipse') {
+                        sel.cx = Math.max(sel.rx, Math.min(App.getActiveImage().width - sel.rx, srx + dx));
+                        sel.cy = Math.max(sel.ry, Math.min(App.getActiveImage().height - sel.ry, sry + dy));
+                    }
+                    self.renderHsl();
+                    self.updateHslPreview();
+                }
+                function onUp() {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                }
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+        },
+
+        bindHslHandles: function (el, sel) {
+            var self = this;
+            var handles = el.querySelectorAll('.resize-handle');
+            for (var i = 0; i < handles.length; i++) {
+                handles[i].addEventListener('mousedown', (function (h) {
+                    return function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var dir = '';
+                        ['nw', 'ne', 'sw', 'se', 'n', 's', 'w', 'e'].forEach(function (d) {
+                            if (h.classList.contains('h-' + d)) dir = d;
+                        });
+                        var startX = e.clientX, startY = e.clientY;
+                        var o = JSON.parse(JSON.stringify(sel));
+                        function onMove(ev) {
+                            var dx = (ev.clientX - startX) * 100 / App.state.zoom;
+                            var dy = (ev.clientY - startY) * 100 / App.state.zoom;
+                            self.resizeHslFromDir(sel, o, dir, dx, dy);
+                            self.renderHsl();
+                            self.updateHslPreview();
+                        }
+                        function onUp() {
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('mouseup', onUp);
+                        }
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('mouseup', onUp);
+                    };
+                })(handles[i]));
+            }
+        },
+
+        resizeHslFromDir: function (sel, o, dir, dx, dy) {
+            if (sel.type === 'rect') {
+                if (dir.indexOf('e') >= 0) sel.w = Math.max(5, o.w + dx);
+                if (dir.indexOf('s') >= 0) sel.h = Math.max(5, o.h + dy);
+                if (dir.indexOf('w') >= 0) { sel.w = Math.max(5, o.w - dx); sel.x = o.x + dx; if (sel.w === 5) sel.x = o.x + o.w - 5; }
+                if (dir.indexOf('n') >= 0) { sel.h = Math.max(5, o.h - dy); sel.y = o.y + dy; if (sel.h === 5) sel.y = o.y + o.h - 5; }
+            } else if (sel.type === 'circle') {
+                var sign = (dir === 'n' || dir === 'w' || dir === 'nw' || dir === 'ne' || dir === 'sw') ? -1 : 1;
+                sel.r = Math.max(5, o.r + (Math.abs(dx) > Math.abs(dy) ? dx : dy) * sign * (dir === 'se' || dir === 'nw' ? 1 : 0.7));
+            } else if (sel.type === 'ellipse') {
+                if (dir === 'e' || dir === 'w') sel.rx = Math.max(5, o.rx + Math.abs(dx) * (dir === 'e' ? 1 : -1));
+                else if (dir === 'n' || dir === 's') sel.ry = Math.max(5, o.ry + Math.abs(dy) * (dir === 's' ? 1 : -1));
+                else { sel.rx = Math.max(5, o.rx + Math.abs(dx) * (dir.indexOf('e') >= 0 ? 1 : -1)); sel.ry = Math.max(5, o.ry + Math.abs(dy) * (dir.indexOf('s') >= 0 ? 1 : -1)); }
+            }
+        },
+
+        clearHslPreview: function () {
+            _hslPreviewActive = false;
+            _hslPreviewCanvas = null;
+            var imgObj = App.getActiveImage();
+            if (imgObj) {
+                delete imgObj._hslPreview;
+            }
+            App.renderCanvas();
+        },
+
+        updateHslPreview: function () {
+            var imgObj = App.getActiveImage();
+            if (!imgObj) return;
             var h = parseFloat(App.els().hueAdjust.value) || 0;
             var s = parseFloat(App.els().satAdjust.value) || 0;
             var l = parseFloat(App.els().lumAdjust.value) || 0;
+            var sel = App.state.activeHslSel;
+
+            if (h === 0 && s === 0 && l === 0) {
+                this.clearHslPreview();
+                return;
+            }
+
             var canvas = document.createElement('canvas');
             canvas.width = imgObj.width;
             canvas.height = imgObj.height;
             var ctx = canvas.getContext('2d');
             ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
             var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            applyHslToImageData(imgData, h, s / 100, l / 100);
+            var selHasArea = false;
+            var maskData = null;
+
+            if (sel) {
+                if (sel.type === 'polygon') {
+                    if (App.state.hslPolygonPoints && App.state.hslPolygonPoints.length >= 3) {
+                        selHasArea = true;
+                    }
+                } else {
+                    selHasArea = true;
+                }
+            }
+
+            if (selHasArea) {
+                var maskCanvas = document.createElement('canvas');
+                maskCanvas.width = canvas.width;
+                maskCanvas.height = canvas.height;
+                var mctx = maskCanvas.getContext('2d');
+                mctx.fillStyle = '#fff';
+                if (sel.type === 'rect') mctx.fillRect(sel.x, sel.y, sel.w, sel.h);
+                else if (sel.type === 'circle') {
+                    mctx.beginPath();
+                    mctx.arc(sel.cx, sel.cy, sel.r, 0, Math.PI * 2);
+                    mctx.fill();
+                } else if (sel.type === 'ellipse') {
+                    mctx.beginPath();
+                    mctx.ellipse(sel.cx, sel.cy, sel.rx, sel.ry, 0, 0, Math.PI * 2);
+                    mctx.fill();
+                } else if (sel.type === 'polygon') {
+                    mctx.beginPath();
+                    var pts = App.state.hslPolygonPoints;
+                    mctx.moveTo(pts[0].x, pts[0].y);
+                    for (var i = 1; i < pts.length; i++) mctx.lineTo(pts[i].x, pts[i].y);
+                    mctx.closePath();
+                    mctx.fill();
+                }
+                maskData = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+            }
+
+            applyHslToImageData(imgData, h, s / 100, l / 100, maskData);
+            ctx.putImageData(imgData, 0, 0);
+
+            var previewImg = new Image();
+            var self = this;
+            previewImg.onload = function () {
+                _hslPreviewCanvas = canvas;
+                _hslPreviewActive = true;
+                imgObj._hslPreview = previewImg;
+                App.renderCanvas();
+            };
+            previewImg.src = canvas.toDataURL('image/png');
+        },
+
+        applyHsl: function () {
+            var imgObj = App.getActiveImage();
+            if (!imgObj) return;
+            var h = parseFloat(App.els().hueAdjust.value) || 0;
+            var s = parseFloat(App.els().satAdjust.value) || 0;
+            var l = parseFloat(App.els().lumAdjust.value) || 0;
+            if (h === 0 && s === 0 && l === 0) {
+                App.showToast('请先调整参数');
+                return;
+            }
+            var sel = App.state.activeHslSel;
+            var hasSel = false;
+            if (sel) {
+                if (sel.type === 'polygon') {
+                    if (App.state.hslPolygonPoints && App.state.hslPolygonPoints.length >= 3) hasSel = true;
+                } else {
+                    hasSel = true;
+                }
+            }
+            var desc = '色彩调整';
+            if (hasSel) desc = '局部' + desc;
+            if (App.History) App.History.push(desc);
+
+            var canvas = document.createElement('canvas');
+            canvas.width = imgObj.width;
+            canvas.height = imgObj.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
+            var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var maskData = null;
+
+            if (hasSel) {
+                var maskCanvas = document.createElement('canvas');
+                maskCanvas.width = canvas.width;
+                maskCanvas.height = canvas.height;
+                var mctx = maskCanvas.getContext('2d');
+                mctx.fillStyle = '#fff';
+                if (sel.type === 'rect') mctx.fillRect(sel.x, sel.y, sel.w, sel.h);
+                else if (sel.type === 'circle') {
+                    mctx.beginPath();
+                    mctx.arc(sel.cx, sel.cy, sel.r, 0, Math.PI * 2);
+                    mctx.fill();
+                } else if (sel.type === 'ellipse') {
+                    mctx.beginPath();
+                    mctx.ellipse(sel.cx, sel.cy, sel.rx, sel.ry, 0, 0, Math.PI * 2);
+                    mctx.fill();
+                } else if (sel.type === 'polygon') {
+                    mctx.beginPath();
+                    var pts = App.state.hslPolygonPoints;
+                    mctx.moveTo(pts[0].x, pts[0].y);
+                    for (var i = 1; i < pts.length; i++) mctx.lineTo(pts[i].x, pts[i].y);
+                    mctx.closePath();
+                    mctx.fill();
+                }
+                maskData = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+            }
+
+            applyHslToImageData(imgData, h, s / 100, l / 100, maskData);
             ctx.putImageData(imgData, 0, 0);
             var loaded = new Image();
+            var self = this;
             loaded.onload = function () {
                 imgObj.img = loaded;
                 imgObj._prevW = imgObj.width;
                 imgObj._prevH = imgObj.height;
+                self.clearHslPreview();
+                self.resetHslVals();
+                self.refreshHslLabels();
                 App.renderCanvas();
             };
             loaded.src = canvas.toDataURL('image/png');
-            this.resetHslVals();
-            this.refreshHslLabels();
         },
 
         renderSizeInputs: function () {
@@ -343,19 +729,36 @@
             }
         },
 
-        onImageClick: function (x, y) {
-            if (App.els().filterSelType.value !== 'polygon') return;
-            if (!App.state.activeFilterSel || App.state.activeFilterSel.type !== 'polygon') {
-                App.state.activeFilterSel = { type: 'polygon' };
-                App.state.filterPolygonPoints = [];
+        onImageClick: function (x, y, tool) {
+            if (!tool) tool = 'filter';
+            if (tool === 'filter') {
+                if (App.els().filterSelType.value !== 'polygon') return;
+                if (!App.state.activeFilterSel || App.state.activeFilterSel.type !== 'polygon') {
+                    App.state.activeFilterSel = { type: 'polygon' };
+                    App.state.filterPolygonPoints = [];
+                }
+                App.state.filterPolygonPoints.push({ x: x, y: y });
+                this.render();
+            } else if (tool === 'hsl') {
+                if (App.els().hslSelType.value !== 'polygon') return;
+                if (!App.state.activeHslSel || App.state.activeHslSel.type !== 'polygon') {
+                    App.state.activeHslSel = { type: 'polygon' };
+                    App.state.hslPolygonPoints = [];
+                }
+                App.state.hslPolygonPoints.push({ x: x, y: y });
+                this.renderHsl();
+                this.updateHslPreview();
             }
-            App.state.filterPolygonPoints.push({ x: x, y: y });
-            this.render();
         },
 
-        onImageDblClick: function () {
-            if (App.state.filterKind && App.els().filterSelType.value === 'polygon' && App.state.filterPolygonPoints.length >= 3) {
-                this.apply();
+        onImageDblClick: function (tool) {
+            if (!tool) tool = 'filter';
+            if (tool === 'filter') {
+                if (App.state.filterKind && App.els().filterSelType.value === 'polygon' && App.state.filterPolygonPoints.length >= 3) {
+                    this.apply();
+                }
+            } else if (tool === 'hsl') {
+                // 双击不直接应用，HSL有应用按钮
             }
         },
 
@@ -549,14 +952,27 @@
         data.data.set(dst);
     }
 
-    function applyHslToImageData(imgData, dh, ds, dl) {
+    function applyHslToImageData(imgData, dh, ds, dl, maskData) {
         var data = imgData.data;
         for (var i = 0; i < data.length; i += 4) {
+            if (maskData) {
+                var a = maskData[i + 3] / 255;
+                if (a <= 0) continue;
+            }
             var hsl = rgbToHsl(data[i], data[i + 1], data[i + 2]);
             hsl.h = (hsl.h + dh / 360 + 1) % 1;
             hsl.s = Math.max(0, Math.min(1, hsl.s + ds));
             hsl.l = Math.max(0, Math.min(1, hsl.l + dl));
             var rgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+            if (maskData) {
+                var a = maskData[i + 3] / 255;
+                if (a < 1) {
+                    data[i] = data[i] + (rgb[0] - data[i]) * a;
+                    data[i + 1] = data[i + 1] + (rgb[1] - data[i + 1]) * a;
+                    data[i + 2] = data[i + 2] + (rgb[2] - data[i + 2]) * a;
+                    continue;
+                }
+            }
             data[i] = rgb[0];
             data[i + 1] = rgb[1];
             data[i + 2] = rgb[2];
