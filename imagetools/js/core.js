@@ -42,6 +42,10 @@ var App = (function () {
         activeFilterSel: null,
         filterPolygonPoints: [],
         activeLzSel: null,
+        activeCurveSel: null,
+        curvePolygonPoints: [],
+        activeBalanceSel: null,
+        balancePolygonPoints: [],
         pencilActive: false,
         pencilDrawing: false,
         pencilMode: 'free',
@@ -108,6 +112,44 @@ var App = (function () {
             lumDisp: document.getElementById('lumDisp'),
             resetHsl: document.getElementById('resetHsl'),
             applyHsl: document.getElementById('applyHsl'),
+            curveTool: document.getElementById('curveTool'),
+            curvePropsSection: document.getElementById('curvePropsSection'),
+            curveSelType: document.getElementById('curveSelType'),
+            curveSelSizeContent: document.getElementById('curveSelSizeContent'),
+            curveSelSizeSub: document.getElementById('curveSelSizeSub'),
+            createCurveSel: document.getElementById('createCurveSel'),
+            clearCurveSel: document.getElementById('clearCurveSel'),
+            curveChannel: document.getElementById('curveChannel'),
+            curveEditor: document.getElementById('curveEditor'),
+            curvePreset: document.getElementById('curvePreset'),
+            resetCurve: document.getElementById('resetCurve'),
+            resetAllCurves: document.getElementById('resetAllCurves'),
+            applyCurve: document.getElementById('applyCurve'),
+            balanceTool: document.getElementById('balanceTool'),
+            balancePropsSection: document.getElementById('balancePropsSection'),
+            balanceSelType: document.getElementById('balanceSelType'),
+            balanceSelSizeContent: document.getElementById('balanceSelSizeContent'),
+            balanceSelSizeSub: document.getElementById('balanceSelSizeSub'),
+            createBalanceSel: document.getElementById('createBalanceSel'),
+            clearBalanceSel: document.getElementById('clearBalanceSel'),
+            shRCyan: document.getElementById('shRCyan'), shRCyanDisp: document.getElementById('shRCyanDisp'),
+            shGMagenta: document.getElementById('shGMagenta'), shGMagentaDisp: document.getElementById('shGMagentaDisp'),
+            shBYellow: document.getElementById('shBYellow'), shBYellowDisp: document.getElementById('shBYellowDisp'),
+            miRCyan: document.getElementById('miRCyan'), miRCyanDisp: document.getElementById('miRCyanDisp'),
+            miGMagenta: document.getElementById('miGMagenta'), miGMagentaDisp: document.getElementById('miGMagentaDisp'),
+            miBYellow: document.getElementById('miBYellow'), miBYellowDisp: document.getElementById('miBYellowDisp'),
+            hiRCyan: document.getElementById('hiRCyan'), hiRCyanDisp: document.getElementById('hiRCyanDisp'),
+            hiGMagenta: document.getElementById('hiGMagenta'), hiGMagentaDisp: document.getElementById('hiGMagentaDisp'),
+            hiBYellow: document.getElementById('hiBYellow'), hiBYellowDisp: document.getElementById('hiBYellowDisp'),
+            balanceLuminosity: document.getElementById('balanceLuminosity'),
+            resetBalance: document.getElementById('resetBalance'),
+            applyBalance: document.getElementById('applyBalance'),
+            liveHistogram: document.getElementById('liveHistogram'),
+            lhLum: document.getElementById('lhLum'),
+            lhR: document.getElementById('lhR'),
+            lhG: document.getElementById('lhG'),
+            lhB: document.getElementById('lhB'),
+            lhOverlay: document.getElementById('lhOverlay'),
             localZoomPropsSection: document.getElementById('localZoomPropsSection'),
             lzShape: document.getElementById('lzShape'),
             createLzSel: document.getElementById('createLzSel'),
@@ -243,22 +285,19 @@ var App = (function () {
     }
 
     function renderCanvas() {
-        var imgObj = getActiveImage();
-        if (!imgObj) return;
+        var imgObj = getActiveImage(); if (!imgObj) { return; }
+        var src = imgObj.img;
+        if (imgObj._balancePreview) src = imgObj._balancePreview;
+        else if (imgObj._curvePreview) src = imgObj._curvePreview;
+        else if (imgObj._hslPreview) src = imgObj._hslPreview;
         var canvas = els.mainCanvas;
-        canvas.width = imgObj.width;
-        canvas.height = imgObj.height;
+        canvas.width = imgObj.width; canvas.height = imgObj.height;
         canvas.style.width = toDisplay(imgObj.width) + 'px';
         canvas.style.height = toDisplay(imgObj.height) + 'px';
-
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, imgObj.width, imgObj.height);
-        var imgSrc = imgObj._hslPreview ? imgObj._hslPreview : imgObj.img;
-        ctx.drawImage(imgSrc, 0, 0, imgObj.width, imgObj.height);
-        if (imgObj.pencilCanvas) {
-            ctx.drawImage(imgObj.pencilCanvas, 0, 0);
-        }
-
+        ctx.drawImage(src, 0, 0, imgObj.width, imgObj.height);
+        if (imgObj.pencilCanvas) ctx.drawImage(imgObj.pencilCanvas, 0, 0);
         els.canvasWrapper.style.width = toDisplay(imgObj.width) + 'px';
         els.canvasWrapper.style.height = toDisplay(imgObj.height) + 'px';
     }
@@ -306,10 +345,13 @@ var App = (function () {
         else if (state.activeImgTool === 'rotate' && App.ImageTransform) App.ImageTransform.deactivateRotate();
         else if ((state.activeImgTool === 'filter') && App.Filters) App.Filters.deactivate();
         else if (state.activeImgTool === 'hsl' && App.Filters) App.Filters.deactivateHsl();
+        else if (state.activeImgTool === 'curve' && App.Filters) App.Filters.deactivateCurve();
+        else if (state.activeImgTool === 'balance' && App.Filters) App.Filters.deactivateBalance();
         else if (state.activeImgTool === 'localzoom' && App.LocalZoom) App.LocalZoom.deactivate();
         else if (state.activeImgTool === 'pencil' && App.Pencil) App.Pencil.deactivate();
         state.activeImgTool = null;
         if (els.rotateCenterHandle) els.rotateCenterHandle.style.display = 'none';
+        trigger('tool:deactivated');
     }
 
     var _toastTimer = null;

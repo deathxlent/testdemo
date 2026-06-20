@@ -65,8 +65,14 @@
                     <button class="tool-icon" id="negativeTool" data-tip="底片化（颜色反转）|将所有颜色反转为互补色，类似胶片底片效果，对全图立即生效">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="12" height="14" rx="1" fill="currentColor" fill-opacity="0.08"/><path d="M3 9h12"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
                     </button>
-                    <button class="tool-icon" id="hslTool" data-tip="色度/饱和度/亮度|整体调整图片的色相（-180°~180°）、饱和度和亮度，调整后点击应用">
+                    <button class="tool-icon" id="hslTool" data-tip="色度/饱和度/亮度|整体调整图片的色相（-180°~180°）、饱和度和亮度，调整后点击应用，支持局部选区">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><circle cx="9" cy="9" r="2.5" stroke-dasharray="1.5,1.5"/></svg>
+                    </button>
+                    <button class="tool-icon" id="curveTool" data-tip="色彩曲线|通过曲线精确调整各通道亮度，支持局部选区，实时预览">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="1"/><path d="M3 15L12 3" stroke-dasharray="2,1"/><path d="M3 15c2-5 4-9 12-12"/></svg>
+                    </button>
+                    <button class="tool-icon" id="balanceTool" data-tip="色彩平衡|调整阴影/中间调/高光的RGB平衡，校正偏色，支持局部选区和实时预览">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><circle cx="6" cy="11" r="2" fill="#f44" opacity="0.6"/><circle cx="12" cy="11" r="2" fill="#4f4" opacity="0.6"/><circle cx="9" cy="6" r="2" fill="#44f" opacity="0.6"/></svg>
                     </button>
                     <button class="tool-icon" id="localZoomTool" data-tip="局部放大|在画布上创建选区后将其内容放大显示，可调整放大倍数、边框样式，生成可移动的放大图层">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="10" y="7" width="6" height="8" rx="1"/><path d="M9 6l3 4M7 10l4 2"/></svg>
@@ -418,6 +424,152 @@
                 </button>
             </div>
 
+            <div class="panel-section" id="curvePropsSection" style="display:none">
+                <div class="panel-title">色彩曲线</div>
+                <div class="prop-group">
+                    <label>选区范围</label>
+                    <select id="curveSelType">
+                        <option value="full">全图</option>
+                        <option value="rect">长方形</option>
+                        <option value="circle">圆形</option>
+                        <option value="ellipse">椭圆形</option>
+                        <option value="polygon">自定义多边形</option>
+                    </select>
+                </div>
+                <div class="prop-group-sub" id="curveSelSizeSub" style="display:none">
+                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-content" id="curveSelSizeContent"></div>
+                </div>
+                <button class="panel-btn" id="createCurveSel" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
+                    <span>创建选区</span>
+                </button>
+                <button class="panel-btn" id="clearCurveSel" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
+                    <span>清除多边形点</span>
+                </button>
+                <div class="prop-group">
+                    <label>通道</label>
+                    <select id="curveChannel">
+                        <option value="rgb">RGB 合成</option>
+                        <option value="r">红通道 (R)</option>
+                        <option value="g">绿通道 (G)</option>
+                        <option value="b">蓝通道 (B)</option>
+                    </select>
+                </div>
+                <div class="prop-group" style="padding:8px 4px;">
+                    <canvas id="curveEditor" width="230" height="230" style="width:100%;height:230px;background:#1a1a1a;border:1px solid #333;border-radius:4px;cursor:crosshair;"></canvas>
+                    <div class="prop-tip" style="font-size:11px;color:#888;margin-top:4px;">在曲线上点击添加控制点，拖动控制点调节，右键点击控制点删除</div>
+                </div>
+                <div class="prop-group">
+                    <label>曲线预设</label>
+                    <select id="curvePreset">
+                        <option value="linear">线性 (默认)</option>
+                        <option value="contrast">增加对比</option>
+                        <option value="bright">整体提亮</option>
+                        <option value="dark">整体压暗</option>
+                        <option value="negate">反相</option>
+                        <option value="s-shape">S型对比</option>
+                    </select>
+                </div>
+                <div class="prop-group btn-row">
+                    <button class="style-btn" id="resetCurve">重置通道</button>
+                    <button class="style-btn" id="resetAllCurves">重置全部</button>
+                </div>
+                <button class="panel-btn primary" id="applyCurve">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8l4 4 8-9"/></svg>
+                    <span>应用曲线</span>
+                </button>
+            </div>
+
+            <div class="panel-section" id="balancePropsSection" style="display:none">
+                <div class="panel-title">色彩平衡</div>
+                <div class="prop-group">
+                    <label>选区范围</label>
+                    <select id="balanceSelType">
+                        <option value="full">全图</option>
+                        <option value="rect">长方形</option>
+                        <option value="circle">圆形</option>
+                        <option value="ellipse">椭圆形</option>
+                        <option value="polygon">自定义多边形</option>
+                    </select>
+                </div>
+                <div class="prop-group-sub" id="balanceSelSizeSub" style="display:none">
+                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-content" id="balanceSelSizeContent"></div>
+                </div>
+                <button class="panel-btn" id="createBalanceSel" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
+                    <span>创建选区</span>
+                </button>
+                <button class="panel-btn" id="clearBalanceSel" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
+                    <span>清除多边形点</span>
+                </button>
+                <div class="prop-group-sub">
+                    <div class="sub-header"><span>阴影 (暗部)</span></div>
+                    <div class="sub-content">
+                        <div class="prop-group">
+                            <label style="color:#ff6060;">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="shRCyanDisp">0</span>)</label>
+                            <input type="range" id="shRCyan" min="-100" max="100" value="0">
+                        </div>
+                        <div class="prop-group">
+                            <label style="color:#60ff60;">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="shGMagentaDisp">0</span>)</label>
+                            <input type="range" id="shGMagenta" min="-100" max="100" value="0">
+                        </div>
+                        <div class="prop-group">
+                            <label style="color:#6080ff;">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="shBYellowDisp">0</span>)</label>
+                            <input type="range" id="shBYellow" min="-100" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="prop-group-sub">
+                    <div class="sub-header"><span>中间调</span></div>
+                    <div class="sub-content">
+                        <div class="prop-group">
+                            <label style="color:#ff6060;">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="miRCyanDisp">0</span>)</label>
+                            <input type="range" id="miRCyan" min="-100" max="100" value="0">
+                        </div>
+                        <div class="prop-group">
+                            <label style="color:#60ff60;">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="miGMagentaDisp">0</span>)</label>
+                            <input type="range" id="miGMagenta" min="-100" max="100" value="0">
+                        </div>
+                        <div class="prop-group">
+                            <label style="color:#6080ff;">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="miBYellowDisp">0</span>)</label>
+                            <input type="range" id="miBYellow" min="-100" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="prop-group-sub">
+                    <div class="sub-header"><span>高光 (亮部)</span></div>
+                    <div class="sub-content">
+                        <div class="prop-group">
+                            <label style="color:#ff6060;">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="hiRCyanDisp">0</span>)</label>
+                            <input type="range" id="hiRCyan" min="-100" max="100" value="0">
+                        </div>
+                        <div class="prop-group">
+                            <label style="color:#60ff60;">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="hiGMagentaDisp">0</span>)</label>
+                            <input type="range" id="hiGMagenta" min="-100" max="100" value="0">
+                        </div>
+                        <div class="prop-group">
+                            <label style="color:#6080ff;">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="hiBYellowDisp">0</span>)</label>
+                            <input type="range" id="hiBYellow" min="-100" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="prop-group" style="flex-direction:row;justify-content:flex-start;gap:8px;">
+                    <label class="toggle"><input type="checkbox" id="balanceLuminosity" checked><span></span></label>
+                    <label for="balanceLuminosity" style="margin:0;flex:none;cursor:pointer;">保持亮度</label>
+                </div>
+                <div class="prop-group btn-row">
+                    <button class="style-btn" id="resetBalance">重置</button>
+                </div>
+                <button class="panel-btn primary" id="applyBalance">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8l4 4 8-9"/></svg>
+                    <span>应用色彩平衡</span>
+                </button>
+            </div>
+
             <div class="panel-section" id="localZoomPropsSection" style="display:none">
                 <div class="panel-title">局部放大</div>
                 <div class="prop-group">
@@ -509,6 +661,29 @@
                         <div class="selection-rect" id="selectionRect" style="display:none"></div>
                         <div class="img-operation-layer" id="imgOperationLayer"></div>
                         <div class="rotate-center-handle" id="rotateCenterHandle" style="display:none"></div>
+                    </div>
+                    <div class="live-histogram" id="liveHistogram" style="display:none">
+                        <div class="lh-title">实时直方图</div>
+                        <div class="lh-item">
+                            <div class="lh-label" style="color:#ddd">亮度 (Y)</div>
+                            <canvas id="lhLum" width="220" height="80"></canvas>
+                        </div>
+                        <div class="lh-item">
+                            <div class="lh-label" style="color:#ff6060">红通道 (R)</div>
+                            <canvas id="lhR" width="220" height="80"></canvas>
+                        </div>
+                        <div class="lh-item">
+                            <div class="lh-label" style="color:#60ff60">绿通道 (G)</div>
+                            <canvas id="lhG" width="220" height="80"></canvas>
+                        </div>
+                        <div class="lh-item">
+                            <div class="lh-label" style="color:#6080ff">蓝通道 (B)</div>
+                            <canvas id="lhB" width="220" height="80"></canvas>
+                        </div>
+                        <div class="lh-item">
+                            <div class="lh-label" style="color:#fff">RGB 叠加</div>
+                            <canvas id="lhOverlay" width="220" height="80"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>

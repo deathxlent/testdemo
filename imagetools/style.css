@@ -1337,6 +1337,46 @@ html, body {
     animation: slideUp 0.25s;
 }
 
+/* ============ 实时直方图浮窗 ============ */
+.live-histogram {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 240px;
+    background: rgba(22,22,22,0.95);
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    padding: 8px 10px 10px;
+    box-shadow: -4px 4px 16px rgba(0,0,0,0.4);
+    z-index: 50;
+    backdrop-filter: blur(4px);
+}
+.lh-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    padding: 4px 0 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #333;
+}
+.lh-item {
+    margin-top: 6px;
+}
+.lh-label {
+    font-size: 11px;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+.lh-item canvas {
+    width: 100%;
+    height: 80px;
+    background: #111;
+    border-radius: 3px;
+    border: 1px solid #222;
+    display: block;
+}
+
 .modal-wide {
     min-width: 600px;
 }

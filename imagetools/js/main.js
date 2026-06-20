@@ -16,6 +16,8 @@
         els.mosaicTool.classList.toggle('active', false);
         els.negativeTool.classList.toggle('active', false);
         els.hslTool.classList.toggle('active', false);
+        els.curveTool.classList.toggle('active', false);
+        els.balanceTool.classList.toggle('active', false);
         els.localZoomTool.classList.toggle('active', false);
         els.pencilTool.classList.toggle('active', false);
 
@@ -58,6 +60,10 @@
         } else if (tool === 'hsl') {
             App.Filters.activateHsl();
             els.hslTool.classList.add('active');
+        } else if (tool === 'curve') {
+            App.Filters.activateCurve();
+        } else if (tool === 'balance') {
+            App.Filters.activateBalance();
         } else if (tool === 'localzoom') {
             App.LocalZoom.activate();
             els.localZoomTool.classList.add('active');
@@ -102,6 +108,14 @@
         if (App.state.activeImgTool === 'hsl') {
         } else {
             els.hslPropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'curve') {
+        } else {
+            els.curvePropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'balance') {
+        } else {
+            els.balancePropsSection.style.display = 'none';
         }
         if (App.state.activeImgTool === 'localzoom') {
         } else {
@@ -274,6 +288,119 @@
                 App.Filters.updateHslPreview();
             });
         }
+
+        if (els.curveChannel) {
+            els.curveChannel.addEventListener('change', function () {
+                App.Filters.setCurveChannel(els.curveChannel.value);
+            });
+        }
+        if (els.curvePreset) {
+            els.curvePreset.addEventListener('change', function () {
+                App.Filters.applyCurvePreset(els.curvePreset.value);
+            });
+        }
+        if (els.resetCurve) {
+            els.resetCurve.addEventListener('click', function () {
+                App.Filters.resetCurveChannel();
+            });
+        }
+        if (els.resetAllCurves) {
+            els.resetAllCurves.addEventListener('click', function () {
+                App.Filters.resetAllCurveChannels();
+            });
+        }
+        if (els.applyCurve) {
+            els.applyCurve.addEventListener('click', function () {
+                App.Filters.applyCurve();
+            });
+        }
+        if (els.curveSelType) {
+            els.curveSelType.addEventListener('change', function () {
+                var type = els.curveSelType.value;
+                if (type === 'full') {
+                    if (els.curveSelSizeSub) els.curveSelSizeSub.style.display = 'none';
+                    if (els.createCurveSel) els.createCurveSel.style.display = 'none';
+                    App.state.activeCurveSel = null;
+                    App.state.curvePolygonPoints = [];
+                    App.Filters.renderCurveSizeInputs();
+                    App.Filters.updateCurvePreview();
+                } else {
+                    if (els.curveSelSizeSub) els.curveSelSizeSub.style.display = 'block';
+                    if (els.createCurveSel) els.createCurveSel.style.display = type === 'polygon' ? 'none' : 'block';
+                    App.Filters.renderCurveSizeInputs();
+                }
+            });
+        }
+        if (els.createCurveSel) {
+            els.createCurveSel.addEventListener('click', function () {
+                App.Filters.createCurveSelection();
+            });
+        }
+        if (els.clearCurveSel) {
+            els.clearCurveSel.addEventListener('click', function () {
+                App.Filters.clearCurvePolygon();
+            });
+        }
+
+        var balanceSliders = [
+            ['shRCyan','shRCyanDisp'],['shGMagenta','shGMagentaDisp'],['shBYellow','shBYellowDisp'],
+            ['miRCyan','miRCyanDisp'],['miGMagenta','miGMagentaDisp'],['miBYellow','miBYellowDisp'],
+            ['hiRCyan','hiRCyanDisp'],['hiGMagenta','hiGMagentaDisp'],['hiBYellow','hiBYellowDisp']
+        ];
+        for (var bi = 0; bi < balanceSliders.length; bi++) {
+            (function(key, dispKey) {
+                if (els[key]) {
+                    els[key].addEventListener('input', function () {
+                        if (els[dispKey]) els[dispKey].textContent = els[key].value;
+                        App.Filters.updateBalancePreview();
+                    });
+                }
+            })(balanceSliders[bi][0], balanceSliders[bi][1]);
+        }
+        if (els.balanceLuminosity) {
+            els.balanceLuminosity.addEventListener('change', function () {
+                App.Filters.updateBalancePreview();
+            });
+        }
+        if (els.resetBalance) {
+            els.resetBalance.addEventListener('click', function () {
+                App.Filters.resetBalanceVals();
+                App.Filters.refreshBalanceLabels();
+                App.Filters.clearBalancePreview();
+            });
+        }
+        if (els.applyBalance) {
+            els.applyBalance.addEventListener('click', function () {
+                App.Filters.applyBalance();
+            });
+        }
+        if (els.balanceSelType) {
+            els.balanceSelType.addEventListener('change', function () {
+                var type = els.balanceSelType.value;
+                if (type === 'full') {
+                    if (els.balanceSelSizeSub) els.balanceSelSizeSub.style.display = 'none';
+                    if (els.createBalanceSel) els.createBalanceSel.style.display = 'none';
+                    App.state.activeBalanceSel = null;
+                    App.state.balancePolygonPoints = [];
+                    App.Filters.renderBalanceSizeInputs();
+                    App.Filters.updateBalancePreview();
+                } else {
+                    if (els.balanceSelSizeSub) els.balanceSelSizeSub.style.display = 'block';
+                    if (els.createBalanceSel) els.createBalanceSel.style.display = type === 'polygon' ? 'none' : 'block';
+                    App.Filters.renderBalanceSizeInputs();
+                }
+            });
+        }
+        if (els.createBalanceSel) {
+            els.createBalanceSel.addEventListener('click', function () {
+                App.Filters.createBalanceSelection();
+            });
+        }
+        if (els.clearBalanceSel) {
+            els.clearBalanceSel.addEventListener('click', function () {
+                App.Filters.clearBalancePolygon();
+            });
+        }
     }
 
     function setupLocalZoomEvents() {
@@ -338,6 +465,8 @@
         els.mosaicTool.addEventListener('click', function () { activateImgTool('mosaic'); });
         els.negativeTool.addEventListener('click', function () { activateImgTool('negative'); });
         els.hslTool.addEventListener('click', function () { activateImgTool('hsl'); });
+        els.curveTool.addEventListener('click', function () { activateImgTool('curve'); });
+        els.balanceTool.addEventListener('click', function () { activateImgTool('balance'); });
         els.localZoomTool.addEventListener('click', function () { activateImgTool('localzoom'); });
         els.pencilTool.addEventListener('click', function () { activateImgTool('pencil'); });
 
@@ -415,7 +544,7 @@
                 return;
             }
 
-            if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl') && App.Filters) {
+            if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl' || App.state.activeImgTool === 'curve' || App.state.activeImgTool === 'balance') && App.Filters) {
                 e.preventDefault();
                 e.stopPropagation();
                 App.Filters.onImageClick(coords.x, coords.y, App.state.activeImgTool);
@@ -465,7 +594,7 @@
                 return;
             }
 
-            if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl') && App.Filters) {
+            if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl' || App.state.activeImgTool === 'curve' || App.state.activeImgTool === 'balance') && App.Filters) {
                 App.Filters.onImageDblClick(App.state.activeImgTool);
                 return;
             }
