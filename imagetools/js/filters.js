@@ -83,255 +83,13 @@
             if (App.els().lumDisp) App.els().lumDisp.textContent = App.els().lumAdjust.value;
         },
 
-        renderHslSizeInputs: function () {
-            var el = App.els().hslSelSizeContent;
-            if (!el) return;
-            var type = App.els().hslSelType.value;
-            var html = '';
-            var imgObj = App.getActiveImage();
-            if (!imgObj) return;
-            if (type === 'rect') {
-                html += '<div class="prop-group two-col"><div><label>宽</label><input type="number" id="hfw" min="1" value="' + Math.round(imgObj.width * 0.5) + '"></div>';
-                html += '<div><label>高</label><input type="number" id="hfh" min="1" value="' + Math.round(imgObj.height * 0.5) + '"></div></div>';
-                html += '<div class="prop-group two-col"><div><label>X</label><input type="number" id="hfx" min="0" value="' + Math.round(imgObj.width * 0.25) + '"></div>';
-                html += '<div><label>Y</label><input type="number" id="hfy" min="0" value="' + Math.round(imgObj.height * 0.25) + '"></div></div>';
-            } else if (type === 'circle') {
-                html += '<div class="prop-group"><label>半径</label><input type="number" id="hfr" min="1" value="' + Math.round(Math.min(imgObj.width, imgObj.height) * 0.25) + '"></div>';
-                html += '<div class="prop-group two-col"><div><label>中心 X</label><input type="number" id="hfcx" min="0" value="' + Math.round(imgObj.width / 2) + '"></div>';
-                html += '<div><label>中心 Y</label><input type="number" id="hfcy" min="0" value="' + Math.round(imgObj.height / 2) + '"></div></div>';
-            } else if (type === 'ellipse') {
-                html += '<div class="prop-group two-col"><div><label>宽半径</label><input type="number" id="hferx" min="1" value="' + Math.round(imgObj.width * 0.3) + '"></div>';
-                html += '<div><label>高半径</label><input type="number" id="hfery" min="1" value="' + Math.round(imgObj.height * 0.3) + '"></div></div>';
-                html += '<div class="prop-group two-col"><div><label>中心 X</label><input type="number" id="hfecx" min="0" value="' + Math.round(imgObj.width / 2) + '"></div>';
-                html += '<div><label>中心 Y</label><input type="number" id="hfecy" min="0" value="' + Math.round(imgObj.height / 2) + '"></div></div>';
-            } else {
-                html = '<div class="panel-tip" style="margin:4px 0 8px">在图片上点击以增加多边形节点，至少 3 个节点后再调整。</div>';
-            }
-            el.innerHTML = html;
-            if (App.els().clearHslSel) App.els().clearHslSel.style.display = (type === 'polygon') ? 'block' : 'none';
-        },
+        renderHslSizeInputs: function () { App.FilterSelection.renderSizeInputs('hsl'); },
 
-        createHslSelection: function () {
-            var imgObj = App.getActiveImage();
-            if (!imgObj) return;
-            var type = App.els().hslSelType.value;
-            var sel = { type: type };
-            if (type === 'rect') {
-                sel.x = parseInt(document.getElementById('hfx').value) || 0;
-                sel.y = parseInt(document.getElementById('hfy').value) || 0;
-                sel.w = parseInt(document.getElementById('hfw').value) || 0;
-                sel.h = parseInt(document.getElementById('hfh').value) || 0;
-            } else if (type === 'circle') {
-                sel.cx = parseInt(document.getElementById('hfcx').value) || 0;
-                sel.cy = parseInt(document.getElementById('hfcy').value) || 0;
-                sel.r = parseInt(document.getElementById('hfr').value) || 0;
-            } else if (type === 'ellipse') {
-                sel.cx = parseInt(document.getElementById('hfecx').value) || 0;
-                sel.cy = parseInt(document.getElementById('hfecy').value) || 0;
-                sel.rx = parseInt(document.getElementById('hferx').value) || 0;
-                sel.ry = parseInt(document.getElementById('hfery').value) || 0;
-            } else {
-                return;
-            }
-            App.state.activeHslSel = sel;
-            this.renderHsl();
-            this.updateHslPreview();
-        },
+        createHslSelection: function () { App.FilterSelection.createSelection('hsl'); },
 
-        clearHslPolygon: function () {
-            App.state.hslPolygonPoints = [];
-            this.renderHsl();
-        },
+        clearHslPolygon: function () { App.FilterSelection.clearPolygon('hsl'); },
 
-        renderHsl: function () {
-            var layer = App.els().imgOperationLayer;
-            if (!layer) return;
-            layer.innerHTML = '';
-            layer.classList.add('active');
-            var zoom = App.state.zoom / 100;
-            var sel = App.state.activeHslSel;
-            if (sel && sel.type !== 'polygon') {
-                var el = document.createElement('div');
-                el.className = 'crop-box';
-                if (sel.type === 'rect') {
-                    el.style.left = (sel.x * zoom) + 'px';
-                    el.style.top = (sel.y * zoom) + 'px';
-                    el.style.width = (sel.w * zoom) + 'px';
-                    el.style.height = (sel.h * zoom) + 'px';
-                    el.style.background = 'rgba(255,150,0,0.15)';
-                } else if (sel.type === 'circle') {
-                    var R = sel.r;
-                    el.style.left = ((sel.cx - R) * zoom) + 'px';
-                    el.style.top = ((sel.cy - R) * zoom) + 'px';
-                    el.style.width = (R * 2 * zoom) + 'px';
-                    el.style.height = (R * 2 * zoom) + 'px';
-                    el.style.borderRadius = '50%';
-                    el.style.background = 'rgba(255,150,0,0.15)';
-                } else if (sel.type === 'ellipse') {
-                    el.style.left = ((sel.cx - sel.rx) * zoom) + 'px';
-                    el.style.top = ((sel.cy - sel.ry) * zoom) + 'px';
-                    el.style.width = (sel.rx * 2 * zoom) + 'px';
-                    el.style.height = (sel.ry * 2 * zoom) + 'px';
-                    el.style.borderRadius = '50%';
-                    el.style.background = 'rgba(255,150,0,0.15)';
-                }
-                this.bindHslBoxEvents(el, sel);
-                for (var i = 0; i < 8; i++) {
-                    var h = document.createElement('span');
-                    var dirs = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-                    h.className = 'resize-handle h-' + dirs[i];
-                    el.appendChild(h);
-                }
-                this.bindHslHandles(el, sel);
-                layer.appendChild(el);
-            }
-            if (sel && sel.type === 'polygon' && App.state.hslPolygonPoints.length >= 3) {
-                this.renderHslPolygonMask(layer);
-            }
-            this.renderHslPolygonPoints(layer);
-        },
-
-        renderHslPolygonPoints: function (layer) {
-            var pts = App.state.hslPolygonPoints || [];
-            var zoom = App.state.zoom / 100;
-            for (var i = 0; i < pts.length; i++) {
-                var p = pts[i];
-                var el = document.createElement('div');
-                el.className = 'polygon-point';
-                el.style.left = (p.x * zoom) + 'px';
-                el.style.top = (p.y * zoom) + 'px';
-                el.dataset.idx = i;
-                (function (idx, node) {
-                    node.addEventListener('mousedown', function (e) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        var startX = e.clientX, startY = e.clientY;
-                        var ox = pts[idx].x, oy = pts[idx].y;
-                        function onMove(ev) {
-                            var dx = (ev.clientX - startX) * 100 / App.state.zoom;
-                            var dy = (ev.clientY - startY) * 100 / App.state.zoom;
-                            pts[idx].x = Math.max(0, Math.min(App.getActiveImage().width, ox + dx));
-                            pts[idx].y = Math.max(0, Math.min(App.getActiveImage().height, oy + dy));
-                            Filters.renderHsl();
-                            Filters.updateHslPreview();
-                        }
-                        function onUp() {
-                            document.removeEventListener('mousemove', onMove);
-                            document.removeEventListener('mouseup', onUp);
-                        }
-                        document.addEventListener('mousemove', onMove);
-                        document.addEventListener('mouseup', onUp);
-                    });
-                })(i, el);
-                layer.appendChild(el);
-            }
-        },
-
-        renderHslPolygonMask: function (layer) {
-            var pts = App.state.hslPolygonPoints;
-            var zoom = App.state.zoom / 100;
-            var svgNS = 'http://www.w3.org/2000/svg';
-            var svg = document.createElementNS(svgNS, 'svg');
-            var img = App.getActiveImage();
-            svg.setAttribute('width', img.width * zoom);
-            svg.setAttribute('height', img.height * zoom);
-            svg.style.position = 'absolute';
-            svg.style.left = '0';
-            svg.style.top = '0';
-            svg.style.pointerEvents = 'none';
-            var path = document.createElementNS(svgNS, 'polygon');
-            var coords = pts.map(function (p) { return (p.x * zoom) + ',' + (p.y * zoom); }).join(' ');
-            path.setAttribute('points', coords);
-            path.setAttribute('fill', 'rgba(255,150,0,0.15)');
-            path.setAttribute('stroke', '#ff9600');
-            path.setAttribute('stroke-dasharray', '4 4');
-            path.setAttribute('stroke-width', '1.5');
-            svg.appendChild(path);
-            layer.appendChild(svg);
-        },
-
-        bindHslBoxEvents: function (el, sel) {
-            var self = this;
-            el.addEventListener('mousedown', function (e) {
-                if (e.target.classList.contains('resize-handle')) return;
-                e.preventDefault();
-                e.stopPropagation();
-                var startX = e.clientX, startY = e.clientY;
-                var sx, sy, srx, sry;
-                if (sel.type === 'rect') { sx = sel.x; sy = sel.y; }
-                else if (sel.type === 'circle' || sel.type === 'ellipse') { srx = sel.cx; sry = sel.cy; }
-                function onMove(ev) {
-                    var dx = (ev.clientX - startX) * 100 / App.state.zoom;
-                    var dy = (ev.clientY - startY) * 100 / App.state.zoom;
-                    if (sel.type === 'rect') {
-                        sel.x = Math.max(0, Math.min(App.getActiveImage().width - sel.w, sx + dx));
-                        sel.y = Math.max(0, Math.min(App.getActiveImage().height - sel.h, sy + dy));
-                    } else if (sel.type === 'circle') {
-                        sel.cx = Math.max(sel.r, Math.min(App.getActiveImage().width - sel.r, srx + dx));
-                        sel.cy = Math.max(sel.r, Math.min(App.getActiveImage().height - sel.r, sry + dy));
-                    } else if (sel.type === 'ellipse') {
-                        sel.cx = Math.max(sel.rx, Math.min(App.getActiveImage().width - sel.rx, srx + dx));
-                        sel.cy = Math.max(sel.ry, Math.min(App.getActiveImage().height - sel.ry, sry + dy));
-                    }
-                    self.renderHsl();
-                    self.updateHslPreview();
-                }
-                function onUp() {
-                    document.removeEventListener('mousemove', onMove);
-                    document.removeEventListener('mouseup', onUp);
-                }
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('mouseup', onUp);
-            });
-        },
-
-        bindHslHandles: function (el, sel) {
-            var self = this;
-            var handles = el.querySelectorAll('.resize-handle');
-            for (var i = 0; i < handles.length; i++) {
-                handles[i].addEventListener('mousedown', (function (h) {
-                    return function (e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        var dir = '';
-                        ['nw', 'ne', 'sw', 'se', 'n', 's', 'w', 'e'].forEach(function (d) {
-                            if (h.classList.contains('h-' + d)) dir = d;
-                        });
-                        var startX = e.clientX, startY = e.clientY;
-                        var o = JSON.parse(JSON.stringify(sel));
-                        function onMove(ev) {
-                            var dx = (ev.clientX - startX) * 100 / App.state.zoom;
-                            var dy = (ev.clientY - startY) * 100 / App.state.zoom;
-                            self.resizeHslFromDir(sel, o, dir, dx, dy);
-                            self.renderHsl();
-                            self.updateHslPreview();
-                        }
-                        function onUp() {
-                            document.removeEventListener('mousemove', onMove);
-                            document.removeEventListener('mouseup', onUp);
-                        }
-                        document.addEventListener('mousemove', onMove);
-                        document.addEventListener('mouseup', onUp);
-                    };
-                })(handles[i]));
-            }
-        },
-
-        resizeHslFromDir: function (sel, o, dir, dx, dy) {
-            if (sel.type === 'rect') {
-                if (dir.indexOf('e') >= 0) sel.w = Math.max(5, o.w + dx);
-                if (dir.indexOf('s') >= 0) sel.h = Math.max(5, o.h + dy);
-                if (dir.indexOf('w') >= 0) { sel.w = Math.max(5, o.w - dx); sel.x = o.x + dx; if (sel.w === 5) sel.x = o.x + o.w - 5; }
-                if (dir.indexOf('n') >= 0) { sel.h = Math.max(5, o.h - dy); sel.y = o.y + dy; if (sel.h === 5) sel.y = o.y + o.h - 5; }
-            } else if (sel.type === 'circle') {
-                var sign = (dir === 'n' || dir === 'w' || dir === 'nw' || dir === 'ne' || dir === 'sw') ? -1 : 1;
-                sel.r = Math.max(5, o.r + (Math.abs(dx) > Math.abs(dy) ? dx : dy) * sign * (dir === 'se' || dir === 'nw' ? 1 : 0.7));
-            } else if (sel.type === 'ellipse') {
-                if (dir === 'e' || dir === 'w') sel.rx = Math.max(5, o.rx + Math.abs(dx) * (dir === 'e' ? 1 : -1));
-                else if (dir === 'n' || dir === 's') sel.ry = Math.max(5, o.ry + Math.abs(dy) * (dir === 's' ? 1 : -1));
-                else { sel.rx = Math.max(5, o.rx + Math.abs(dx) * (dir.indexOf('e') >= 0 ? 1 : -1)); sel.ry = Math.max(5, o.ry + Math.abs(dy) * (dir.indexOf('s') >= 0 ? 1 : -1)); }
-            }
-        },
+        renderHsl: function () { App.FilterSelection.renderGenericSelBox('hsl'); App.FilterSelection.bindGenericSelEvents('hsl'); },
 
         clearHslPreview: function () {
             _hslPreviewActive = false;
@@ -363,43 +121,14 @@
             ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
             var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             var selHasArea = false;
-            var maskData = null;
-
             if (sel) {
                 if (sel.type === 'polygon') {
-                    if (App.state.hslPolygonPoints && App.state.hslPolygonPoints.length >= 3) {
-                        selHasArea = true;
-                    }
+                    if (App.state.hslPolygonPoints && App.state.hslPolygonPoints.length >= 3) selHasArea = true;
                 } else {
                     selHasArea = true;
                 }
             }
-
-            if (selHasArea) {
-                var maskCanvas = document.createElement('canvas');
-                maskCanvas.width = canvas.width;
-                maskCanvas.height = canvas.height;
-                var mctx = maskCanvas.getContext('2d');
-                mctx.fillStyle = '#fff';
-                if (sel.type === 'rect') mctx.fillRect(sel.x, sel.y, sel.w, sel.h);
-                else if (sel.type === 'circle') {
-                    mctx.beginPath();
-                    mctx.arc(sel.cx, sel.cy, sel.r, 0, Math.PI * 2);
-                    mctx.fill();
-                } else if (sel.type === 'ellipse') {
-                    mctx.beginPath();
-                    mctx.ellipse(sel.cx, sel.cy, sel.rx, sel.ry, 0, 0, Math.PI * 2);
-                    mctx.fill();
-                } else if (sel.type === 'polygon') {
-                    mctx.beginPath();
-                    var pts = App.state.hslPolygonPoints;
-                    mctx.moveTo(pts[0].x, pts[0].y);
-                    for (var i = 1; i < pts.length; i++) mctx.lineTo(pts[i].x, pts[i].y);
-                    mctx.closePath();
-                    mctx.fill();
-                }
-                maskData = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
-            }
+            var maskData = selHasArea ? buildMaskFromSelection(sel, App.state.hslPolygonPoints, imgObj.width, imgObj.height) : null;
 
             applyHslToImageData(imgData, h, s / 100, l / 100, maskData);
             ctx.putImageData(imgData, 0, 0);
@@ -444,33 +173,7 @@
             var ctx = canvas.getContext('2d');
             ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
             var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            var maskData = null;
-
-            if (hasSel) {
-                var maskCanvas = document.createElement('canvas');
-                maskCanvas.width = canvas.width;
-                maskCanvas.height = canvas.height;
-                var mctx = maskCanvas.getContext('2d');
-                mctx.fillStyle = '#fff';
-                if (sel.type === 'rect') mctx.fillRect(sel.x, sel.y, sel.w, sel.h);
-                else if (sel.type === 'circle') {
-                    mctx.beginPath();
-                    mctx.arc(sel.cx, sel.cy, sel.r, 0, Math.PI * 2);
-                    mctx.fill();
-                } else if (sel.type === 'ellipse') {
-                    mctx.beginPath();
-                    mctx.ellipse(sel.cx, sel.cy, sel.rx, sel.ry, 0, 0, Math.PI * 2);
-                    mctx.fill();
-                } else if (sel.type === 'polygon') {
-                    mctx.beginPath();
-                    var pts = App.state.hslPolygonPoints;
-                    mctx.moveTo(pts[0].x, pts[0].y);
-                    for (var i = 1; i < pts.length; i++) mctx.lineTo(pts[i].x, pts[i].y);
-                    mctx.closePath();
-                    mctx.fill();
-                }
-                maskData = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
-            }
+            var maskData = hasSel ? buildMaskFromSelection(sel, App.state.hslPolygonPoints, imgObj.width, imgObj.height) : null;
 
             applyHslToImageData(imgData, h, s / 100, l / 100, maskData);
             ctx.putImageData(imgData, 0, 0);
@@ -804,31 +507,9 @@
             var ctx = canvas.getContext('2d');
             ctx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
 
-            var maskCanvas = document.createElement('canvas');
-            maskCanvas.width = canvas.width;
-            maskCanvas.height = canvas.height;
-            var mctx = maskCanvas.getContext('2d');
-            mctx.fillStyle = '#fff';
-            if (sel.type === 'rect') mctx.fillRect(sel.x, sel.y, sel.w, sel.h);
-            else if (sel.type === 'circle') {
-                mctx.beginPath();
-                mctx.arc(sel.cx, sel.cy, sel.r, 0, Math.PI * 2);
-                mctx.fill();
-            } else if (sel.type === 'ellipse') {
-                mctx.beginPath();
-                mctx.ellipse(sel.cx, sel.cy, sel.rx, sel.ry, 0, 0, Math.PI * 2);
-                mctx.fill();
-            } else if (sel.type === 'polygon') {
-                mctx.beginPath();
-                var pts = App.state.filterPolygonPoints;
-                mctx.moveTo(pts[0].x, pts[0].y);
-                for (var i = 1; i < pts.length; i++) mctx.lineTo(pts[i].x, pts[i].y);
-                mctx.closePath();
-                mctx.fill();
-            }
             var srcData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             var dstData = this.applyKindToPixels(srcData, this.activeKind);
-            var maskData = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+            var maskData = buildMaskFromSelection(sel, App.state.filterPolygonPoints, canvas.width, canvas.height);
             var srcPix = srcData.data;
             var dstPix = dstData.data;
             for (var p = 0; p < srcPix.length; p += 4) {
@@ -1300,336 +981,24 @@
         Filters.updateCurvePreview();
     }
 
-    Filters.renderHslSizeInputs = function() { renderSelSizeInputs('hsl'); };
-    Filters.renderCurveSizeInputs = function() { renderSelSizeInputs('curve'); };
-    Filters.renderBalanceSizeInputs = function() { renderSelSizeInputs('balance'); };
+    Filters.renderHslSizeInputs = function() { App.FilterSelection.renderSizeInputs('hsl'); };
+    Filters.renderCurveSizeInputs = function() { App.FilterSelection.renderSizeInputs('curve'); };
+    Filters.renderBalanceSizeInputs = function() { App.FilterSelection.renderSizeInputs('balance'); };
 
-    function renderSelSizeInputs(kind) {
-        var imgObj = App.getActiveImage();
-        if (!imgObj) return;
-        var els = App.els();
-        var type, sizeContent;
-        if (kind === 'hsl') { type = els.hslSelType.value; sizeContent = els.hslSelSizeContent; }
-        else if (kind === 'curve') { type = els.curveSelType.value; sizeContent = els.curveSelSizeContent; }
-        else if (kind === 'balance') { type = els.balanceSelType.value; sizeContent = els.balanceSelSizeContent; }
-        if (!sizeContent) return;
-        sizeContent.innerHTML = '';
-        var W = imgObj.width, H = imgObj.height;
-        if (type === 'rect') {
-            sizeContent.innerHTML =
-                '<div class="prop-group two-col"><div><label>X</label><input type="number" id="'+kind+'rectx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.2)+'"></div>' +
-                '<div><label>Y</label><input type="number" id="'+kind+'recty" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.2)+'"></div></div>' +
-                '<div class="prop-group two-col"><div><label>宽</label><input type="number" id="'+kind+'rectw" min="10" max="'+W+'" value="'+Math.round(W*0.6)+'"></div>' +
-                '<div><label>高</label><input type="number" id="'+kind+'recth" min="10" max="'+H+'" value="'+Math.round(H*0.6)+'"></div></div>';
-        } else if (type === 'circle') {
-            sizeContent.innerHTML =
-                '<div class="prop-group two-col"><div><label>中心X</label><input type="number" id="'+kind+'ccx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.5)+'"></div>' +
-                '<div><label>中心Y</label><input type="number" id="'+kind+'ccy" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.5)+'"></div></div>' +
-                '<div class="prop-group"><label>半径</label><input type="number" id="'+kind+'cr" min="5" value="'+Math.round(Math.min(W,H)*0.25)+'"></div>';
-        } else if (type === 'ellipse') {
-            sizeContent.innerHTML =
-                '<div class="prop-group two-col"><div><label>中心X</label><input type="number" id="'+kind+'ecx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.5)+'"></div>' +
-                '<div><label>中心Y</label><input type="number" id="'+kind+'ecy" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.5)+'"></div></div>' +
-                '<div class="prop-group two-col"><div><label>X半轴</label><input type="number" id="'+kind+'erx" min="5" value="'+Math.round(W*0.3)+'"></div>' +
-                '<div><label>Y半轴</label><input type="number" id="'+kind+'ery" min="5" value="'+Math.round(H*0.3)+'"></div></div>';
-        }
-    }
+    Filters.createHslSelection = function() { App.FilterSelection.createSelection('hsl'); };
+    Filters.createCurveSelection = function() { App.FilterSelection.createSelection('curve'); };
+    Filters.createBalanceSelection = function() { App.FilterSelection.createSelection('balance'); };
 
-    Filters.createHslSelection = function() { createSelectionByKind('hsl'); };
-    Filters.createCurveSelection = function() { createSelectionByKind('curve'); };
-    Filters.createBalanceSelection = function() { createSelectionByKind('balance'); };
+    Filters.clearHslPolygon = function() { App.FilterSelection.clearPolygon('hsl'); };
+    Filters.clearCurvePolygon = function() { App.FilterSelection.clearPolygon('curve'); };
+    Filters.clearBalancePolygon = function() { App.FilterSelection.clearPolygon('balance'); };
 
-    function createSelectionByKind(kind) {
-        var imgObj = App.getActiveImage(); if (!imgObj) return;
-        var els = App.els();
-        var type, stateSelKey = 'active' + capital(kind) + 'Sel';
-        if (kind === 'hsl') {
-            type = els.hslSelType.value;
-            App.state.activeHslSel = null;
-            App.state.hslPolygonPoints = [];
-        } else if (kind === 'curve') {
-            type = els.curveSelType.value;
-            App.state.activeCurveSel = null;
-            App.state.curvePolygonPoints = [];
-        } else if (kind === 'balance') {
-            type = els.balanceSelType.value;
-            App.state.activeBalanceSel = null;
-            App.state.balancePolygonPoints = [];
-        }
-        var sel = { type: type };
-        try {
-            if (type === 'rect') sel = { type: type, x: +document.getElementById(kind+'rectx').value, y: +document.getElementById(kind+'recty').value,
-                w: +document.getElementById(kind+'rectw').value, h: +document.getElementById(kind+'recth').value };
-            else if (type === 'circle') sel = { type: type, cx: +document.getElementById(kind+'ccx').value, cy: +document.getElementById(kind+'ccy').value, r: +document.getElementById(kind+'cr').value };
-            else if (type === 'ellipse') sel = { type: type, cx: +document.getElementById(kind+'ecx').value, cy: +document.getElementById(kind+'ecy').value,
-                rx: +document.getElementById(kind+'erx').value, ry: +document.getElementById(kind+'ery').value };
-            else if (type === 'polygon') sel = { type: type, points: [] };
-        } catch(e) { App.showToast('请输入正确的数值'); return; }
-        sel.w = Math.max(10, Math.min(imgObj.width - sel.x, sel.w | 0));
-        sel.h = Math.max(10, Math.min(imgObj.height - sel.y, sel.h | 0));
-        App.state[stateSelKey] = sel;
-        if (kind === 'hsl') { renderHsl(); Filters.updateHslPreview(); }
-        else if (kind === 'curve') { renderCurve(); Filters.updateCurvePreview(); }
-        else if (kind === 'balance') { renderBalance(); Filters.updateBalancePreview(); }
-    }
-
-    function capital(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-
-    Filters.clearHslPolygon = function() { App.state.hslPolygonPoints = []; App.state.activeHslSel = null; renderHsl(); };
-    Filters.clearCurvePolygon = function() { App.state.curvePolygonPoints = []; App.state.activeCurveSel = null; renderCurve(); Filters.updateCurvePreview(); };
-    Filters.clearBalancePolygon = function() { App.state.balancePolygonPoints = []; App.state.activeBalanceSel = null; renderBalance(); Filters.updateBalancePreview(); };
-
-    /* renderHsl / renderCurve / renderBalance 统一声明为独立函数 */
-    function renderHsl() { renderGenericSelBox('hsl'); bindGenericSelEvents('hsl'); }
-    function renderCurve() { renderGenericSelBox('curve'); bindGenericSelEvents('curve'); }
-    function renderBalance() { renderGenericSelBox('balance'); bindGenericSelEvents('balance'); }
+    function renderHsl() { App.FilterSelection.renderGenericSelBox('hsl'); App.FilterSelection.bindGenericSelEvents('hsl'); }
+    function renderCurve() { App.FilterSelection.renderGenericSelBox('curve'); App.FilterSelection.bindGenericSelEvents('curve'); }
+    function renderBalance() { App.FilterSelection.renderGenericSelBox('balance'); App.FilterSelection.bindGenericSelEvents('balance'); }
     Filters.renderHsl = renderHsl;
-
-    function renderGenericSelBox(kind) {
-        var layer = App.els().imgOperationLayer; if (!layer) return;
-        var selKey = 'active' + capital(kind) + 'Sel';
-        var polyKey = kind + 'PolygonPoints';
-        var sel = App.state[selKey];
-        var pts = App.state[polyKey] || [];
-        var old = document.getElementById('sel-box-' + kind);
-        if (old) old.remove();
-        var oldPoly = document.getElementById('sel-polygon-' + kind);
-        if (oldPoly) oldPoly.remove();
-        var oldDots = document.getElementById('sel-polygon-dots-' + kind);
-        if (oldDots) oldDots.remove();
-        var imgObj = App.getActiveImage(); if (!imgObj) return;
-        var tint = kind === 'hsl' ? 'rgba(255,150,0,0.15)' : kind === 'curve' ? 'rgba(120,200,255,0.15)' : 'rgba(200,120,255,0.15)';
-        var border = kind === 'hsl' ? '#ffa040' : kind === 'curve' ? '#40b0ff' : '#c060ff';
-
-        if (sel && (sel.type === 'rect' || sel.type === 'circle' || sel.type === 'ellipse')) {
-            var el = document.createElement('div');
-            el.id = 'sel-box-' + kind;
-            el.className = 'sel-box';
-            el.style.position = 'absolute';
-            el.style.border = '1.5px dashed ' + border;
-            el.style.background = tint;
-            el.style.pointerEvents = 'none';
-            el.style.boxSizing = 'border-box';
-
-            if (sel.type === 'rect') {
-                el.style.left = App.toDisplay(sel.x) + 'px';
-                el.style.top = App.toDisplay(sel.y) + 'px';
-                el.style.width = App.toDisplay(sel.w) + 'px';
-                el.style.height = App.toDisplay(sel.h) + 'px';
-                el.style.zIndex = '10';
-                layer.appendChild(el);
-                appendResizeHandles(el, kind, 'rect');
-            } else if (sel.type === 'circle') {
-                var d = App.toDisplay(sel.r * 2);
-                el.style.left = App.toDisplay(sel.cx - sel.r) + 'px';
-                el.style.top = App.toDisplay(sel.cy - sel.r) + 'px';
-                el.style.width = d + 'px';
-                el.style.height = d + 'px';
-                el.style.borderRadius = '50%';
-                el.style.zIndex = '10';
-                layer.appendChild(el);
-                appendResizeHandles(el, kind, 'circle');
-            } else if (sel.type === 'ellipse') {
-                el.style.left = App.toDisplay(sel.cx - sel.rx) + 'px';
-                el.style.top = App.toDisplay(sel.cy - sel.ry) + 'px';
-                el.style.width = App.toDisplay(sel.rx * 2) + 'px';
-                el.style.height = App.toDisplay(sel.ry * 2) + 'px';
-                el.style.borderRadius = '50%';
-                el.style.zIndex = '10';
-                layer.appendChild(el);
-                appendResizeHandles(el, kind, 'ellipse');
-            }
-        }
-
-        if (sel && sel.type === 'polygon' && pts.length > 0) {
-            var poly = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            poly.id = 'sel-polygon-' + kind;
-            poly.setAttribute('class', 'sel-polygon');
-            poly.style.position = 'absolute';
-            poly.style.left = '0'; poly.style.top = '0';
-            poly.style.width = App.toDisplay(imgObj.width) + 'px';
-            poly.style.height = App.toDisplay(imgObj.height) + 'px';
-            poly.style.pointerEvents = 'none';
-            poly.style.zIndex = '9';
-            var pointsStr = pts.map(function(p){ return App.toDisplay(p.x)+','+App.toDisplay(p.y); }).join(' ');
-            var pol = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-            pol.setAttribute('points', pointsStr);
-            pol.setAttribute('fill', tint);
-            pol.setAttribute('stroke', border);
-            pol.setAttribute('stroke-width', '1.5');
-            pol.setAttribute('stroke-dasharray', '4,3');
-            poly.appendChild(pol);
-            layer.appendChild(poly);
-
-            if (pts.length >= 3) {
-                // 渲染多边形节点
-                var dots = document.createElement('div');
-                dots.id = 'sel-polygon-dots-' + kind;
-                dots.style.position = 'absolute'; dots.style.left = '0'; dots.style.top = '0';
-                dots.style.width = App.toDisplay(imgObj.width) + 'px'; dots.style.height = App.toDisplay(imgObj.height) + 'px';
-                dots.style.zIndex = '11'; dots.style.pointerEvents = 'none';
-                for (var pi = 0; pi < pts.length; pi++) {
-                    (function(idx){
-                        var dot = document.createElement('div');
-                        dot.className = 'sel-poly-dot';
-                        dot.style.position = 'absolute';
-                        dot.style.left = (App.toDisplay(pts[idx].x) - 5) + 'px';
-                        dot.style.top = (App.toDisplay(pts[idx].y) - 5) + 'px';
-                        dot.style.width = '10px'; dot.style.height = '10px';
-                        dot.style.background = border; dot.style.border = '1.5px solid #fff';
-                        dot.style.borderRadius = '50%'; dot.style.cursor = 'pointer';
-                        dot.style.pointerEvents = 'auto'; dot.style.zIndex = '20';
-                        dot._ptIdx = idx; dot._kind = kind;
-                        dots.appendChild(dot);
-                    })(pi);
-                }
-                layer.appendChild(dots);
-                bindPolygonDrag(dots, kind);
-            }
-        }
-    }
-
-    function bindPolygonDrag(dotsDiv, kind) {
-        var polyKey = kind + 'PolygonPoints';
-        var renderFn = kind === 'hsl' ? renderHsl : (kind === 'curve' ? renderCurve : renderBalance);
-        var updateFn = kind === 'hsl' ? 'updateHslPreview' : (kind === 'curve' ? 'updateCurvePreview' : 'updateBalancePreview');
-        var dragging = null, startX, startY, startPt;
-        var dotNodes = dotsDiv.querySelectorAll('.sel-poly-dot');
-        dotNodes.forEach(function(d){
-            d.addEventListener('mousedown', function(e){
-                e.preventDefault(); e.stopPropagation();
-                dragging = d._ptIdx;
-                startX = e.clientX; startY = e.clientY;
-                startPt = App.state[polyKey][dragging];
-            });
-            d.addEventListener('contextmenu', function(e){
-                e.preventDefault();
-                if (App.state[polyKey].length <= 3) { App.showToast('至少保留3个点'); return; }
-                App.state[polyKey].splice(d._ptIdx, 1);
-                renderFn(); Filters[updateFn]();
-            });
-        });
-        window.addEventListener('mousemove', function(e){
-            if (dragging === null) return;
-            var pts = App.state[polyKey];
-            var imgObj = App.getActiveImage(); if (!imgObj) return;
-            var rect = App.els().canvasWrapper.getBoundingClientRect();
-            var nx = App.toImage(e.clientX - rect.left);
-            var ny = App.toImage(e.clientY - rect.top);
-            pts[dragging].x = Math.max(0, Math.min(imgObj.width-1, nx));
-            pts[dragging].y = Math.max(0, Math.min(imgObj.height-1, ny));
-            renderFn();
-        });
-        window.addEventListener('mouseup', function(){
-            if (dragging !== null) { dragging = null; Filters[updateFn](); }
-        });
-    }
-
-    function appendResizeHandles(box, kind, shape) {
-        var handles = shape === 'circle' ? ['e','w','n','s','ne','nw','se','sw'] : (shape === 'ellipse' ? ['e','w','n','s'] : ['nw','n','ne','e','se','s','sw','w']);
-        handles.forEach(function(h){
-            var el = document.createElement('div');
-            el.className = 'resize-handle resize-handle-' + h;
-            el._handle = h; el._kind = kind; el._shape = shape;
-            el.style.zIndex = '30';
-            box.appendChild(el);
-        });
-    }
-
-    function bindGenericSelEvents(kind) {
-        var layer = App.els().imgOperationLayer; if (!layer) return;
-        var selKey = 'active' + capital(kind) + 'Sel';
-        var polyKey = kind + 'PolygonPoints';
-        var renderFn = kind === 'hsl' ? renderHsl : (kind === 'curve' ? renderCurve : renderBalance);
-        var updateFn = kind === 'hsl' ? 'updateHslPreview' : (kind === 'curve' ? 'updateCurvePreview' : 'updateBalancePreview');
-        var box = document.getElementById('sel-box-' + kind);
-        if (box && !box._bound) {
-            box._bound = true;
-            box.style.pointerEvents = 'auto';
-            box.style.cursor = 'move';
-            var dragging = false, startX, startY, startSel;
-            box.addEventListener('mousedown', function(e){
-                if (e.target && e.target.classList.contains('resize-handle')) return;
-                dragging = true; startX = e.clientX; startY = e.clientY;
-                startSel = JSON.parse(JSON.stringify(App.state[selKey]));
-                e.preventDefault(); e.stopPropagation();
-            });
-            box.addEventListener('dblclick', function(e){
-                e.preventDefault(); e.stopPropagation();
-                if (kind === 'hsl') Filters.applyHsl();
-                else if (kind === 'curve') Filters.applyCurve();
-                else if (kind === 'balance') Filters.applyBalance();
-            });
-            window.addEventListener('mousemove', function(e){
-                if (!dragging) return;
-                var imgObj = App.getActiveImage(); if (!imgObj) return;
-                var dx = App.toImage(e.clientX - startX);
-                var dy = App.toImage(e.clientY - startY);
-                var s = startSel;
-                var ns = JSON.parse(JSON.stringify(s));
-                if (s.type === 'rect') {
-                    ns.x = Math.max(0, Math.min(imgObj.width - s.w, s.x + dx));
-                    ns.y = Math.max(0, Math.min(imgObj.height - s.h, s.y + dy));
-                } else if (s.type === 'circle') {
-                    ns.cx = Math.max(s.r, Math.min(imgObj.width - s.r, s.cx + dx));
-                    ns.cy = Math.max(s.r, Math.min(imgObj.height - s.r, s.cy + dy));
-                } else if (s.type === 'ellipse') {
-                    ns.cx = Math.max(s.rx, Math.min(imgObj.width - s.rx, s.cx + dx));
-                    ns.cy = Math.max(s.ry, Math.min(imgObj.height - s.ry, s.cy + dy));
-                }
-                App.state[selKey] = ns;
-                renderFn();
-            });
-            window.addEventListener('mouseup', function(){ if (dragging) { dragging = false; Filters[updateFn](); } });
-
-            box.querySelectorAll('.resize-handle').forEach(function(h){
-                var rDragging = false, rStartX, rStartY, rStartSel;
-                h.addEventListener('mousedown', function(e){
-                    rDragging = true; rStartX = e.clientX; rStartY = e.clientY;
-                    rStartSel = JSON.parse(JSON.stringify(App.state[selKey]));
-                    e.preventDefault(); e.stopPropagation();
-                });
-                window.addEventListener('mousemove', function(e){
-                    if (!rDragging) return;
-                    var imgObj = App.getActiveImage(); if (!imgObj) return;
-                    var dx = App.toImage(e.clientX - rStartX);
-                    var dy = App.toImage(e.clientY - rStartY);
-                    var s = rStartSel;
-                    var ns = JSON.parse(JSON.stringify(s));
-                    var handle = h._handle;
-                    if (s.type === 'rect') {
-                        if (handle.indexOf('e') >= 0) ns.w = Math.max(10, s.w + dx);
-                        if (handle.indexOf('w') >= 0) { ns.w = Math.max(10, s.w - dx); ns.x = s.x + (s.w - ns.w); }
-                        if (handle.indexOf('s') >= 0) ns.h = Math.max(10, s.h + dy);
-                        if (handle.indexOf('n') >= 0) { ns.h = Math.max(10, s.h - dy); ns.y = s.y + (s.h - ns.h); }
-                        ns.x = Math.max(0, Math.min(imgObj.width - ns.w, ns.x));
-                        ns.y = Math.max(0, Math.min(imgObj.height - ns.h, ns.y));
-                    } else if (s.type === 'circle') {
-                        var dr = 0;
-                        if (handle === 'e' || handle === 'se' || handle === 'ne') dr = dx;
-                        else if (handle === 'w' || handle === 'sw' || handle === 'nw') dr = -dx;
-                        else if (handle === 's') dr = dy;
-                        else if (handle === 'n') dr = -dy;
-                        ns.r = Math.max(5, s.r + dr);
-                        var maxR = Math.min(ns.cx, imgObj.width - ns.cx, ns.cy, imgObj.height - ns.cy);
-                        ns.r = Math.min(ns.r, maxR);
-                    } else if (s.type === 'ellipse') {
-                        if (handle === 'e') ns.rx = Math.max(5, s.rx + dx);
-                        if (handle === 'w') ns.rx = Math.max(5, s.rx - dx);
-                        if (handle === 's') ns.ry = Math.max(5, s.ry + dy);
-                        if (handle === 'n') ns.ry = Math.max(5, s.ry - dy);
-                        var maxRx = Math.min(ns.cx, imgObj.width - ns.cx);
-                        var maxRy = Math.min(ns.cy, imgObj.height - ns.cy);
-                        ns.rx = Math.min(ns.rx, maxRx);
-                        ns.ry = Math.min(ns.ry, maxRy);
-                    }
-                    App.state[selKey] = ns;
-                    renderFn();
-                });
-                window.addEventListener('mouseup', function(){ if (rDragging) { rDragging = false; Filters[updateFn](); } });
-            });
-        }
-    }
+    Filters.renderCurve = renderCurve;
+    Filters.renderBalance = renderBalance;
 
     /* ============================================================
      * 曲线 CURVE：公开方法
@@ -1812,7 +1181,7 @@
 
     function balanceIsZero(p) {
         var all = [p.shadow, p.mid, p.high];
-        for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) if (Math.abs(all[i][j]) > 1e-6) return false;
+        for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) if (Math.abs(all[i][j]) > 0.5) return false;
         return true;
     }
 
@@ -1961,109 +1330,9 @@
     /* ============================================================
      * 实时直方图悬浮窗
      * ============================================================ */
-    Filters.showLiveHistogram = function() {
-        var els = App.els();
-        if (els.liveHistogram) els.liveHistogram.style.display = 'block';
-    };
-    Filters.hideLiveHistogram = function() {
-        var els = App.els();
-        if (els.liveHistogram) els.liveHistogram.style.display = 'none';
-    };
-
-    Filters.updateLiveHistogram = function(imgSrc) {
-        if (!imgSrc) return;
-        var els = App.els();
-        if (!els.liveHistogram || els.liveHistogram.style.display === 'none') return;
-        var w = imgSrc.naturalWidth || imgSrc.width;
-        var h = imgSrc.naturalHeight || imgSrc.height;
-        if (!w || !h) return;
-        var maxPx = 400 * 400;
-        var scale = Math.min(1, Math.sqrt(maxPx / (w * h)));
-        var sw = Math.max(32, Math.round(w * scale));
-        var sh = Math.max(32, Math.round(h * scale));
-        var cv = document.createElement('canvas');
-        cv.width = sw; cv.height = sh;
-        var c = cv.getContext('2d');
-        try {
-            c.drawImage(imgSrc, 0, 0, sw, sh);
-        } catch(e) { return; }
-        var data = c.getImageData(0, 0, sw, sh).data;
-        var lumH = new Uint32Array(256);
-        var rH = new Uint32Array(256), gH = new Uint32Array(256), bH = new Uint32Array(256);
-        var maxLum = 0, maxR = 0, maxG = 0, maxB = 0;
-        var total = 0;
-        for (var i = 0; i < data.length; i += 4) {
-            var rv = data[i], gv = data[i+1], bv = data[i+2];
-            var y = (0.299 * rv + 0.587 * gv + 0.114 * bv) | 0;
-            if (y < 0) y = 0; if (y > 255) y = 255;
-            lumH[y]++; rH[rv]++; gH[gv]++; bH[bv]++;
-            if (lumH[y] > maxLum) maxLum = lumH[y];
-            if (rH[rv] > maxR) maxR = rH[rv];
-            if (gH[gv] > maxG) maxG = gH[gv];
-            if (bH[bv] > maxB) maxB = bH[bv];
-            total++;
-        }
-        maxR = Math.max(maxR, 1); maxG = Math.max(maxG, 1); maxB = Math.max(maxB, 1); maxLum = Math.max(maxLum, 1);
-        var maxOverlay = Math.max(rH[0], gH[0], bH[0]);
-        for (var bi = 1; bi < 256; bi++) {
-            var t = Math.max(rH[bi], gH[bi], bH[bi]);
-            if (t > maxOverlay) maxOverlay = t;
-        }
-        maxOverlay = Math.max(maxOverlay, 1);
-
-        drawHistogramBar(els.lhLum, lumH, maxLum, '#e0e0e0', '#909090');
-        drawHistogramBar(els.lhR, rH, maxR, '#ff6060', '#b03030');
-        drawHistogramBar(els.lhG, gH, maxG, '#60ff60', '#30b030');
-        drawHistogramBar(els.lhB, bH, maxB, '#6080ff', '#3050c0');
-        drawHistogramOverlay(els.lhOverlay, rH, gH, bH, maxOverlay);
-    };
-
-    function drawHistogramBar(canvas, hist, maxV, color, lineColor) {
-        if (!canvas) return;
-        var W = canvas.width, H = canvas.height;
-        var ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, W, H);
-        var grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, color);
-        grad.addColorStop(1, lineColor || color);
-        var barW = W / 256;
-        for (var i = 0; i < 256; i++) {
-            var bh = (hist[i] / maxV) * (H - 2);
-            ctx.fillStyle = i % 32 === 0 ? 'rgba(120,120,120,0.15)' : grad;
-            ctx.fillRect(i * barW, H - bh, Math.max(1, barW), bh);
-        }
-        if (lineColor) {
-            ctx.strokeStyle = lineColor;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for (var j = 0; j < 256; j++) {
-                var jh = (hist[j] / maxV) * (H - 2);
-                if (j === 0) ctx.moveTo(j * barW + barW/2, H - jh);
-                else ctx.lineTo(j * barW + barW/2, H - jh);
-            }
-            ctx.stroke();
-        }
-    }
-
-    function drawHistogramOverlay(canvas, rH, gH, bH, maxV) {
-        if (!canvas) return;
-        var W = canvas.width, H = canvas.height;
-        var ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, W, H);
-        var barW = W / 256;
-        function draw(hist, col) {
-            ctx.fillStyle = col;
-            for (var i = 0; i < 256; i++) {
-                var bh = (hist[i] / maxV) * (H - 2);
-                ctx.globalAlpha = 0.45;
-                ctx.fillRect(i * barW, H - bh, Math.max(1, barW), bh);
-            }
-            ctx.globalAlpha = 1;
-        }
-        draw(rH, '#ff3030');
-        draw(gH, '#30ff30');
-        draw(bH, '#3060ff');
-    }
+    Filters.showLiveHistogram = function() { App.FilterHistogram.show(); };
+    Filters.hideLiveHistogram = function() { App.FilterHistogram.hide(); };
+    Filters.updateLiveHistogram = function(imgSrc) { App.FilterHistogram.update(imgSrc); };
 
     /* 覆写 renderCanvas：扩展支持多种预览 */
     var _origRenderCanvas = App.renderCanvas;
