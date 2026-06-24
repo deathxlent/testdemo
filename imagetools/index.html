@@ -77,6 +77,9 @@
                     <button class="tool-icon" id="localZoomTool" data-tip="局部放大|在画布上创建选区后将其内容放大显示，可调整放大倍数、边框样式，生成可移动的放大图层">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="10" y="7" width="6" height="8" rx="1"/><path d="M9 6l3 4M7 10l4 2"/></svg>
                     </button>
+                    <button class="tool-icon" id="selectionTool" data-tip="通用选择|支持矩形/圆形/椭圆/多边形/魔棒选择，Shift添加选区，Ctrl减去选区，支持反选、删除、复制、涂色">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="12" height="12" rx="1" stroke-dasharray="2,2"/><circle cx="9" cy="9" r="3"/><path d="M6 6l6 6M12 6l-6 6"/></svg>
+                    </button>
                     <button class="tool-icon" id="pencilTool" data-tip="铅笔工具|自由绘制线条。普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式，可调节锚点">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 16l3-1L14 6l-2-2L3 13l-1 3z"/><path d="M12 4l2 2"/></svg>
                     </button>
@@ -644,6 +647,43 @@
                 </div>
                 <div class="panel-tip">普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式</div>
             </div>
+
+            <div class="panel-section" id="selectionPropsSection" style="display:none">
+                <div class="panel-title">通用选择</div>
+                <div class="prop-group">
+                    <label>选择类型</label>
+                    <select id="selectionType">
+                        <option value="rect">矩形</option>
+                        <option value="circle">圆形</option>
+                        <option value="ellipse">椭圆</option>
+                        <option value="polygon">多边形</option>
+                        <option value="magic">魔棒（取色）</option>
+                    </select>
+                </div>
+                <div class="prop-group" id="magicWandToleranceGroup" style="display:none">
+                    <label>容差 (<span id="magicToleranceDisp">30</span>)</label>
+                    <input type="range" id="magicTolerance" min="1" max="100" value="30">
+                </div>
+                <div class="prop-group btn-row">
+                    <button class="style-btn" id="invertSelection">反选</button>
+                    <button class="style-btn" id="clearSelection">清除选区</button>
+                </div>
+                <div class="prop-group btn-row">
+                    <button class="style-btn" id="deleteSelection">删除选区内容</button>
+                    <button class="style-btn" id="copySelection">复制到剪贴板</button>
+                </div>
+                <div class="prop-group">
+                    <label>填充颜色</label>
+                    <div class="color-row">
+                        <input type="color" id="selectionFillColor" value="#ffffff">
+                        <input type="text" id="selectionFillColorText" value="#ffffff" maxlength="7">
+                    </div>
+                </div>
+                <div class="prop-group btn-row">
+                    <button class="style-btn" id="fillSelection">填充选区</button>
+                </div>
+                <div class="panel-tip">Shift+拖拽：添加选区 | Ctrl+拖拽：减去选区 | 多边形：双击完成 | 魔棒：点击选择相似色</div>
+            </div>
         </div>
 
         <div class="center-area">
@@ -769,6 +809,7 @@
     <script src="js/filters.js"></script>
     <script src="js/local-zoom.js"></script>
     <script src="js/pencil.js"></script>
+    <script src="js/selection.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

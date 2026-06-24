@@ -67,6 +67,9 @@
         } else if (tool === 'localzoom') {
             App.LocalZoom.activate();
             els.localZoomTool.classList.add('active');
+        } else if (tool === 'selection') {
+            App.Selection.activate();
+            els.selectionTool.classList.add('active');
         } else if (tool === 'pencil') {
             App.Pencil.activate();
             els.pencilTool.classList.add('active');
@@ -120,6 +123,10 @@
         if (App.state.activeImgTool === 'localzoom') {
         } else {
             els.localZoomPropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'selection') {
+        } else {
+            els.selectionPropsSection.style.display = 'none';
         }
         if (App.state.activeImgTool === 'pencil') {
         } else {
@@ -416,6 +423,76 @@
         }
     }
 
+    function setupSelectionEvents() {
+        var els = App.els();
+        if (!els.selectionType) return;
+
+        els.selectionType.addEventListener('change', function () {
+            var type = els.selectionType.value;
+            App.Selection.setSelectionType(type);
+            if (els.magicWandToleranceGroup) {
+                els.magicWandToleranceGroup.style.display = (type === 'magic') ? 'block' : 'none';
+            }
+        });
+
+        if (els.magicTolerance) {
+            els.magicTolerance.addEventListener('input', function () {
+                if (els.magicToleranceDisp) els.magicToleranceDisp.textContent = els.magicTolerance.value;
+                App.Selection.setTolerance(els.magicTolerance.value);
+            });
+        }
+
+        if (els.invertSelection) {
+            els.invertSelection.addEventListener('click', function () {
+                App.Selection.invert();
+            });
+        }
+
+        if (els.clearSelection) {
+            els.clearSelection.addEventListener('click', function () {
+                App.Selection.clear();
+            });
+        }
+
+        if (els.deleteSelection) {
+            els.deleteSelection.addEventListener('click', function () {
+                if (confirm('确定要删除选区内容吗？')) {
+                    App.Selection.delete();
+                }
+            });
+        }
+
+        if (els.copySelection) {
+            els.copySelection.addEventListener('click', function () {
+                App.Selection.copy();
+            });
+        }
+
+        if (els.selectionFillColor) {
+            els.selectionFillColor.addEventListener('input', function () {
+                if (els.selectionFillColorText) els.selectionFillColorText.value = els.selectionFillColor.value;
+            });
+        }
+
+        if (els.selectionFillColorText) {
+            els.selectionFillColorText.addEventListener('change', function () {
+                var v = els.selectionFillColorText.value.trim();
+                if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+                    els.selectionFillColor.value = v;
+                } else {
+                    els.selectionFillColorText.value = els.selectionFillColor.value;
+                }
+            });
+        }
+
+        if (els.fillSelection) {
+            els.fillSelection.addEventListener('click', function () {
+                var color = els.selectionFillColor.value;
+                App.Selection.fill(color);
+            });
+        }
+    }
+
     function setupPencilEvents() {
         var els = App.els();
         if (!els.pencilColor) return;
@@ -468,6 +545,7 @@
         els.curveTool.addEventListener('click', function () { activateImgTool('curve'); });
         els.balanceTool.addEventListener('click', function () { activateImgTool('balance'); });
         els.localZoomTool.addEventListener('click', function () { activateImgTool('localzoom'); });
+        els.selectionTool.addEventListener('click', function () { activateImgTool('selection'); });
         els.pencilTool.addEventListener('click', function () { activateImgTool('pencil'); });
 
         document.addEventListener('keydown', function (e) {
@@ -487,6 +565,11 @@
                         App.Pencil.finishCurve();
                     }
                 }
+                if (App.state.activeImgTool === 'selection' && App.Selection) {
+                    App.Selection.handleKeyDown(e);
+                }
+            } else if (App.state.activeImgTool === 'selection' && App.Selection) {
+                App.Selection.handleKeyDown(e);
             }
         });
     }
@@ -544,6 +627,13 @@
                 return;
             }
 
+            if (App.state.activeImgTool === 'selection' && App.Selection) {
+                e.preventDefault();
+                e.stopPropagation();
+                App.Selection.handleMouseDown(e);
+                return;
+            }
+
             if ((App.state.activeImgTool === 'filter' || App.state.activeImgTool === 'hsl' || App.state.activeImgTool === 'curve' || App.state.activeImgTool === 'balance') && App.Filters) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -569,6 +659,10 @@
             if (App.state.activeImgTool === 'pencil' && App.Pencil) {
                 App.Pencil.onCanvasMouseMove(coords.x, coords.y, e);
             }
+
+            if (App.state.activeImgTool === 'selection' && App.Selection) {
+                App.Selection.handleMouseMove(e);
+            }
         });
 
         wrapper.addEventListener('mouseup', function (e) {
@@ -576,6 +670,10 @@
 
             if (App.state.activeImgTool === 'pencil' && App.Pencil) {
                 App.Pencil.onCanvasMouseUp(coords.x, coords.y, e);
+            }
+
+            if (App.state.activeImgTool === 'selection' && App.Selection) {
+                App.Selection.handleMouseUp(e);
             }
         });
 
@@ -591,6 +689,11 @@
 
             if (App.state.activeImgTool === 'pencil' && App.Pencil) {
                 App.Pencil.onCanvasDblClick(coords.x, coords.y, e);
+                return;
+            }
+
+            if (App.state.activeImgTool === 'selection' && App.Selection) {
+                App.Selection.handleDoubleClick(e);
                 return;
             }
 
@@ -1295,6 +1398,7 @@
         setupMirrorEvents();
         setupFilterEvents();
         setupLocalZoomEvents();
+        setupSelectionEvents();
         setupPencilEvents();
         setupCanvasEvents();
         setupGlobalListeners();

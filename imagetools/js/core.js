@@ -158,6 +158,19 @@ var App = (function () {
             lzBorderStyle: document.getElementById('lzBorderStyle'),
             lzZoom: document.getElementById('lzZoom'),
             lzZoomDisp: document.getElementById('lzZoomDisp'),
+            selectionTool: document.getElementById('selectionTool'),
+            selectionPropsSection: document.getElementById('selectionPropsSection'),
+            selectionType: document.getElementById('selectionType'),
+            magicWandToleranceGroup: document.getElementById('magicWandToleranceGroup'),
+            magicTolerance: document.getElementById('magicTolerance'),
+            magicToleranceDisp: document.getElementById('magicToleranceDisp'),
+            invertSelection: document.getElementById('invertSelection'),
+            clearSelection: document.getElementById('clearSelection'),
+            deleteSelection: document.getElementById('deleteSelection'),
+            copySelection: document.getElementById('copySelection'),
+            selectionFillColor: document.getElementById('selectionFillColor'),
+            selectionFillColorText: document.getElementById('selectionFillColorText'),
+            fillSelection: document.getElementById('fillSelection'),
             pencilPropsSection: document.getElementById('pencilPropsSection'),
             pencilColor: document.getElementById('pencilColor'),
             pencilColorText: document.getElementById('pencilColorText'),
@@ -349,6 +362,7 @@ var App = (function () {
         else if (state.activeImgTool === 'balance' && App.Filters) App.Filters.deactivateBalance();
         else if (state.activeImgTool === 'localzoom' && App.LocalZoom) App.LocalZoom.deactivate();
         else if (state.activeImgTool === 'pencil' && App.Pencil) App.Pencil.deactivate();
+        else if (state.activeImgTool === 'selection' && App.Selection) App.Selection.deactivate();
         state.activeImgTool = null;
         if (els.rotateCenterHandle) els.rotateCenterHandle.style.display = 'none';
         trigger('tool:deactivated');
