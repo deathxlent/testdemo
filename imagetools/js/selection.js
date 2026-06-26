@@ -13,7 +13,7 @@
 
     function activate() {
         var imgObj = App.getActiveImage();
-        if (!imgObj) { App.showToast('请先打开一张图片'); return false; }
+        if (!imgObj) { App.showToast(App.i18n.t('dialog.open_image_first')); return false; }
         App.Text.deselectAll();
         App.clearOperationLayer();
         App.setActiveImgTool('selection');
@@ -59,6 +59,10 @@
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
 
+        if (selections.length > 0) {
+            renderBrightnessOverlay();
+        }
+
         selections.forEach(function (sel, idx) {
             renderSelection(sel, idx);
         });
@@ -72,6 +76,48 @@
         }
     }
 
+    function renderBrightnessOverlay() {
+        var layer = App.els().imgOperationLayer;
+        var imgObj = App.getActiveImage();
+        if (!layer || !imgObj) return;
+
+        var combinedMask = combineSelectionsToMask(selections);
+        if (!combinedMask) return;
+
+        var overlayCanvas = document.createElement('canvas');
+        overlayCanvas.width = App.toDisplay(imgObj.width);
+        overlayCanvas.height = App.toDisplay(imgObj.height);
+        overlayCanvas.style.position = 'absolute';
+        overlayCanvas.style.left = '0';
+        overlayCanvas.style.top = '0';
+        overlayCanvas.style.zIndex = '5';
+        overlayCanvas.style.pointerEvents = 'none';
+        var ctx = overlayCanvas.getContext('2d');
+
+        ctx.drawImage(imgObj.img, 0, 0, overlayCanvas.width, overlayCanvas.height);
+        var imageData = ctx.getImageData(0, 0, overlayCanvas.width, overlayCanvas.height);
+        var data = imageData.data;
+        var scaleX = imgObj.width / overlayCanvas.width;
+        var scaleY = imgObj.height / overlayCanvas.height;
+
+        for (var y = 0; y < overlayCanvas.height; y++) {
+            for (var x = 0; x < overlayCanvas.width; x++) {
+                var srcX = Math.floor(x * scaleX);
+                var srcY = Math.floor(y * scaleY);
+                var maskIdx = (srcY * imgObj.width + srcX) * 4 + 3;
+                if (combinedMask[maskIdx] > 0) {
+                    var idx = (y * overlayCanvas.width + x) * 4;
+                    data[idx] = Math.min(255, data[idx] + 40);
+                    data[idx + 1] = Math.min(255, data[idx + 1] + 40);
+                    data[idx + 2] = Math.min(255, data[idx + 2] + 40);
+                }
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        layer.appendChild(overlayCanvas);
+    }
+
     function renderSelection(sel, idx) {
         var layer = App.els().imgOperationLayer;
         if (!layer) return;
@@ -81,11 +127,12 @@
         var el = document.createElement('div');
         el.className = 'selection-box';
         el.style.position = 'absolute';
-        el.style.border = '2px dashed #00aaff';
-        el.style.background = 'rgba(0, 170, 255, 0.15)';
+        el.style.border = '2px dashed #ffdd00';
+        el.style.background = 'transparent';
         el.style.pointerEvents = 'none';
         el.style.boxSizing = 'border-box';
         el.style.zIndex = '10';
+        el.style.boxShadow = '0 0 8px rgba(255, 221, 0, 0.5)';
 
         if (sel.type === 'rect') {
             el.style.left = App.toDisplay(sel.x) + 'px';
@@ -123,35 +170,72 @@
             }).join(' ');
             var pol = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
             pol.setAttribute('points', pointsStr);
-            pol.setAttribute('fill', 'rgba(0, 170, 255, 0.15)');
-            pol.setAttribute('stroke', '#00aaff');
+            pol.setAttribute('fill', 'transparent');
+            pol.setAttribute('stroke', '#ffdd00');
             pol.setAttribute('stroke-width', '2');
-            pol.setAttribute('stroke-dasharray', '4,3');
+            pol.setAttribute('stroke-dasharray', '6,4');
+            pol.setAttribute('style', 'filter: drop-shadow(0 0 4px rgba(255, 221, 0, 0.5))');
             poly.appendChild(pol);
             layer.appendChild(poly);
         } else if (sel.type === 'magic' && sel.mask) {
-            var maskCanvas = document.createElement('canvas');
-            maskCanvas.width = imgObj.width;
-            maskCanvas.height = imgObj.height;
-            var maskCtx = maskCanvas.getContext('2d');
-            var maskData = new Uint8ClampedArray(sel.mask);
-            maskCtx.putImageData(new ImageData(maskData, imgObj.width, imgObj.height), 0, 0);
-
-            var displayCanvas = document.createElement('canvas');
-            displayCanvas.width = App.toDisplay(imgObj.width);
-            displayCanvas.height = App.toDisplay(imgObj.height);
-            displayCanvas.style.position = 'absolute';
-            displayCanvas.style.left = '0';
-            displayCanvas.style.top = '0';
-            displayCanvas.style.zIndex = '10';
-            displayCanvas.style.pointerEvents = 'none';
-            var displayCtx = displayCanvas.getContext('2d');
-            displayCtx.drawImage(maskCanvas, 0, 0, displayCanvas.width, displayCanvas.height);
-            displayCtx.globalCompositeOperation = 'source-in';
-            displayCtx.fillStyle = 'rgba(0, 170, 255, 0.15)';
-            displayCtx.fillRect(0, 0, displayCanvas.width, displayCanvas.height);
-            layer.appendChild(displayCanvas);
+            var svg = maskToSvg(sel.mask, imgObj.width, imgObj.height);
+            if (svg) {
+                layer.appendChild(svg);
+            }
         }
+    }
+
+    function maskToSvg(mask, w, h) {
+        var edges = [];
+        for (var y = 0; y < h; y++) {
+            for (var x = 0; x < w; x++) {
+                var idx = (y * w + x) * 4;
+                if (mask[idx + 3] > 0) {
+                    var isEdge = false;
+                    if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
+                        isEdge = true;
+                    } else {
+                        var top = mask[((y - 1) * w + x) * 4 + 3] === 0;
+                        var bottom = mask[((y + 1) * w + x) * 4 + 3] === 0;
+                        var left = mask[(y * w + (x - 1)) * 4 + 3] === 0;
+                        var right = mask[(y * w + (x + 1)) * 4 + 3] === 0;
+                        if (top || bottom || left || right) {
+                            isEdge = true;
+                        }
+                    }
+                    if (isEdge) {
+                        edges.push({ x: x, y: y });
+                    }
+                }
+            }
+        }
+
+        if (edges.length === 0) return null;
+
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'selection-magic');
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.width = App.toDisplay(w) + 'px';
+        svg.style.height = App.toDisplay(h) + 'px';
+        svg.style.pointerEvents = 'none';
+        svg.style.zIndex = '10';
+
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        var d = edges.map(function (p) {
+            return 'M' + App.toDisplay(p.x) + ',' + App.toDisplay(p.y) + ' h1 v1 h-1 Z';
+        }).join(' ');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', '#ffdd00');
+        path.setAttribute('fill-opacity', '0.15');
+        path.setAttribute('stroke', '#ffdd00');
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('stroke-dasharray', '4,3');
+        path.setAttribute('style', 'filter: drop-shadow(0 0 3px rgba(255, 221, 0, 0.5))');
+        svg.appendChild(path);
+
+        return svg;
     }
 
     function renderPolygonPreview() {
@@ -177,9 +261,9 @@
             var line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
             line.setAttribute('points', pointsStr);
             line.setAttribute('fill', 'none');
-            line.setAttribute('stroke', '#00aaff');
+            line.setAttribute('stroke', '#ff4444');
             line.setAttribute('stroke-width', '2');
-            line.setAttribute('stroke-dasharray', '4,3');
+            line.setAttribute('stroke-dasharray', '6,4');
             poly.appendChild(line);
         }
 
@@ -188,7 +272,7 @@
             dot.setAttribute('cx', App.toDisplay(p.x));
             dot.setAttribute('cy', App.toDisplay(p.y));
             dot.setAttribute('r', '5');
-            dot.setAttribute('fill', '#00aaff');
+            dot.setAttribute('fill', '#ff4444');
             dot.setAttribute('stroke', '#fff');
             dot.setAttribute('stroke-width', '2');
             poly.appendChild(dot);
@@ -319,13 +403,140 @@
 
     function handleKeyDown(e) {
         if (!active) return;
-        if (e.key === 'Escape') {
-            selections = [];
-            currentSelection = null;
-            polygonPoints = [];
-            render();
-        } else if (e.key === 'Enter' && selectionType === 'polygon') {
+        if (e.key === 'Enter' && selectionType === 'polygon') {
             handleDoubleClick(e);
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+            e.preventDefault();
+            invertSelection();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+            e.preventDefault();
+            copySelectionToClipboard();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+            e.preventDefault();
+            pasteImageAsWatermark();
+        }
+    }
+
+    async function copySelectionToClipboard() {
+        var imgObj = App.getActiveImage();
+        if (!imgObj) {
+            App.showToast(App.i18n.t('dialog.open_image_first'));
+            return;
+        }
+        
+        if (selections.length === 0) {
+            App.showToast(App.i18n.t('selection.create_first'));
+            return;
+        }
+        
+        try {
+            var combinedMask = combineSelectionsToMask(selections);
+            if (!combinedMask) {
+                App.showToast(App.i18n.t('selection.invalid'));
+                return;
+            }
+
+            var bounds = getSelectionBounds(combinedMask, imgObj.width, imgObj.height);
+            if (!bounds) {
+                App.showToast(App.i18n.t('selection.invalid'));
+                return;
+            }
+            
+            var canvas = document.createElement('canvas');
+            canvas.width = bounds.w;
+            canvas.height = bounds.h;
+            var ctx = canvas.getContext('2d');
+            
+            var sourceCanvas = document.createElement('canvas');
+            sourceCanvas.width = imgObj.width;
+            sourceCanvas.height = imgObj.height;
+            var sourceCtx = sourceCanvas.getContext('2d');
+            sourceCtx.drawImage(imgObj.img, 0, 0, imgObj.width, imgObj.height);
+            var sourceData = sourceCtx.getImageData(0, 0, imgObj.width, imgObj.height);
+            
+            var copyData = ctx.createImageData(bounds.w, bounds.h);
+            for (var y = 0; y < bounds.h; y++) {
+                for (var x = 0; x < bounds.w; x++) {
+                    var srcIdx = ((bounds.y + y) * imgObj.width + bounds.x + x) * 4;
+                    var dstIdx = (y * bounds.w + x) * 4;
+                    var maskIdx = srcIdx;
+                    if (combinedMask[maskIdx + 3] > 0) {
+                        copyData.data[dstIdx] = sourceData.data[srcIdx];
+                        copyData.data[dstIdx + 1] = sourceData.data[srcIdx + 1];
+                        copyData.data[dstIdx + 2] = sourceData.data[srcIdx + 2];
+                        copyData.data[dstIdx + 3] = sourceData.data[srcIdx + 3];
+                    } else {
+                        copyData.data[dstIdx + 3] = 0;
+                    }
+                }
+            }
+            
+            ctx.putImageData(copyData, 0, 0);
+            
+            var blob = await new Promise(function(resolve) {
+                canvas.toBlob(resolve, 'image/png');
+            });
+            
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+            
+            App.showToast(App.i18n.t('selection.copied'));
+        } catch (err) {
+            console.error(App.i18n.t('selection.copy_failed') + ':', err);
+            App.showToast(App.i18n.t('selection.copy_failed') + ': ' + err.message);
+        }
+    }
+
+    async function pasteImageAsWatermark() {
+        var imgObj = App.getActiveImage();
+        if (!imgObj) {
+            App.showToast(App.i18n.t('dialog.open_image_first'));
+            return;
+        }
+
+        try {
+            var clipboardItems = await navigator.clipboard.read();
+            if (!clipboardItems || clipboardItems.length === 0) {
+                App.showToast(App.i18n.t('selection.clipboard_empty'));
+                return;
+            }
+
+            for (var i = 0; i < clipboardItems.length; i++) {
+                var item = clipboardItems[i];
+                var imageType = item.types.find(function(t) {
+                    return t === 'image/png' || t === 'image/jpeg' || t === 'image/webp' || t.startsWith('image/');
+                });
+                
+                if (imageType) {
+                    var blob = await item.getType(imageType);
+                    var url = URL.createObjectURL(blob);
+                    var img = new Image();
+                    
+                    img.onload = function() {
+                        URL.revokeObjectURL(url);
+                        
+                        if (App.Watermark && App.Watermark.addImageWatermark) {
+                            App.Watermark.addImageWatermark(img);
+                            App.showToast(App.i18n.t('selection.added_as_watermark'));
+                        } else {
+                            App.showToast(App.i18n.t('selection.watermark_unavailable'));
+                        }
+                    };
+                    
+                    img.onerror = function() {
+                        URL.revokeObjectURL(url);
+                        App.showToast(App.i18n.t('selection.paste_failed'));
+                    };
+                    
+                    img.src = url;
+                    return;
+                }
+            }
+            App.showToast(App.i18n.t('selection.no_image_in_clipboard'));
+        } catch (err) {
+            console.error(App.i18n.t('selection.paste_failed') + ':', err);
+            App.showToast(App.i18n.t('selection.paste_failed') + ': ' + (err.message || App.i18n.t('selection.clipboard_unsupported')));
         }
     }
 
@@ -435,7 +646,7 @@
         canvas.width = imgObj.width;
         canvas.height = imgObj.height;
         var ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = 'rgba(255,255,255,1)';
 
         if (sel.type === 'rect') {
             ctx.fillRect(sel.x, sel.y, sel.w, sel.h);
@@ -494,7 +705,7 @@
 
     function invertSelection() {
         if (selections.length === 0) {
-            App.showToast('请先创建选择区域');
+            App.showToast(App.i18n.t('selection.create_first'));
             return;
         }
 
@@ -514,12 +725,14 @@
 
     function deleteSelection() {
         if (selections.length === 0) {
-            App.showToast('请先创建选择区域');
+            App.showToast(App.i18n.t('selection.create_first'));
             return;
         }
 
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
+
+        if (App.History) App.History.push(App.i18n.t('history.delete_selection'));
 
         var canvas = document.createElement('canvas');
         canvas.width = imgObj.width;
@@ -550,14 +763,13 @@
             App.renderCanvas();
             selections = [];
             render();
-            App.Images.saveHistory();
         };
         newImg.src = canvas.toDataURL('image/png');
     }
 
     function copySelection() {
         if (selections.length === 0) {
-            App.showToast('请先创建选择区域');
+            App.showToast(App.i18n.t('selection.create_first'));
             return;
         }
 
@@ -605,19 +817,19 @@
             try {
                 var item = new ClipboardItem({ 'image/png': blob });
                 navigator.clipboard.write([item]).then(function () {
-                    App.showToast('已复制到剪贴板');
+                    App.showToast(App.i18n.t('selection.copied'));
                 }).catch(function (err) {
-                    App.showToast('复制失败: ' + err.message);
+                    App.showToast(App.i18n.t('selection.copy_failed') + ': ' + err.message);
                 });
             } catch (e) {
-                App.showToast('浏览器不支持剪贴板API');
+                App.showToast(App.i18n.t('selection.clipboard_unsupported'));
             }
         }, 'image/png');
     }
 
     function fillSelection(color) {
         if (selections.length === 0) {
-            App.showToast('请先创建选择区域');
+            App.showToast(App.i18n.t('selection.create_first'));
             return;
         }
 
@@ -657,7 +869,7 @@
             App.renderCanvas();
             selections = [];
             render();
-            App.Images.saveHistory();
+            if (App.History) App.History.push(App.i18n.t('history.fill_selection'));
         };
         newImg.src = canvas.toDataURL('image/png');
     }
@@ -712,7 +924,15 @@
         handleKeyDown: handleKeyDown,
         invert: invertSelection,
         delete: deleteSelection,
-        copy: copySelection,
+        deleteSelection: deleteSelection,
+        clearSelection: function () {
+            selections = [];
+            currentSelection = null;
+            polygonPoints = [];
+            render();
+        },
+        copy: copySelectionToClipboard,
+        paste: pasteImageAsWatermark,
         fill: fillSelection,
         setSelectionType: setSelectionType,
         setTolerance: setTolerance,

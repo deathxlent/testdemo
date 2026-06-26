@@ -20,19 +20,19 @@
                 label = obj.text;
             } else if (obj.type === 'localzoom') {
                 iconSvg = '<svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="10" y="7" width="6" height="8" rx="1"/><path d="M9 6l3 4M7 10l4 2"/></svg>';
-                label = (obj.name || '局部放大') + ' ' + obj.scale.toFixed(1) + '×';
+                label = (obj.name || App.i18n.t('object.local_zoom')) + ' ' + obj.scale.toFixed(1) + '×';
             } else {
                 iconSvg = '<svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M2 13l4-4 3 3 2-2 5 5"/><circle cx="7" cy="6" r="1.5"/></svg>';
-                label = obj.name || '水印';
+                label = obj.name || App.i18n.t('object.watermark');
             }
 
             item.innerHTML =
                 '<div class="object-icon">' + iconSvg + '</div>' +
                 '<div class="object-name" title="' + App.escapeHtml(label) + '">' + App.escapeHtml(label) + '</div>' +
                 '<div class="object-actions">' +
-                    '<button class="object-btn" data-action="up" title="上移一层">\u2191</button>' +
-                    '<button class="object-btn" data-action="down" title="下移一层">\u2193</button>' +
-                    '<button class="object-btn" data-action="delete" title="删除">\u2715</button>' +
+                    '<button class="object-btn" data-action="up" title="' + App.i18n.t('js.move_up') + '">\u2191</button>' +
+                    '<button class="object-btn" data-action="down" title="' + App.i18n.t('js.move_down') + '">\u2193</button>' +
+                    '<button class="object-btn" data-action="delete" title="' + App.i18n.t('js.delete_obj') + '">\u2715</button>' +
                 '</div>';
 
             item.addEventListener('click', function (e) {

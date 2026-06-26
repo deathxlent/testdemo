@@ -3,7 +3,7 @@
 
     var LocalZoom = {
         activate: function () {
-            if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
+            if (!App.getActiveImage()) { App.showToast(App.i18n.t('dialog.open_image_first')); return; }
             App.Text.deselectAll();
             App.clearOperationLayer();
             App.setActiveImgTool('localzoom');
@@ -130,7 +130,7 @@
             if (!sel) return;
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
-            if (App.History) App.History.push('局部放大');
+            if (App.History) App.History.push(App.i18n.t('history.local_zoom'));
             var scale = parseFloat(App.els().lzZoom.value) || 2;
             var borderColor = App.els().lzBorderColor.value || '#ff0000';
             var borderWidth = parseInt(App.els().lzBorderWidth.value) || 0;
@@ -146,7 +146,7 @@
             var obj = {
                 id: 'lz_' + (Date.now()),
                 type: 'localzoom',
-                name: '局部放大',
+                name: App.i18n.t('history.local_zoom'),
                 srcShape: sel.shape,
                 srcX: sel.x,
                 srcY: sel.y,
@@ -224,7 +224,7 @@
             }
             var sl = document.createElement('div');
             sl.className = 'lz-label';
-            sl.textContent = '源区域 · ' + obj.srcW + '×' + obj.srcH;
+            sl.textContent = App.i18n.t('localzoom.source_area') + ' · ' + obj.srcW + '×' + obj.srcH;
             source.appendChild(sl);
 
             var img = new Image();
@@ -258,7 +258,7 @@
             }
             var bl = document.createElement('div');
             bl.className = 'lz-label';
-            bl.textContent = '放大 ' + obj.scale.toFixed(1) + '×';
+            bl.textContent = App.i18n.t('localzoom.zoom_label') + ' ' + obj.scale.toFixed(1) + '×';
             box.appendChild(bl);
 
             var self = this;

@@ -7,7 +7,7 @@
         tmpStroke: null,
 
         activate: function () {
-            if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
+            if (!App.getActiveImage()) { App.showToast(App.i18n.t('dialog.open_image_first')); return; }
             App.Text.deselectAll();
             this.ensurePencilCanvas();
             App.setActiveImgTool('pencil');
@@ -207,13 +207,13 @@
                 App.state.pencilDrawing = false;
                 App.state.pencilStartPoint = null;
                 App.state.pencilLastPoint = null;
-                if (App.History) App.History.push('铅笔（直线）');
+                if (App.History) App.History.push(App.i18n.t('history.pencil_line'));
                 return;
             }
 
             if (App.state.pencilMode === 'free') {
                 App.state.pencilDrawing = false;
-                if (App.History) App.History.push('铅笔（手绘）');
+                if (App.History) App.History.push(App.i18n.t('history.pencil_freehand'));
                 return;
             }
 
@@ -376,7 +376,7 @@
                 ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p1.x, p1.y);
             }
             ctx.stroke();
-            if (App.History) App.History.push('铅笔（路径曲线）');
+            if (App.History) App.History.push(App.i18n.t('history.pencil_curve'));
             App.state.pencilCurveAnchors = [];
             App.state.pencilMode = 'free';
             App.clearOperationLayer();
@@ -394,7 +394,7 @@
         clearPencilLayer: function () {
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
-            if (App.History) App.History.push('清除铅笔层');
+            if (App.History) App.History.push(App.i18n.t('history.pencil_clear'));
             if (imgObj.pencilCanvas) {
                 var c = imgObj.pencilCanvas.getContext('2d');
                 c.clearRect(0, 0, imgObj.pencilCanvas.width, imgObj.pencilCanvas.height);

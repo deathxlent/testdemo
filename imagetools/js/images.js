@@ -1,36 +1,45 @@
 (function () {
-    function addImage(file) {
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            var img = new Image();
-            img.onload = function () {
-                var pencilCanvas = document.createElement('canvas');
-                pencilCanvas.width = img.naturalWidth;
-                pencilCanvas.height = img.naturalHeight;
-                var imageObj = {
-                    id: 'img_' + App.state.nextImageId++,
-                    name: file.name,
-                    img: img,
-                    width: img.naturalWidth,
-                    height: img.naturalHeight,
-                    objects: [],
-                    _lastZoom: 100,
-                    _origW: img.naturalWidth,
-                    _origH: img.naturalHeight,
-                    _prevW: img.naturalWidth,
-                    _prevH: img.naturalHeight,
-                    pencilCanvas: pencilCanvas
+    function addImage(fileOrObj) {
+        if (fileOrObj instanceof File || fileOrObj instanceof Blob) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var img = new Image();
+                img.onload = function () {
+                    var pencilCanvas = document.createElement('canvas');
+                    pencilCanvas.width = img.naturalWidth;
+                    pencilCanvas.height = img.naturalHeight;
+                    var imageObj = {
+                        id: 'img_' + App.state.nextImageId++,
+                        name: fileOrObj.name,
+                        img: img,
+                        width: img.naturalWidth,
+                        height: img.naturalHeight,
+                        objects: [],
+                        _lastZoom: 100,
+                        _origW: img.naturalWidth,
+                        _origH: img.naturalHeight,
+                        _prevW: img.naturalWidth,
+                        _prevH: img.naturalHeight,
+                        pencilCanvas: pencilCanvas
+                    };
+                    App.state.images.push(imageObj);
+                    switchImage(imageObj.id);
+                    fitToView();
+                    setTimeout(function () {
+                        if (App.History) App.History.initForImage(imageObj);
+                    }, 10);
                 };
-                App.state.images.push(imageObj);
-                switchImage(imageObj.id);
-                fitToView();
-                setTimeout(function () {
-                    if (App.History) App.History.initForImage(imageObj);
-                }, 10);
+                img.src = e.target.result;
             };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            reader.readAsDataURL(fileOrObj);
+        } else if (fileOrObj && fileOrObj.img && fileOrObj.width && fileOrObj.height) {
+            App.state.images.push(fileOrObj);
+            switchImage(fileOrObj.id);
+            fitToView();
+            setTimeout(function () {
+                if (App.History) App.History.initForImage(fileOrObj);
+            }, 10);
+        }
     }
 
     function renderTabs() {
@@ -60,6 +69,9 @@
     }
 
     function switchImage(id) {
+        if (App.Puzzle && App.Puzzle.isActive) {
+            App.Puzzle.saveStateToImage();
+        }
         App.state.activeImageId = id;
         App.state.selectedObjId = null;
         App.state.isEditing = false;
@@ -72,6 +84,13 @@
         App.renderCanvas();
         App.showCanvasArea();
         App.updateZoomUI();
+        if (App.Selection) {
+            App.Selection.clearSelection();
+        }
+        if (App.Puzzle && App.Puzzle.isActive) {
+            App.Puzzle.loadStateFromImage(img);
+            App.Puzzle.renderPuzzleGrid();
+        }
         App.trigger('image:switched');
     }
 

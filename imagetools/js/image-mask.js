@@ -3,7 +3,7 @@
 
     function activate() {
         var imgObj = App.getActiveImage();
-        if (!imgObj) { alert('请先打开一张图片'); return false; }
+        if (!imgObj) { alert(App.i18n.t('dialog.open_image_first')); return false; }
         App.state.activeImgTool = 'mask';
         App.Text.deselectAll();
         App.els().maskPropsSection.style.display = 'block';
@@ -52,23 +52,23 @@
         if (_currentType === 'circle') {
             cont.innerHTML =
                 '<div class="prop-group">' +
-                '<label>半径 R (px)</label>' +
+                '<label>' + App.i18n.t('mask.radius') + '</label>' +
                 '<input type="number" id="maskRadius" min="5" step="1" value="' + Math.max(50, Math.floor(Math.min(App.getActiveImage().width, App.getActiveImage().height) / 4)) + '">' +
                 '</div>';
         } else {
             cont.innerHTML =
                 '<div class="prop-group two-col">' +
                 '<div>' +
-                '<label>宽度 (px)</label>' +
+                '<label>' + App.i18n.t('mask.width') + '</label>' +
                 '<input type="number" id="maskW" min="10" step="1" value="' + Math.max(200, Math.floor(App.getActiveImage().width / 2)) + '">' +
                 '</div>' +
                 '<div>' +
-                '<label>高度 (px)</label>' +
+                '<label>' + App.i18n.t('mask.height') + '</label>' +
                 '<input type="number" id="maskH" min="10" step="1" value="' + Math.max(150, Math.floor(App.getActiveImage().height / 2)) + '">' +
                 '</div>' +
                 '</div>' +
                 '<div class="prop-group">' +
-                '<label class="chk-label"><input type="checkbox" id="maskLockRatio"> 锁定比例</label>' +
+                '<label class="chk-label"><input type="checkbox" id="maskLockRatio"> ' + App.i18n.t('mask.lock_ratio') + '</label>' +
                 '</div>';
             setTimeout(bindRatioEvents, 0);
         }
@@ -322,7 +322,7 @@
             pt.className = 'polygon-point';
             pt.style.left = App.toDisplay(p.x) + 'px';
             pt.style.top = App.toDisplay(p.y) + 'px';
-            pt.title = '点 ' + (idx + 1) + '（双击空白处执行蒙版）';
+            pt.title = App.i18n.t('js.point_label').replace('{index}', idx + 1);
             pt.dataset.idx = idx;
             pt.addEventListener('mousedown', function (e) {
                 e.stopPropagation();
@@ -356,9 +356,9 @@
         if (!imgObj) return;
 
         if (App.state.isDrawingPolygon) {
-            if (pts.length < 3) { alert('至少需要 3 个点'); return; }
+            if (pts.length < 3) { alert(App.i18n.t('dialog.need_3_points')); return; }
         } else if (!m) {
-            alert('请先创建蒙版形状');
+            alert(App.i18n.t('dialog.create_mask_first'));
             return;
         }
 

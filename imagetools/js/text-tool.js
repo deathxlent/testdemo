@@ -121,7 +121,7 @@
 
         var rotateHandle = document.createElement('div');
         rotateHandle.className = 'watermark-rotate';
-        rotateHandle.title = '旋转';
+        rotateHandle.title = App.i18n.t('js.rotate_handle');
         div.appendChild(rotateHandle);
 
         var img = document.createElement('img');
@@ -163,7 +163,7 @@
             y: y,
             width: w,
             height: h,
-            text: '文字',
+            text: App.i18n.t('object.text'),
             fontSize: parseInt(els.fontSize.value) || 32,
             fontFamily: els.fontFamily.value,
             bold: els.boldBtn.classList.contains('active'),
@@ -327,7 +327,7 @@
         var obj = App.getActiveImage().objects.find(function (t) { return t.id === id; });
         if (obj) {
             var content = editingEl.querySelector('.text-content');
-            obj.text = content.textContent || '文字';
+            obj.text = content.textContent || App.i18n.t('object.text');
             content.contentEditable = 'false';
             content.removeEventListener('blur', onEditBlur);
         }

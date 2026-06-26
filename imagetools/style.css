@@ -20,7 +20,7 @@ html, body {
     height: 100%;
 }
 
-.left-panel, .right-panel {
+.left-panel {
     width: 240px;
     min-width: 240px;
     max-width: 240px;
@@ -32,10 +32,19 @@ html, body {
     flex-direction: column;
 }
 
-.right-panel {
-    border-right: none;
+.app > .right-panel {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+    height: 100%;
+    background: #2d2d2d;
     border-left: 1px solid #3d3d3d;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
+
+
 
 .panel-section {
     border-bottom: 1px solid #3d3d3d;
@@ -227,6 +236,13 @@ html, body {
 .btn-row {
     display: flex;
     gap: 2px;
+}
+
+.btn-row-center {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 10px 0;
 }
 
 .style-btn {
@@ -1408,6 +1424,19 @@ html, body {
     to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes selection-blink {
+    0%, 100% { 
+        opacity: 1; 
+        border-color: #ff4444;
+        box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+    }
+    50% { 
+        opacity: 0.6; 
+        border-color: #ff8888;
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.8);
+    }
+}
+
 .modal-header {
     display: flex;
     align-items: center;
@@ -1573,4 +1602,1569 @@ html, body {
     color: #ddd;
     font-family: "Consolas", monospace;
     font-weight: 600;
+}
+
+.batch-process-section {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.batch-header {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.batch-file-count {
+    font-size: 12px;
+    color: #888;
+    margin-left: auto;
+}
+
+.batch-file-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #3d3d3d;
+    border-radius: 6px;
+    padding: 6px;
+    margin-bottom: 12px;
+    background: rgba(0,0,0,0.2);
+}
+
+.batch-empty, .batch-op-empty {
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+}
+
+.batch-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.batch-file-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.batch-file-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.batch-file-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.batch-file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.batch-file-name {
+    font-size: 12px;
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.batch-file-meta {
+    font-size: 11px;
+    color: #666;
+}
+
+.batch-file-remove {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.15s;
+}
+
+.batch-file-remove:hover {
+    background: rgba(255,100,100,0.2);
+    color: #f66;
+}
+
+.batch-op-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.batch-op-header select {
+    padding: 4px 8px;
+    background: #2a2a2a;
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.batch-operation-list {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+
+.batch-op-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #3d3d3d;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.batch-op-item.disabled {
+    opacity: 0.5;
+}
+
+.batch-op-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.2);
+}
+
+.batch-op-toggle {
+    cursor: pointer;
+    color: #0078d7;
+    font-size: 14px;
+}
+
+.batch-op-name {
+    flex: 1;
+    font-size: 12px;
+    color: #ddd;
+}
+
+.batch-op-remove {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.batch-op-remove:hover {
+    background: rgba(255,100,100,0.2);
+    color: #f66;
+}
+
+.batch-op-params {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.param-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.param-row label {
+    font-size: 12px;
+    color: #888;
+    min-width: 60px;
+}
+
+.param-row select,
+.param-row input[type="number"],
+.param-row input[type="text"] {
+    flex: 1;
+    padding: 4px 8px;
+    background: #2a2a2a;
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.param-row input[type="range"] {
+    flex: 1;
+}
+
+.param-val {
+    font-size: 11px;
+    color: #888;
+    min-width: 30px;
+    text-align: right;
+}
+
+.batch-output-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+}
+
+.batch-progress-bar-wrap {
+    height: 8px;
+    background: #2a2a2a;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 12px 0;
+}
+
+.batch-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0078d7, #00b4f0);
+    transition: width 0.3s;
+    border-radius: 4px;
+}
+
+.batch-progress-text {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+.batch-progress-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.batch-progress-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.batch-progress-info img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.batch-progress-info span {
+    font-size: 12px;
+    color: #ddd;
+}
+
+.puzzle-section {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    width: 240px;
+    min-width: 240px;
+    max-width: 240px;
+}
+
+.puzzle-canvas-settings {
+    background: rgba(255,255,255,0.03);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.puzzle-canvas-settings .prop-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.puzzle-canvas-settings .prop-row:last-child {
+    margin-bottom: 0;
+}
+
+.puzzle-canvas-settings .prop-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.special-tools {
+    padding: 8px 0;
+}
+
+.tool-section-title {
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.puzzle-template-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.puzzle-template-item {
+    background: rgba(255,255,255,0.03);
+    border: 2px solid #3d3d3d;
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.puzzle-template-item:hover {
+    border-color: #555;
+    background: rgba(255,255,255,0.06);
+}
+
+.puzzle-template-item.selected {
+    border-color: #0078d7;
+    background: rgba(0,120,215,0.15);
+}
+
+.puzzle-template-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    aspect-ratio: 1;
+    margin-bottom: 6px;
+}
+
+.puzzle-template-row {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+}
+
+.puzzle-template-cell {
+    flex: 1;
+    background: #3d3d3d;
+    border-radius: 2px;
+}
+
+.puzzle-template-name {
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+}
+
+.puzzle-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.puzzle-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.puzzle-cell {
+    position: absolute;
+    overflow: hidden;
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.15s;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.puzzle-cell:hover {
+    box-shadow: inset 0 0 0 2px rgba(0,120,215,0.5);
+}
+
+.puzzle-cell.adjusting {
+    box-shadow: inset 0 0 0 3px #0078d7;
+    cursor: move;
+}
+
+.puzzle-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.puzzle-cell-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.puzzle-cell.empty::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    position: relative;
+}
+
+.puzzle-cell.empty::after {
+    content: '+';
+    position: absolute;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.puzzle-cell-placeholder {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    pointer-events: none;
+}
+
+.puzzle-cell-placeholder::before {
+    content: '+';
+    display: block;
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.panel-subtitle {
+    font-size: 12px;
+    color: #888;
+    margin: 12px 0 8px;
+    padding-left: 4px;
+    border-left: 3px solid #0078d7;
+}
+
+.puzzle-custom-panel {
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+    margin-top: 12px;
+    overflow: hidden;
+    border: 1px solid #3d3d3d;
+}
+
+.puzzle-custom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.puzzle-custom-title {
+    font-size: 13px;
+    color: #ccc;
+    font-weight: 500;
+}
+
+.puzzle-custom-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.puzzle-custom-close:hover {
+    color: #fff;
+}
+
+.puzzle-custom-body {
+    padding: 12px;
+}
+
+.puzzle-custom-row {
+    margin-bottom: 10px;
+}
+
+.puzzle-custom-row:last-child {
+    margin-bottom: 0;
+}
+
+.puzzle-custom-label {
+    font-size: 12px;
+    color: #888;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.puzzle-custom-select {
+    width: 100%;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.puzzle-custom-select:focus {
+    outline: none;
+    border-color: #0078d7;
+}
+
+.puzzle-custom-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: #0078d7;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.puzzle-custom-btn:hover {
+    background: #005a9e;
+}
+
+.puzzle-custom-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}
+
+.puzzle-custom-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.puzzle-custom-cell {
+    position: absolute;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    border: 2px dashed rgba(0, 120, 215, 0.6);
+    background: rgba(0, 120, 215, 0.05);
+}
+
+.puzzle-custom-cell:hover {
+    border-color: rgba(0, 120, 215, 1);
+    background: rgba(0, 120, 215, 0.1);
+}
+
+.puzzle-custom-cell-editing {
+    border-color: #ff6b6b;
+    border-style: solid;
+    background: rgba(255, 107, 107, 0.1);
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+    cursor: move;
+}
+
+.puzzle-custom-cell-editing .puzzle-custom-cell-bottom {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.puzzle-custom-cell-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: rgba(0, 120, 215, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 5px;
+    z-index: 2;
+}
+
+.puzzle-custom-edit-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.puzzle-custom-edit-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.puzzle-custom-cell-bottom {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.puzzle-cell-placeholder {
+    width: 40px;
+    height: 40px;
+    border: 2px dashed rgba(0, 120, 215, 0.5);
+    border-radius: 50%;
+    color: rgba(0, 120, 215, 0.5);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.puzzle-cell-placeholder:hover {
+    border-color: rgba(0, 120, 215, 1);
+    color: rgba(0, 120, 215, 1);
+    transform: scale(1.1);
+}
+
+.puzzle-custom-edit-toolbar {
+    position: absolute;
+    top: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+}
+
+.puzzle-custom-edit-toolbar .puzzle-custom-edit-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+}
+
+.puzzle-custom-edit-toolbar .confirm {
+    background: #28a745;
+}
+
+.puzzle-custom-edit-toolbar .confirm:hover {
+    background: #20c997;
+}
+
+.puzzle-custom-edit-toolbar .delete {
+    background: #dc3545;
+}
+
+.puzzle-custom-edit-toolbar .delete:hover {
+    background: #fd7e14;
+}
+
+.puzzle-custom-resize-handle {
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 15px;
+    height: 15px;
+    background: #ff6b6b;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: se-resize;
+    z-index: 5;
+}
+
+.watermark-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.watermark-dialog-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.watermark-dialog-content {
+    position: relative;
+    width: 450px;
+    max-width: 90%;
+    background: #1e1e1e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.watermark-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.watermark-dialog-header span {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.watermark-dialog-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.watermark-dialog-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.watermark-dialog-body {
+    padding: 20px;
+}
+
+.watermark-upload-area {
+    border: 2px dashed #0078d7;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+}
+
+.watermark-upload-area:hover,
+.watermark-upload-area.dragover {
+    border-color: #0099ff;
+    background: rgba(0, 120, 215, 0.1);
+}
+
+.watermark-upload-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.watermark-upload-area p {
+    color: #999;
+    margin-bottom: 16px;
+}
+
+.watermark-upload-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    background: #0078d7;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.watermark-upload-btn:hover {
+    background: #0099ff;
+}
+
+.watermark-images-section {
+    border-top: 1px solid #3d3d3d;
+    padding-top: 16px;
+}
+
+.watermark-images-section h4 {
+    color: #ccc;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.watermark-images-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.watermark-image-item {
+    width: 80px;
+    height: 80px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.watermark-image-item:hover {
+    border-color: #0078d7;
+    transform: scale(1.05);
+}
+
+.puzzle-cell-cropper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.puzzle-cropper-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.puzzle-cropper-content {
+    position: relative;
+    background: #1e1e1e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.puzzle-cropper-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.puzzle-cropper-header span {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.puzzle-cropper-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.puzzle-cropper-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-cropper-body {
+    padding: 20px;
+}
+
+.puzzle-cropper-image-container {
+    position: relative;
+    margin: 0 auto;
+    border: 1px solid #3d3d3d;
+    overflow: hidden;
+}
+
+.puzzle-cropper-image-container img {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.puzzle-cropper-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border: 2px solid #0078d7;
+    background: rgba(0, 120, 215, 0.2);
+    cursor: move;
+}
+
+.puzzle-cropper-resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #0078d7;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: se-resize;
+}
+
+.puzzle-cropper-resize-handle.tl {
+    top: -6px;
+    left: -6px;
+    cursor: nwse-resize;
+}
+
+.puzzle-cropper-resize-handle.tr {
+    top: -6px;
+    right: -6px;
+    cursor: nesw-resize;
+}
+
+.puzzle-cropper-resize-handle.bl {
+    bottom: -6px;
+    left: -6px;
+    cursor: nesw-resize;
+}
+
+.puzzle-cropper-resize-handle.br {
+    bottom: -6px;
+    right: -6px;
+    cursor: nwse-resize;
+}
+
+.puzzle-cropper-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.puzzle-cropper-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.puzzle-cropper-btn.cancel {
+    background: #3d3d3d;
+    color: #ccc;
+}
+
+.puzzle-cropper-btn.cancel:hover {
+    background: #4d4d4d;
+}
+
+.puzzle-cropper-btn.confirm {
+    background: #0078d7;
+    color: #fff;
+}
+
+.puzzle-cropper-btn.confirm:hover {
+    background: #0099ff;
+}
+
+.puzzle-shape-rect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.puzzle-shape-circle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+}
+
+.puzzle-shape-ellipse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+}
+
+.puzzle-shape-triangle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 87px solid rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+}
+
+.puzzle-shape-star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.3);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.puzzle-custom-menu {
+    position: fixed;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    padding: 4px;
+    z-index: 1000;
+    min-width: 120px;
+}
+
+.puzzle-menu-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #ccc;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.puzzle-menu-item:hover {
+    background: rgba(0, 120, 215, 0.2);
+    color: #fff;
+}
+
+.puzzle-custom-settings {
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.puzzle-shadow-settings {
+    padding-left: 12px;
+    border-left: 2px solid #3d3d3d;
+    margin-top: 8px;
+}
+
+.puzzle-image-editor {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background: #1a1a1a;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.puzzle-editor-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.puzzle-editor-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.puzzle-editor-crop {
+    position: absolute;
+    border: 2px dashed #0078d7;
+    background: rgba(0, 120, 215, 0.1);
+    cursor: move;
+}
+
+.puzzle-editor-crop .resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #0078d7;
+    border-radius: 50%;
+    display: block;
+}
+
+.puzzle-editor-crop .resize-handle.tl { top: -6px; left: -6px; cursor: nwse-resize; }
+.puzzle-editor-crop .resize-handle.tr { top: -6px; right: -6px; cursor: nesw-resize; }
+.puzzle-editor-crop .resize-handle.bl { bottom: -6px; left: -6px; cursor: nesw-resize; }
+.puzzle-editor-crop .resize-handle.br { bottom: -6px; right: -6px; cursor: nwse-resize; }
+
+.puzzle-editor-toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.editor-btn {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e1e1e;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.editor-btn:hover {
+    background: #3d3d3d;
+    border-color: #555;
+}
+
+.editor-btn.active {
+    background: #0078d7;
+    border-color: #0068c7;
+    color: #fff;
+}
+
+.editor-btn.primary {
+    background: #0078d7;
+    border-color: #0068c7;
+    color: #fff;
+}
+
+.editor-btn.primary:hover {
+    background: #0068c7;
+    border-color: #0058b7;
+}
+
+.export-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dialog-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+}
+
+.dialog-content {
+    position: relative;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid #3d3d3d;
+    font-size: 14px;
+    font-weight: 600;
+    color: #eee;
+}
+
+.dialog-close {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: #888;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: all 0.15s;
+}
+
+.dialog-close:hover {
+    background: rgba(255,100,100,0.15);
+    color: #ff6b6b;
+}
+
+.dialog-body {
+    padding: 18px;
+}
+
+.dialog-body .form-group {
+    margin-bottom: 16px;
+}
+
+.dialog-body .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+.format-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.format-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: #1e1e1e;
+    border: 2px solid #3d3d3d;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.format-option:hover {
+    border-color: #555;
+    background: rgba(255,255,255,0.03);
+}
+
+.format-option input[type="radio"] {
+    display: none;
+}
+
+.format-option input[type="radio"]:checked + span {
+    color: #0078d7;
+}
+
+.format-option input[type="radio"]:checked ~ span {
+    color: #0078d7;
+}
+
+.format-option span {
+    font-size: 12px;
+    color: #ccc;
+}
+
+.dialog-body input[type="range"] {
+    width: 100%;
+    height: 6px;
+    background: #3d3d3d;
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.dialog-body input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #0078d7;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.dialog-footer {
+    display: flex;
+    gap: 10px;
+    padding: 14px 18px;
+    border-top: 1px solid #3d3d3d;
+    justify-content: flex-end;
+}
+
+.btn-cancel {
+    padding: 7px 18px;
+    background: #3d3d3d;
+    border: none;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-cancel:hover {
+    background: #4a4a4a;
+}
+
+.btn-confirm {
+    padding: 7px 18px;
+    background: #0078d7;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-confirm:hover {
+    background: #0066b3;
+}
+
+.info-section {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.info-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.info-title {
+    font-size: 11px;
+    color: #0078d7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.info-label {
+    font-size: 12px;
+    color: #888;
+}
+
+.info-value {
+    font-size: 12px;
+    color: #ddd;
+    font-family: "Consolas", monospace;
+    max-width: 200px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.color-box {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 1px solid #3d3d3d;
+}
+
+.help-section {
+    margin-top: auto;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid #3d3d3d;
+}
+
+.author-link {
+    font-size: 11px;
+    color: #00a8ff;
+    text-decoration: none;
+}
+
+.author-link:hover {
+    text-decoration: underline;
+}
+
+.help-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: #0078d7;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.help-btn:hover {
+    background: #0066b3;
+    transform: scale(1.05);
+}
+
+.help-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.help-dialog .dialog-content {
+    width: 600px;
+    max-height: 80vh;
+}
+
+.help-dialog .dialog-body {
+    display: flex;
+    gap: 20px;
+    max-height: calc(80vh - 120px);
+    overflow-y: auto;
+}
+
+.help-tools, .help-shortcuts {
+    flex: 1;
+}
+
+.help-tools h3, .help-shortcuts h3 {
+    font-size: 12px;
+    color: #0078d7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.tool-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+
+.tool-item:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.tool-icon-wrap {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0078d7;
+    margin-bottom: 6px;
+}
+
+.tool-name {
+    font-size: 11px;
+    color: #ccc;
+    text-align: center;
+}
+
+.tool-shortcut {
+    font-size: 10px;
+    color: #0078d7;
+    margin-top: 3px;
+    font-family: "Consolas", monospace;
+}
+
+.shortcuts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+}
+
+.shortcut-keys {
+    display: flex;
+    gap: 4px;
+}
+
+.key {
+    padding: 3px 8px;
+    background: #3d3d3d;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #ddd;
+    font-family: "Consolas", monospace;
+    min-width: 28px;
+    text-align: center;
 }

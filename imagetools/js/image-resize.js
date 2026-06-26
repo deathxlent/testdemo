@@ -4,7 +4,7 @@
 
     function activate() {
         var imgObj = App.getActiveImage();
-        if (!imgObj) { alert('请先打开一张图片'); return false; }
+        if (!imgObj) { alert(App.i18n.t('dialog.open_image_first')); return false; }
         App.state.activeImgTool = 'resize';
         App.Text.deselectAll();
         App.clearOperationLayer();
@@ -66,8 +66,8 @@
         var els = App.els();
         var newW = parseInt(els.resizeWidth.value);
         var newH = parseInt(els.resizeHeight.value);
-        if (!newW || !newH || newW <= 0 || newH <= 0) { alert('请输入有效的宽高'); return; }
-        if (App.History) App.History.push('调整尺寸 (' + newW + '×' + newH + ')');
+        if (!newW || !newH || newW <= 0 || newH <= 0) { alert(App.i18n.t('dialog.invalid_size')); return; }
+        if (App.History) App.History.push(App.i18n.t('history.resize') + ' (' + newW + '×' + newH + ')');
         var oldW = imgObj._prevW || imgObj.width;
         var oldH = imgObj._prevH || imgObj.height;
 

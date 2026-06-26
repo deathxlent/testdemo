@@ -5,7 +5,7 @@
 
     function activateCrop() {
         var imgObj = App.getActiveImage();
-        if (!imgObj) { alert('请先打开一张图片'); return false; }
+        if (!imgObj) { alert(App.i18n.t('dialog.open_image_first')); return false; }
         App.state.activeImgTool = 'crop';
         _mode = 'crop';
         App.Text.deselectAll();
@@ -20,7 +20,7 @@
 
     function activateRectCrop() {
         var imgObj = App.getActiveImage();
-        if (!imgObj) { alert('请先打开一张图片'); return false; }
+        if (!imgObj) { alert(App.i18n.t('dialog.open_image_first')); return false; }
         App.state.activeImgTool = 'rectcrop';
         _mode = 'rectcrop';
         App.Text.deselectAll();
@@ -252,21 +252,21 @@
     function doCrop() {
         var c = App.state.activeCrop;
         if (!c) return;
-        if (c.w < 2 || c.h < 2) { alert('裁剪区域太小'); return; }
+        if (c.w < 2 || c.h < 2) { alert(App.i18n.t('dialog.crop_too_small')); return; }
         applyCropToImage(c);
     }
 
     function doCropRectCrop() {
         var c = App.state.activeRectCrop;
         if (!c) return;
-        if (c.w < 2 || c.h < 2) { alert('裁剪区域太小'); return; }
+        if (c.w < 2 || c.h < 2) { alert(App.i18n.t('dialog.crop_too_small')); return; }
         applyCropToImage(c);
     }
 
     function applyCropToImage(c) {
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
-        if (App.History) App.History.push('裁剪 (' + c.w + '×' + c.h + ')');
+        if (App.History) App.History.push(App.i18n.t('history.crop') + ' (' + c.w + '×' + c.h + ')');
         var canvas = document.createElement('canvas');
         canvas.width = c.w;
         canvas.height = c.h;

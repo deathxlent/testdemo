@@ -8,7 +8,7 @@
         activeKind: null,
 
         activate: function (kind) {
-            if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
+            if (!App.getActiveImage()) { App.showToast(App.i18n.t('dialog.open_image_first')); return; }
             App.Text.deselectAll();
             App.clearOperationLayer();
             App.setActiveImgTool('filter');
@@ -17,8 +17,8 @@
             App.state.activeFilterSel = null;
             App.state.filterPolygonPoints = [];
 
-            var titles = { sharpen: '锐化', blur: '模糊化', mosaic: '马赛克化', negative: '底片化' };
-            if (App.els().filterTitle) App.els().filterTitle.textContent = titles[kind] || '滤镜';
+            var titles = { sharpen: App.i18n.t('filter.sharpen'), blur: App.i18n.t('filter.blur'), mosaic: App.i18n.t('filter.mosaic'), negative: App.i18n.t('filter.negative') };
+            if (App.els().filterTitle) App.els().filterTitle.textContent = titles[kind] || App.i18n.t('filter.title');
             if (App.els().filterPropsSection) App.els().filterPropsSection.style.display = 'block';
             if (App.els().filterStrengthGroup && (kind === 'sharpen' || kind === 'blur')) {
                 App.els().filterStrengthGroup.style.display = 'block';
@@ -44,7 +44,7 @@
         },
 
         activateHsl: function () {
-            if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
+            if (!App.getActiveImage()) { App.showToast(App.i18n.t('dialog.open_image_first')); return; }
             App.Text.deselectAll();
             App.clearOperationLayer();
             App.setActiveImgTool('hsl');
@@ -151,7 +151,7 @@
             var s = parseFloat(App.els().satAdjust.value) || 0;
             var l = parseFloat(App.els().lumAdjust.value) || 0;
             if (h === 0 && s === 0 && l === 0) {
-                App.showToast('请先调整参数');
+                App.showToast(App.i18n.t('filter.adjust_first'));
                 return;
             }
             var sel = App.state.activeHslSel;
@@ -163,8 +163,8 @@
                     hasSel = true;
                 }
             }
-            var desc = '色彩调整';
-            if (hasSel) desc = '局部' + desc;
+            var desc = App.i18n.t('filter.color_adjust');
+            if (hasSel) desc = App.i18n.t('filter.local') + desc;
             if (App.History) App.History.push(desc);
 
             var canvas = document.createElement('canvas');
@@ -197,21 +197,21 @@
             var type = App.els().filterSelType.value;
             var html = '';
             if (type === 'rect') {
-                html += '<div class="prop-group two-col"><div><label>宽</label><input type="number" id="fw" min="1" value="' + Math.round(App.getActiveImage().width * 0.5) + '"></div>';
-                html += '<div><label>高</label><input type="number" id="fh" min="1" value="' + Math.round(App.getActiveImage().height * 0.5) + '"></div></div>';
+                html += '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.width') + '</label><input type="number" id="fw" min="1" value="' + Math.round(App.getActiveImage().width * 0.5) + '"></div>';
+                html += '<div><label>' + App.i18n.t('filter.height') + '</label><input type="number" id="fh" min="1" value="' + Math.round(App.getActiveImage().height * 0.5) + '"></div></div>';
                 html += '<div class="prop-group two-col"><div><label>X</label><input type="number" id="fx" min="0" value="' + Math.round(App.getActiveImage().width * 0.25) + '"></div>';
                 html += '<div><label>Y</label><input type="number" id="fy" min="0" value="' + Math.round(App.getActiveImage().height * 0.25) + '"></div></div>';
             } else if (type === 'circle') {
-                html += '<div class="prop-group"><label>半径</label><input type="number" id="fr" min="1" value="' + Math.round(Math.min(App.getActiveImage().width, App.getActiveImage().height) * 0.25) + '"></div>';
-                html += '<div class="prop-group two-col"><div><label>中心 X</label><input type="number" id="fcx" min="0" value="' + Math.round(App.getActiveImage().width / 2) + '"></div>';
-                html += '<div><label>中心 Y</label><input type="number" id="fcy" min="0" value="' + Math.round(App.getActiveImage().height / 2) + '"></div></div>';
+                html += '<div class="prop-group"><label>' + App.i18n.t('filter.radius') + '</label><input type="number" id="fr" min="1" value="' + Math.round(Math.min(App.getActiveImage().width, App.getActiveImage().height) * 0.25) + '"></div>';
+                html += '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.center_x') + '</label><input type="number" id="fcx" min="0" value="' + Math.round(App.getActiveImage().width / 2) + '"></div>';
+                html += '<div><label>' + App.i18n.t('filter.center_y') + '</label><input type="number" id="fcy" min="0" value="' + Math.round(App.getActiveImage().height / 2) + '"></div></div>';
             } else if (type === 'ellipse') {
-                html += '<div class="prop-group two-col"><div><label>宽半径</label><input type="number" id="ferx" min="1" value="' + Math.round(App.getActiveImage().width * 0.3) + '"></div>';
-                html += '<div><label>高半径</label><input type="number" id="fery" min="1" value="' + Math.round(App.getActiveImage().height * 0.3) + '"></div></div>';
-                html += '<div class="prop-group two-col"><div><label>中心 X</label><input type="number" id="fecx" min="0" value="' + Math.round(App.getActiveImage().width / 2) + '"></div>';
-                html += '<div><label>中心 Y</label><input type="number" id="fecy" min="0" value="' + Math.round(App.getActiveImage().height / 2) + '"></div></div>';
+                html += '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.width_radius') + '</label><input type="number" id="ferx" min="1" value="' + Math.round(App.getActiveImage().width * 0.3) + '"></div>';
+                html += '<div><label>' + App.i18n.t('filter.height_radius') + '</label><input type="number" id="fery" min="1" value="' + Math.round(App.getActiveImage().height * 0.3) + '"></div></div>';
+                html += '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.center_x') + '</label><input type="number" id="fecx" min="0" value="' + Math.round(App.getActiveImage().width / 2) + '"></div>';
+                html += '<div><label>' + App.i18n.t('filter.center_y') + '</label><input type="number" id="fecy" min="0" value="' + Math.round(App.getActiveImage().height / 2) + '"></div></div>';
             } else {
-                html = '<div class="panel-tip" style="margin:4px 0 8px">在图片上点击以增加多边形节点，至少 3 个节点，双击任意空白处或点应用按钮执行。</div>';
+                html = '<div class="panel-tip" style="margin:4px 0 8px">' + App.i18n.t('filter.polygon_tip') + '</div>';
             }
             el.innerHTML = html;
             if (App.els().clearFilterSel) App.els().clearFilterSel.style.display = (type === 'polygon') ? 'block' : 'none';
@@ -535,13 +535,13 @@
         },
 
         descForKind: function (k) {
-            return { sharpen: '锐化', blur: '模糊', mosaic: '马赛克化' }[k] || '滤镜';
+            return { sharpen: App.i18n.t('filter.sharpen'), blur: App.i18n.t('filter.blur'), mosaic: App.i18n.t('filter.mosaic') }[k] || App.i18n.t('filter.title');
         },
 
         applyNegative: function () {
             var imgObj = App.getActiveImage();
             if (!imgObj) return;
-            if (App.History) App.History.push('底片化');
+            if (App.History) App.History.push(App.i18n.t('filter.negative'));
             var canvas = document.createElement('canvas');
             canvas.width = imgObj.width;
             canvas.height = imgObj.height;
@@ -583,7 +583,8 @@
                 applyMosaic(outData, size);
             }
             return outData;
-        }
+        },
+
     };
 
     function applyMosaic(data, size) {
@@ -898,7 +899,7 @@
                 var py = info.pad + (pts[i].y / 255) * info.plotH;
                 if (Math.abs(info.mx - px) <= 8 && Math.abs(info.my - py) <= 8) {
                     if (e.button === 2) {
-                        if (pts[i].x === 0 || pts[i].x === 255) { App.showToast('端点不可删除'); return; }
+                        if (pts[i].x === 0 || pts[i].x === 255) { App.showToast(App.i18n.t('filter.endpoint_immovable')); return; }
                         pts.splice(i, 1);
                         renderCurveEditor();
                         rebuildAllCurveLUTs();
@@ -1097,9 +1098,9 @@
             App.renderCanvas();
             App.deactivateAllImgTools();
             var sel = App.state.activeCurveSel || (App.state.curvePolygonPoints && App.state.curvePolygonPoints.length >= 3 ? {type:'polygon'} : null);
-            var opName = sel ? '局部色彩曲线' : '色彩曲线';
+            var opName = sel ? App.i18n.t('filter.local') + App.i18n.t('filter.color_curve') : App.i18n.t('filter.color_curve');
             if (App.History) App.History.push(opName);
-            App.showToast('已应用' + opName);
+            App.showToast(App.i18n.t('filter.applied') + opName);
         };
         newImg.src = canvas.toDataURL('image/png');
     };
@@ -1264,9 +1265,9 @@
             App.renderCanvas();
             App.deactivateAllImgTools();
             var sel = App.state.activeBalanceSel || (App.state.balancePolygonPoints && App.state.balancePolygonPoints.length >= 3 ? {type:'polygon'} : null);
-            var opName = sel ? '局部色彩平衡' : '色彩平衡';
+            var opName = sel ? App.i18n.t('filter.local') + App.i18n.t('filter.color_balance') : App.i18n.t('filter.color_balance');
             if (App.History) App.History.push(opName);
-            App.showToast('已应用' + opName);
+            App.showToast(App.i18n.t('filter.applied') + opName);
         };
         newImg.src = canvas.toDataURL('image/png');
     };

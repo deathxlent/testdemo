@@ -116,7 +116,7 @@
             }
             var snap = this.snapshotImage(imgObj);
             if (!snap) return;
-            list.push({ desc: desc || '操作', snapshot: snap, time: Date.now() });
+            list.push({ desc: desc || App.i18n.t('history.operation'), snapshot: snap, time: Date.now() });
             while (list.length > MAX_STEPS) {
                 list.shift();
             }
@@ -184,7 +184,7 @@
             setTimeout(function () {
                 var snap = self.snapshotImage(imgObj);
                 if (snap) {
-                    self.perImage[id].push({ desc: '打开图片', snapshot: snap, time: Date.now() });
+                    self.perImage[id].push({ desc: App.i18n.t('history.open_image'), snapshot: snap, time: Date.now() });
                     self.currentPointer[id] = 0;
                     self.render();
                 }
@@ -197,14 +197,14 @@
             if (!listEl) return;
             var historyTitleBar = listEl.previousElementSibling;
             if (!imgObj) {
-                listEl.innerHTML = '<div class="object-empty">暂无历史记录</div>';
+                listEl.innerHTML = '<div class="object-empty">' + App.i18n.t('history.no_records') + '</div>';
                 return;
             }
             var id = imgObj.id;
             var list = this.perImage[id] || [];
             var ptr = this.currentPointer[id];
             if (list.length === 0) {
-                listEl.innerHTML = '<div class="object-empty">暂无历史记录</div>';
+                listEl.innerHTML = '<div class="object-empty">' + App.i18n.t('history.no_records') + '</div>';
                 return;
             }
             listEl.innerHTML = '';
@@ -231,7 +231,7 @@
                 if (i > 0) {
                     var btn = document.createElement('button');
                     btn.className = 'hi-undo';
-                    btn.title = '撤销到此步骤';
+                    btn.title = App.i18n.t('js.undo_to_step');
                     btn.innerHTML = '↺';
                     btn.addEventListener('click', (function (idx2) {
                         return function (e) {

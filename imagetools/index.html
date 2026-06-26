@@ -3,93 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ImageTools - 图片工具</title>
+    <title data-i18n="app.title">LocalPix - 本地图匠</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app">
         <div class="left-panel">
             <div class="panel-section">
-                <div class="panel-title">文件</div>
-                <button class="panel-btn" id="uploadBtn" data-tip="打开图片|从本地选择一张或多张图片进行编辑，支持拖拽图片到画布区域">
+                <div class="panel-title" data-i18n="file.title">文件</div>
+                <button class="panel-btn" id="uploadBtn" data-tip="打开图片|从本地选择一张或多张图片进行编辑，支持拖拽图片到画布区域" data-i18n-tip="tip.upload">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v1H3v10h10V7h1v6.5a.5.5 0 01-.5.5h-11a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5H2z"/><path d="M11 1h4v4h-1V2.7l-4.5 4.5-.7-.7L13.3 2H11V1z"/></svg>
-                    <span>打开图片</span>
+                    <span data-i18n="file.open">打开图片</span>
                 </button>
-                <button class="panel-btn" id="exportBtn" data-tip="导出图片|将编辑后的图片保存到本地，支持 PNG/JPG/WebP 等格式">
+                <button class="panel-btn" id="infoBtn" data-tip="图片信息|查看当前图片的详细信息，包括尺寸、大小、格式等" data-i18n-tip="tip.info">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><path d="M8 5v3h2"/></svg>
+                    <span data-i18n="file.info">图片信息</span>
+                </button>
+                <button class="panel-btn" id="exportBtn" data-tip="导出图片|将编辑后的图片保存到本地，支持 PNG/JPG/WebP 等格式" data-i18n-tip="tip.export">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v1H3v10h10V7h1v6.5a.5.5 0 01-.5.5h-11a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5H2z"/><path d="M8 1v8.3L5.4 6.7l-.7.7 4 4 4-4-.7-.7L9 9.3V1H8z"/></svg>
-                    <span>导出图片</span>
+                    <span data-i18n="file.export">导出图片</span>
                 </button>
             </div>
             <div class="panel-section">
-                <div class="panel-title">工具</div>
+                <div class="panel-title" data-i18n="tools.title">工具</div>
                 <div class="tool-grid">
-                    <button class="tool-icon active" id="selectTool" data-tip="选择工具 (V)|用于选择和移动画布上的文字、水印等对象，点击空白处可取消选择">
+                    <button class="tool-icon active" id="selectTool" data-tip="选择工具 (V)|用于选择和移动画布上的文字、水印等对象，点击空白处可取消选择" data-i18n-tip="tip.select_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M3 2l1-1 9 7.5L8 9l2.5 6.5-1.5.6L6.5 9.5 3 12V2z"/></svg>
                     </button>
-                    <button class="tool-icon" id="textTool" data-tip="文字工具 (T)|在画布上点击并拖拽创建文字框，双击文字可进入编辑模式修改内容">
+                    <button class="tool-icon" id="textTool" data-tip="文字工具 (T)|在画布上点击并拖拽创建文字框，双击文字可进入编辑模式修改内容" data-i18n-tip="tip.text_tool">
                         <span style="font-weight:700;font-size:16px;font-family:serif">T</span>
                     </button>
-                    <button class="tool-icon" id="watermarkTool" data-tip="图片水印|点击后选择水印图片，可拖拽移动、调整大小和旋转，支持调整透明度">
+                    <button class="tool-icon" id="watermarkTool" data-tip="图片水印|点击后选择水印图片，可拖拽移动、调整大小和旋转，支持调整透明度" data-i18n-tip="tip.watermark_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M2 13l4-4 3 3 2-2 5 5"/><circle cx="7" cy="6" r="1.5"/></svg>
                     </button>
-                    <button class="tool-icon" id="resizeTool" data-tip="调整大小|修改整张图片的像素尺寸，可锁定宽高比例，输入数值后点击应用">
+                    <button class="tool-icon" id="resizeTool" data-tip="调整大小|修改整张图片的像素尺寸，可锁定宽高比例，输入数值后点击应用" data-i18n-tip="tip.resize_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10V3h7M15 8v7H8M3 3l7 7M15 15L8 8"/></svg>
                     </button>
-                    <button class="tool-icon" id="cropTool" data-tip="自由裁剪|在画布上拖拽任意区域进行裁剪，调整裁剪框后双击或点应用按钮执行">
+                    <button class="tool-icon" id="cropTool" data-tip="自由裁剪|在画布上拖拽任意区域进行裁剪，调整裁剪框后双击或点应用按钮执行" data-i18n-tip="tip.crop_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 1h2v2H5zM1 5h2v2H1zM11 15h2v2h-2zM15 11h2v2h-2zM5 5h10v10H5z"/></svg>
                     </button>
-                    <button class="tool-icon" id="rectCropTool" data-tip="长方形抠图|指定宽高创建固定比例抠图框，拖拽定位后双击执行抠图，常用于证件照等">
+                    <button class="tool-icon" id="rectCropTool" data-tip="长方形抠图|指定宽高创建固定比例抠图框，拖拽定位后双击执行抠图，常用于证件照等" data-i18n-tip="tip.rect_crop_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="12" height="8" rx="0.5" stroke-dasharray="2,2"/><path d="M3 9h12M9 5v8"/></svg>
                     </button>
-                    <button class="tool-icon" id="maskTool" data-tip="蒙版|支持长方形/圆形/椭圆/自定义多边形蒙版，只保留选区内的图像内容">
+                    <button class="tool-icon" id="maskTool" data-tip="蒙版|支持长方形/圆形/椭圆/自定义多边形蒙版，只保留选区内的图像内容" data-i18n-tip="tip.mask_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><path d="M3 9h12M9 3v12M4.7 4.7l8.6 8.6M13.3 4.7L4.7 13.3"/></svg>
                     </button>
-                    <button class="tool-icon" id="rotateTool" data-tip="旋转|自由旋转图片角度，可拖拽红点调整旋转中心，支持一键顺时针/逆时针90度">
+                    <button class="tool-icon" id="rotateTool" data-tip="旋转|自由旋转图片角度，可拖拽红点调整旋转中心，支持一键顺时针/逆时针90度" data-i18n-tip="tip.rotate_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3v3l2.5-2L9 2z"/><path d="M15 9a6 6 0 11-2.5-4.9"/></svg>
                     </button>
-                    <button class="tool-icon" id="mirrorHBtn" data-tip="左右镜像|将图片沿垂直轴翻转，左右内容互换，立即生效无需确认">
+                    <button class="tool-icon" id="mirrorHBtn" data-tip="左右镜像|将图片沿垂直轴翻转，左右内容互换，立即生效无需确认" data-i18n-tip="tip.mirror_h">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2v14M14 5l-3 4 3 4zM7 5l3 4-3 4z"/></svg>
                     </button>
-                    <button class="tool-icon" id="mirrorVBtn" data-tip="上下镜像|将图片沿水平轴翻转，上下内容互换，立即生效无需确认">
+                    <button class="tool-icon" id="mirrorVBtn" data-tip="上下镜像|将图片沿水平轴翻转，上下内容互换，立即生效无需确认" data-i18n-tip="tip.mirror_v">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 9h14M5 14l4-3 4 3zM5 7l4 3 4-3z"/></svg>
                     </button>
-                    <button class="tool-icon" id="sharpenTool" data-tip="锐化|增强图像边缘清晰度，可先创建选区局部应用，调整强度后双击应用">
+                    <button class="tool-icon" id="sharpenTool" data-tip="锐化|增强图像边缘清晰度，可先创建选区局部应用，调整强度后双击应用" data-i18n-tip="tip.sharpen_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2l3 6 6 1-4.5 4 1 6L9 15l-5.5 4 1-6L0 9l6-1z"/></svg>
                     </button>
-                    <button class="tool-icon" id="blurTool" data-tip="模糊化|对图像进行高斯模糊处理，可创建选区局部模糊，常用于遮挡敏感内容">
+                    <button class="tool-icon" id="blurTool" data-tip="模糊化|对图像进行高斯模糊处理，可创建选区局部模糊，常用于遮挡敏感内容" data-i18n-tip="tip.blur_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="5" stroke-dasharray="2,2"/><path d="M6 6c.5-.5 1-.8 1.5-1M12 12c-.5.5-1 .8-1.5 1M5 12c.5-.5 1-.8 1.5-1M13 6c-.5.5-1 .8-1.5 1"/></svg>
                     </button>
-                    <button class="tool-icon" id="mosaicTool" data-tip="马赛克化|对选区进行像素化马赛克处理，可调整马赛克块大小，常用于隐私保护">
+                    <button class="tool-icon" id="mosaicTool" data-tip="马赛克化|对选区进行像素化马赛克处理，可调整马赛克块大小，常用于隐私保护" data-i18n-tip="tip.mosaic_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><rect x="2" y="2" width="4" height="4" opacity="0.7"/><rect x="7" y="2" width="4" height="4" opacity="0.9"/><rect x="12" y="2" width="4" height="4" opacity="0.5"/><rect x="2" y="7" width="4" height="4" opacity="0.4"/><rect x="7" y="7" width="4" height="4" opacity="0.8"/><rect x="12" y="7" width="4" height="4" opacity="0.6"/><rect x="2" y="12" width="4" height="4" opacity="0.9"/><rect x="7" y="12" width="4" height="4" opacity="0.5"/><rect x="12" y="12" width="4" height="4" opacity="0.7"/></svg>
                     </button>
-                    <button class="tool-icon" id="negativeTool" data-tip="底片化（颜色反转）|将所有颜色反转为互补色，类似胶片底片效果，对全图立即生效">
+                    <button class="tool-icon" id="negativeTool" data-tip="底片化（颜色反转）|将所有颜色反转为互补色，类似胶片底片效果，对全图立即生效" data-i18n-tip="tip.negative_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="12" height="14" rx="1" fill="currentColor" fill-opacity="0.08"/><path d="M3 9h12"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
                     </button>
-                    <button class="tool-icon" id="hslTool" data-tip="色度/饱和度/亮度|整体调整图片的色相（-180°~180°）、饱和度和亮度，调整后点击应用，支持局部选区">
+                    <button class="tool-icon" id="hslTool" data-tip="色度/饱和度/亮度|整体调整图片的色相（-180°~180°）、饱和度和亮度，调整后点击应用，支持局部选区" data-i18n-tip="tip.hsl_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><circle cx="9" cy="9" r="2.5" stroke-dasharray="1.5,1.5"/></svg>
                     </button>
-                    <button class="tool-icon" id="curveTool" data-tip="色彩曲线|通过曲线精确调整各通道亮度，支持局部选区，实时预览">
+                    <button class="tool-icon" id="curveTool" data-tip="色彩曲线|通过曲线精确调整各通道亮度，支持局部选区，实时预览" data-i18n-tip="tip.curve_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="14" height="14" rx="1"/><path d="M3 15L12 3" stroke-dasharray="2,1"/><path d="M3 15c2-5 4-9 12-12"/></svg>
                     </button>
-                    <button class="tool-icon" id="balanceTool" data-tip="色彩平衡|调整阴影/中间调/高光的RGB平衡，校正偏色，支持局部选区和实时预览">
+                    <button class="tool-icon" id="balanceTool" data-tip="色彩平衡|调整阴影/中间调/高光的RGB平衡，校正偏色，支持局部选区和实时预览" data-i18n-tip="tip.balance_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><circle cx="6" cy="11" r="2" fill="#f44" opacity="0.6"/><circle cx="12" cy="11" r="2" fill="#4f4" opacity="0.6"/><circle cx="9" cy="6" r="2" fill="#44f" opacity="0.6"/></svg>
                     </button>
-                    <button class="tool-icon" id="localZoomTool" data-tip="局部放大|在画布上创建选区后将其内容放大显示，可调整放大倍数、边框样式，生成可移动的放大图层">
+                    <button class="tool-icon" id="localZoomTool" data-tip="局部放大|在画布上创建选区后将其内容放大显示，可调整放大倍数、边框样式，生成可移动的放大图层" data-i18n-tip="tip.local_zoom_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="10" y="7" width="6" height="8" rx="1"/><path d="M9 6l3 4M7 10l4 2"/></svg>
                     </button>
-                    <button class="tool-icon" id="selectionTool" data-tip="通用选择|支持矩形/圆形/椭圆/多边形/魔棒选择，Shift添加选区，Ctrl减去选区，支持反选、删除、复制、涂色">
+                    <button class="tool-icon" id="selectionTool" data-tip="通用选择|支持矩形/圆形/椭圆/多边形/魔棒选择，Shift添加选区，Ctrl减去选区，支持反选、删除、复制、涂色" data-i18n-tip="tip.selection_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="12" height="12" rx="1" stroke-dasharray="2,2"/><circle cx="9" cy="9" r="3"/><path d="M6 6l6 6M12 6l-6 6"/></svg>
                     </button>
-                    <button class="tool-icon" id="pencilTool" data-tip="铅笔工具|自由绘制线条。普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式，可调节锚点">
+                    <button class="tool-icon" id="pencilTool" data-tip="铅笔工具|自由绘制线条。普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式，可调节锚点" data-i18n-tip="tip.pencil_tool">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 16l3-1L14 6l-2-2L3 13l-1 3z"/><path d="M12 4l2 2"/></svg>
                     </button>
                 </div>
             </div>
 
+            <div class="panel-section special-tools">
+                <div class="panel-title" data-i18n="batch.title">批量与拼图</div>
+                <div class="tool-grid">
+                    <button class="tool-icon" id="batchTool" data-tip="批量处理|批量处理多张图片，支持调整大小、格式转换、重命名、压缩" data-i18n-tip="tip.batch_tool">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="6" height="8" rx="1"/><rect x="10" y="4" width="6" height="8" rx="1"/><rect x="6" y="2" width="6" height="8" rx="1" opacity="0.5"/><rect x="6" y="8" width="6" height="8" rx="1"/></svg>
+                    </button>
+                    <button class="tool-icon" id="puzzleTool" data-tip="拼图模板|将多张图片组合到同一画布的不同格子中" data-i18n-tip="tip.puzzle_tool">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="0.5"/><rect x="11" y="2" width="5" height="5" rx="0.5"/><rect x="2" y="11" width="5" height="5" rx="0.5"/><rect x="11" y="11" width="5" height="5" rx="0.5"/></svg>
+                    </button>
+                </div>
+            </div>
+
             <div class="panel-section" id="textPropsSection" style="display:none">
-                <div class="panel-title">文字属性</div>
+                <div class="panel-title" data-i18n="text.title">文字属性</div>
                 <div class="prop-group">
-                    <label>字体</label>
+                    <label data-i18n="text.font">字体</label>
                     <select id="fontFamily">
                         <option value="Arial">Arial</option>
                         <option value="Helvetica">Helvetica</option>
@@ -99,25 +115,25 @@
                         <option value="Courier New">Courier New</option>
                         <option value="Impact">Impact</option>
                         <option value="Comic Sans MS">Comic Sans MS</option>
-                        <option value="Microsoft YaHei">微软雅黑</option>
-                        <option value="SimSun">宋体</option>
-                        <option value="SimHei">黑体</option>
-                        <option value="KaiTi">楷体</option>
-                        <option value="FangSong">仿宋</option>
+                        <option value="Microsoft YaHei" data-i18n="font.ms_yahei">微软雅黑</option>
+                        <option value="SimSun" data-i18n="font.sim_sun">宋体</option>
+                        <option value="SimHei" data-i18n="font.sim_hei">黑体</option>
+                        <option value="KaiTi" data-i18n="font.kai_ti">楷体</option>
+                        <option value="FangSong" data-i18n="font.fang_song">仿宋</option>
                     </select>
                 </div>
                 <div class="prop-group">
-                    <label>大小</label>
+                    <label data-i18n="text.size">大小</label>
                     <input type="number" id="fontSize" value="32" min="8" max="500" step="1">
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="boldBtn" title="加粗"><b>B</b></button>
-                    <button class="style-btn" id="italicBtn" title="斜体"><i>I</i></button>
-                    <button class="style-btn" id="underlineBtn" title="下划线"><u>U</u></button>
-                    <button class="style-btn" id="strikethroughBtn" title="删除线"><s>S</s></button>
+                    <button class="style-btn" id="boldBtn" data-i18n-title="text.bold" title="加粗"><b>B</b></button>
+                    <button class="style-btn" id="italicBtn" data-i18n-title="text.italic" title="斜体"><i>I</i></button>
+                    <button class="style-btn" id="underlineBtn" data-i18n-title="text.underline" title="下划线"><u>U</u></button>
+                    <button class="style-btn" id="strikethroughBtn" data-i18n-title="text.strikethrough" title="删除线"><s>S</s></button>
                 </div>
                 <div class="prop-group">
-                    <label>颜色</label>
+                    <label data-i18n="text.color">颜色</label>
                     <div class="color-row">
                         <input type="color" id="fontColor" value="#000000">
                         <input type="text" id="fontColorText" value="#000000" maxlength="7">
@@ -125,27 +141,27 @@
                 </div>
                 <div class="prop-group-sub">
                     <div class="sub-header">
-                        <span>阴影</span>
+                        <span data-i18n="text.shadow">阴影</span>
                         <label class="toggle"><input type="checkbox" id="shadowEnabled"><span></span></label>
                     </div>
                     <div id="shadowSub" class="sub-content">
                         <div class="prop-group two-col">
                             <div>
-                                <label>水平</label>
+                                <label data-i18n="text.shadow_h">水平</label>
                                 <input type="number" id="shadowOffsetX" value="4" min="-200" max="200" step="1">
                             </div>
                             <div>
-                                <label>垂直</label>
+                                <label data-i18n="text.shadow_v">垂直</label>
                                 <input type="number" id="shadowOffsetY" value="4" min="-200" max="200" step="1">
                             </div>
                         </div>
                         <div class="prop-group two-col">
                             <div>
-                                <label>模糊</label>
+                                <label data-i18n="text.shadow_blur">模糊</label>
                                 <input type="number" id="shadowBlur" value="4" min="0" max="200" step="1">
                             </div>
                             <div>
-                                <label>颜色</label>
+                                <label data-i18n="text.shadow_color">颜色</label>
                                 <div class="color-row">
                                     <input type="color" id="shadowColor" value="#000000">
                                 </div>
@@ -155,17 +171,17 @@
                 </div>
                 <div class="prop-group-sub">
                     <div class="sub-header">
-                        <span>描边</span>
+                        <span data-i18n="text.stroke">描边</span>
                         <label class="toggle"><input type="checkbox" id="strokeEnabled"><span></span></label>
                     </div>
                     <div id="strokeSub" class="sub-content">
                         <div class="prop-group two-col">
                             <div>
-                                <label>宽度</label>
+                                <label data-i18n="text.stroke_width">宽度</label>
                                 <input type="number" id="strokeWidth" value="2" min="0" max="50" step="0.5">
                             </div>
                             <div>
-                                <label>颜色</label>
+                                <label data-i18n="text.stroke_color">颜色</label>
                                 <div class="color-row">
                                     <input type="color" id="strokeColor" value="#ffffff">
                                 </div>
@@ -176,513 +192,662 @@
             </div>
 
             <div class="panel-section" id="watermarkPropsSection" style="display:none">
-                <div class="panel-title">水印属性</div>
+                <div class="panel-title" data-i18n="watermark.title">水印属性</div>
                 <button class="panel-btn" id="uploadWatermarkBtn">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v1H3v10h10V7h1v6.5a.5.5 0 01-.5.5h-11a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5H2z"/><path d="M11 1h4v4h-1V2.7l-4.5 4.5-.7-.7L13.3 2H11V1z"/></svg>
-                    <span>上传水印</span>
+                    <span data-i18n="watermark.upload">上传水印</span>
                 </button>
                 <div class="prop-group">
-                    <label>大小</label>
+                    <label data-i18n="watermark.size">大小</label>
                     <input type="range" id="wmSize" min="10" max="400" value="100">
                 </div>
                 <div class="prop-group">
-                    <label>旋转 (<span id="wmRotDisp">0</span>°)</label>
+                    <label data-i18n="watermark.rotation">旋转 (<span id="wmRotDisp">0</span>°)</label>
                     <input type="range" id="wmRotate" min="-180" max="180" value="0">
                 </div>
                 <div class="prop-group">
-                    <label>透明度 (<span id="wmOpDisp">100</span>%)</label>
+                    <label data-i18n="watermark.opacity">透明度 (<span id="wmOpDisp">100</span>%)</label>
                     <input type="range" id="wmOpacity" min="0" max="100" value="100">
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="wmLayerUp" title="上移一层">↑</button>
-                    <button class="style-btn" id="wmLayerTop" title="置于顶层">⇈</button>
-                    <button class="style-btn" id="wmLayerDown" title="下移一层">↓</button>
-                    <button class="style-btn" id="wmLayerBottom" title="置于底层">⇊</button>
+                    <button class="style-btn" id="wmLayerUp" data-i18n-title="watermark.layer_up" title="上移一层">↑</button>
+                    <button class="style-btn" id="wmLayerTop" data-i18n-title="watermark.layer_top" title="置于顶层">⇈</button>
+                    <button class="style-btn" id="wmLayerDown" data-i18n-title="watermark.layer_down" title="下移一层">↓</button>
+                    <button class="style-btn" id="wmLayerBottom" data-i18n-title="watermark.layer_bottom" title="置于底层">⇊</button>
                 </div>
             </div>
 
             <div class="panel-section" id="resizePropsSection" style="display:none">
-                <div class="panel-title">调整大小</div>
+                <div class="panel-title" data-i18n="resize.title">调整大小</div>
                 <div class="prop-group two-col">
                     <div>
-                        <label>宽度 (px)</label>
+                        <label data-i18n="resize.width_px">宽度 (px)</label>
                         <input type="number" id="resizeWidth" min="1" step="1">
                     </div>
                     <div>
-                        <label>高度 (px)</label>
+                        <label data-i18n="resize.height_px">高度 (px)</label>
                         <input type="number" id="resizeHeight" min="1" step="1">
                     </div>
                 </div>
                 <div class="prop-group">
                     <label class="chk-label">
                         <input type="checkbox" id="resizeLock" checked>
-                        <span>锁定比例</span>
+                        <span data-i18n="resize.lock_ratio">锁定比例</span>
                     </label>
                 </div>
                 <button class="panel-btn" id="applyResize">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 10V3h7M15 8v7H8M3 3l7 7M15 15L8 8"/></svg>
-                    <span>应用缩放</span>
+                    <span data-i18n="action.apply_scale">应用缩放</span>
                 </button>
             </div>
 
             <div class="panel-section" id="cropPropsSection" style="display:none">
-                <div class="panel-title">自由裁剪</div>
+                <div class="panel-title" data-i18n="crop.title">自由裁剪</div>
                 <div class="prop-group-sub">
                     <div class="sub-header">
-                        <span>裁剪尺寸</span>
+                        <span data-i18n="crop.size">裁剪尺寸</span>
                     </div>
                     <div class="sub-content">
                         <div class="prop-group two-col">
                             <div>
-                                <label>起始 X</label>
+                                <label data-i18n="crop.start_x">起始 X</label>
                                 <input type="number" id="cropX" min="0" step="1">
                             </div>
                             <div>
-                                <label>起始 Y</label>
+                                <label data-i18n="crop.start_y">起始 Y</label>
                                 <input type="number" id="cropY" min="0" step="1">
                             </div>
                         </div>
                         <div class="prop-group two-col">
                             <div>
-                                <label>宽度</label>
+                                <label data-i18n="crop.width">宽度</label>
                                 <input type="number" id="cropW" min="1" step="1">
                             </div>
                             <div>
-                                <label>高度</label>
+                                <label data-i18n="crop.height">高度</label>
                                 <input type="number" id="cropH" min="1" step="1">
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="resetCropBtn" title="重置">重置</button>
+                    <button class="style-btn" id="resetCropBtn" data-i18n="action.reset" data-i18n-title="action.reset" title="重置">重置</button>
                 </div>
                 <button class="panel-btn" id="applyCrop">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1h2v2H5zM1 5h2v2H1zM11 15h2v2h-2zM15 11h2v2h-2zM5 5h10v10H5z"/></svg>
-                    <span>执行裁剪 (双击区域)</span>
+                    <span data-i18n="action.execute_crop">执行裁剪 (双击区域)</span>
                 </button>
             </div>
 
             <div class="panel-section" id="rectCropPropsSection" style="display:none">
-                <div class="panel-title">长方形抠图</div>
+                <div class="panel-title" data-i18n="rect_crop.title">长方形抠图</div>
                 <div class="prop-group two-col">
                     <div>
-                        <label>宽度 (px)</label>
+                        <label data-i18n="rect_crop.width_px">宽度 (px)</label>
                         <input type="number" id="rectCropW" value="400" min="1" step="1">
                     </div>
                     <div>
-                        <label>高度 (px)</label>
+                        <label data-i18n="rect_crop.height_px">高度 (px)</label>
                         <input type="number" id="rectCropH" value="300" min="1" step="1">
                     </div>
                 </div>
                 <div class="prop-group">
                     <label class="chk-label">
                         <input type="checkbox" id="rectCropLock">
-                        <span>锁定比例</span>
+                        <span data-i18n="rect_crop.lock_ratio">锁定比例</span>
                     </label>
                 </div>
                 <button class="panel-btn" id="createRectCrop">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-                    <span>创建抠图框</span>
+                    <span data-i18n="action.create_crop_frame">创建抠图框</span>
                 </button>
-                <div class="panel-tip">拖动框定位，双击框执行抠图</div>
+                <div class="panel-tip" data-i18n="rect_crop.tip">拖动框定位，双击框执行抠图</div>
             </div>
 
             <div class="panel-section" id="maskPropsSection" style="display:none">
-                <div class="panel-title">蒙版</div>
+                <div class="panel-title" data-i18n="mask.title">蒙版</div>
                 <div class="prop-group">
-                    <label>蒙版类型</label>
+                    <label data-i18n="mask.type">蒙版类型</label>
                     <select id="maskType">
-                        <option value="rect">长方形</option>
-                        <option value="circle">圆形</option>
-                        <option value="ellipse">椭圆形</option>
-                        <option value="polygon">自定义多边形</option>
+                        <option value="rect" data-i18n="mask.rect">长方形</option>
+                        <option value="circle" data-i18n="mask.circle">圆形</option>
+                        <option value="ellipse" data-i18n="mask.ellipse">椭圆形</option>
+                        <option value="polygon" data-i18n="mask.polygon">自定义多边形</option>
                     </select>
                 </div>
                 <div id="maskSizeInfo" class="prop-group-sub">
                     <div class="sub-header">
-                        <span>尺寸设置</span>
+                        <span data-i18n="mask.size_settings">尺寸设置</span>
                     </div>
                     <div class="sub-content" id="maskSizeContent"></div>
                 </div>
                 <button class="panel-btn" id="createMaskBtn">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-                    <span>创建蒙版区域</span>
+                    <span data-i18n="action.create_mask">创建蒙版区域</span>
                 </button>
                 <button class="panel-btn" id="clearMaskPoints" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
-                    <span>清除多边形点</span>
+                    <span data-i18n="mask.clear_points">清除多边形点</span>
                 </button>
-                <div class="panel-tip">拖动调整位置大小，双击区域执行蒙版</div>
+                <div class="panel-tip" data-i18n="mask.tip">拖动调整位置大小，双击区域执行蒙版</div>
             </div>
 
             <div class="panel-section" id="rotatePropsSection" style="display:none">
-                <div class="panel-title">旋转</div>
+                <div class="panel-title" data-i18n="rotate.title">旋转</div>
                 <div class="prop-group">
-                    <label>角度 (<span id="rotateAngleDisp">0</span>°)</label>
+                    <label data-i18n="rotate.angle">角度 (<span id="rotateAngleDisp">0</span>°)</label>
                     <input type="range" id="rotateAngle" min="-180" max="180" value="0">
                 </div>
                 <div class="prop-group two-col">
                     <div>
-                        <label>旋转中心 X</label>
+                        <label data-i18n="rotate.center_x">旋转中心 X</label>
                         <input type="number" id="rotateCX" min="0" step="1">
                     </div>
                     <div>
-                        <label>旋转中心 Y</label>
+                        <label data-i18n="rotate.center_y">旋转中心 Y</label>
                         <input type="number" id="rotateCY" min="0" step="1">
                     </div>
                 </div>
-                <div class="panel-tip">或直接拖动画面中心的红色圆点移动旋转中心</div>
+                <div class="panel-tip" data-i18n="rotate.tip">或直接拖动画面中心的红色圆点移动旋转中心</div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="rotateLeft90" title="逆时针90°">↺</button>
-                    <button class="style-btn" id="rotateRight90" title="顺时针90°">↻</button>
-                    <button class="style-btn" id="rotateReset" title="重置">重置</button>
+                    <button class="style-btn" id="rotateLeft90" data-i18n-title="rotate.ccw_90" title="逆时针90°">↺</button>
+                    <button class="style-btn" id="rotateRight90" data-i18n-title="rotate.cw_90" title="顺时针90°">↻</button>
+                    <button class="style-btn" id="rotateReset" data-i18n="action.reset" data-i18n-title="action.reset" title="重置">重置</button>
                 </div>
                 <button class="panel-btn" id="applyRotate">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2v3l2.5-2L8 1z"/><path d="M14 8a6 6 0 11-2.5-4.9"/></svg>
-                    <span>应用旋转 (重绘)</span>
+                    <span data-i18n="action.apply_rotation">应用旋转 (重绘)</span>
                 </button>
             </div>
 
             <div class="panel-section" id="filterPropsSection" style="display:none">
-                <div class="panel-title" id="filterTitle">滤镜</div>
+                <div class="panel-title" id="filterTitle" data-i18n="filter.title">滤镜</div>
                 <div class="prop-group">
-                    <label>选区类型</label>
+                    <label data-i18n="filter.sel_type">选区类型</label>
                     <select id="filterSelType">
-                        <option value="rect">长方形</option>
-                        <option value="circle">圆形</option>
-                        <option value="ellipse">椭圆形</option>
-                        <option value="polygon">自定义多边形</option>
+                        <option value="rect" data-i18n="filter.sel_rect">长方形</option>
+                        <option value="circle" data-i18n="filter.sel_circle">圆形</option>
+                        <option value="ellipse" data-i18n="filter.sel_ellipse">椭圆形</option>
+                        <option value="polygon" data-i18n="filter.sel_polygon">自定义多边形</option>
                     </select>
                 </div>
                 <div class="prop-group-sub" id="filterSizeSub">
-                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-header"><span data-i18n="filter.size_settings">尺寸设置</span></div>
                     <div class="sub-content" id="filterSizeContent"></div>
                 </div>
                 <button class="panel-btn" id="createFilterSel">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
-                    <span>创建选区</span>
+                    <span data-i18n="filter.create_sel">创建选区</span>
                 </button>
                 <button class="panel-btn" id="clearFilterSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
-                    <span>清除多边形点</span>
+                    <span data-i18n="filter.clear_points">清除多边形点</span>
                 </button>
                 <div class="prop-group" id="filterStrengthGroup" style="display:none">
-                    <label>强度 (<span id="filterStrengthDisp">50</span>%)</label>
+                    <label data-i18n="filter.strength">强度 (<span id="filterStrengthDisp">50</span>%)</label>
                     <input type="range" id="filterStrength" min="1" max="100" value="50">
                 </div>
                 <div class="prop-group" id="filterMosaicGroup" style="display:none">
-                    <label>马赛克块大小 (<span id="mosaicSizeDisp">10</span>px)</label>
+                    <label data-i18n="filter.mosaic_size">马赛克块大小 (<span id="mosaicSizeDisp">10</span>px)</label>
                     <input type="range" id="mosaicSize" min="2" max="50" value="10">
                 </div>
                 <button class="panel-btn primary" id="applyFilter">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8l4 4 8-9"/></svg>
-                    <span>应用效果</span>
+                    <span data-i18n="action.apply_effect">应用效果</span>
                 </button>
-                <div class="panel-tip">先创建选区并调整 → 双击选区或点应用按钮</div>
+                <div class="panel-tip" data-i18n="filter.tip">先创建选区并调整 → 双击选区或点应用按钮</div>
             </div>
 
             <div class="panel-section" id="hslPropsSection" style="display:none">
-                <div class="panel-title">色彩调整</div>
+                <div class="panel-title" data-i18n="hsl.title">色彩调整</div>
                 <div class="prop-group">
-                    <label>选区范围</label>
+                    <label data-i18n="hsl.sel_range">选区范围</label>
                     <select id="hslSelType">
-                        <option value="full">全图</option>
-                        <option value="rect">长方形</option>
-                        <option value="circle">圆形</option>
-                        <option value="ellipse">椭圆形</option>
-                        <option value="polygon">自定义多边形</option>
+                        <option value="full" data-i18n="hsl.full_image">全图</option>
+                        <option value="rect" data-i18n="hsl.sel_rect">长方形</option>
+                        <option value="circle" data-i18n="hsl.sel_circle">圆形</option>
+                        <option value="ellipse" data-i18n="hsl.sel_ellipse">椭圆形</option>
+                        <option value="polygon" data-i18n="hsl.sel_polygon">自定义多边形</option>
                     </select>
                 </div>
                 <div class="prop-group-sub" id="hslSelSizeSub" style="display:none">
-                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-header"><span data-i18n="hsl.size_settings">尺寸设置</span></div>
                     <div class="sub-content" id="hslSelSizeContent"></div>
                 </div>
                 <button class="panel-btn" id="createHslSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
-                    <span>创建选区</span>
+                    <span data-i18n="hsl.create_sel">创建选区</span>
                 </button>
                 <button class="panel-btn" id="clearHslSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
-                    <span>清除多边形点</span>
+                    <span data-i18n="hsl.clear_points">清除多边形点</span>
                 </button>
                 <div class="prop-group">
-                    <label>色相 (<span id="hueDisp">0</span>°)</label>
+                    <label data-i18n="hsl.hue">色相 (<span id="hueDisp">0</span>°)</label>
                     <input type="range" id="hueAdjust" min="-180" max="180" value="0">
                 </div>
                 <div class="prop-group">
-                    <label>饱和度 (<span id="satDisp">0</span>%)</label>
+                    <label data-i18n="hsl.saturation">饱和度 (<span id="satDisp">0</span>%)</label>
                     <input type="range" id="satAdjust" min="-100" max="100" value="0">
                 </div>
                 <div class="prop-group">
-                    <label>亮度 (<span id="lumDisp">0</span>%)</label>
+                    <label data-i18n="hsl.brightness">亮度 (<span id="lumDisp">0</span>%)</label>
                     <input type="range" id="lumAdjust" min="-100" max="100" value="0">
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="resetHsl">重置</button>
+                    <button class="style-btn" id="resetHsl" data-i18n="action.reset">重置</button>
                 </div>
                 <button class="panel-btn primary" id="applyHsl">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8l4 4 8-9"/></svg>
-                    <span>应用调整</span>
+                    <span data-i18n="action.apply_adjustment">应用调整</span>
                 </button>
             </div>
 
             <div class="panel-section" id="curvePropsSection" style="display:none">
-                <div class="panel-title">色彩曲线</div>
+                <div class="panel-title" data-i18n="curve.title">色彩曲线</div>
                 <div class="prop-group">
-                    <label>选区范围</label>
+                    <label data-i18n="curve.sel_range">选区范围</label>
                     <select id="curveSelType">
-                        <option value="full">全图</option>
-                        <option value="rect">长方形</option>
-                        <option value="circle">圆形</option>
-                        <option value="ellipse">椭圆形</option>
-                        <option value="polygon">自定义多边形</option>
+                        <option value="full" data-i18n="curve.full_image">全图</option>
+                        <option value="rect" data-i18n="curve.sel_rect">长方形</option>
+                        <option value="circle" data-i18n="curve.sel_circle">圆形</option>
+                        <option value="ellipse" data-i18n="curve.sel_ellipse">椭圆形</option>
+                        <option value="polygon" data-i18n="curve.sel_polygon">自定义多边形</option>
                     </select>
                 </div>
                 <div class="prop-group-sub" id="curveSelSizeSub" style="display:none">
-                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-header"><span data-i18n="curve.size_settings">尺寸设置</span></div>
                     <div class="sub-content" id="curveSelSizeContent"></div>
                 </div>
                 <button class="panel-btn" id="createCurveSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
-                    <span>创建选区</span>
+                    <span data-i18n="curve.create_sel">创建选区</span>
                 </button>
                 <button class="panel-btn" id="clearCurveSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
-                    <span>清除多边形点</span>
+                    <span data-i18n="curve.clear_points">清除多边形点</span>
                 </button>
                 <div class="prop-group">
-                    <label>通道</label>
+                    <label data-i18n="curve.channel">通道</label>
                     <select id="curveChannel">
-                        <option value="rgb">RGB 合成</option>
-                        <option value="r">红通道 (R)</option>
-                        <option value="g">绿通道 (G)</option>
-                        <option value="b">蓝通道 (B)</option>
+                        <option value="rgb" data-i18n="curve.rgb">RGB 合成</option>
+                        <option value="r" data-i18n="curve.red">红通道 (R)</option>
+                        <option value="g" data-i18n="curve.green">绿通道 (G)</option>
+                        <option value="b" data-i18n="curve.blue">蓝通道 (B)</option>
                     </select>
                 </div>
                 <div class="prop-group" style="padding:8px 4px;">
                     <canvas id="curveEditor" width="230" height="230" style="width:100%;height:230px;background:#1a1a1a;border:1px solid #333;border-radius:4px;cursor:crosshair;"></canvas>
-                    <div class="prop-tip" style="font-size:11px;color:#888;margin-top:4px;">在曲线上点击添加控制点，拖动控制点调节，右键点击控制点删除</div>
+                    <div class="prop-tip" style="font-size:11px;color:#888;margin-top:4px;" data-i18n="curve.tip">在曲线上点击添加控制点，拖动控制点调节，右键点击控制点删除</div>
                 </div>
                 <div class="prop-group">
-                    <label>曲线预设</label>
+                    <label data-i18n="curve.preset">曲线预设</label>
                     <select id="curvePreset">
-                        <option value="linear">线性 (默认)</option>
-                        <option value="contrast">增加对比</option>
-                        <option value="bright">整体提亮</option>
-                        <option value="dark">整体压暗</option>
-                        <option value="negate">反相</option>
-                        <option value="s-shape">S型对比</option>
+                        <option value="linear" data-i18n="curve.linear">线性 (默认)</option>
+                        <option value="contrast" data-i18n="curve.contrast">增加对比</option>
+                        <option value="bright" data-i18n="curve.bright">整体提亮</option>
+                        <option value="dark" data-i18n="curve.dark">整体压暗</option>
+                        <option value="negate" data-i18n="curve.negate">反相</option>
+                        <option value="s-shape" data-i18n="curve.s_shape">S型对比</option>
                     </select>
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="resetCurve">重置通道</button>
-                    <button class="style-btn" id="resetAllCurves">重置全部</button>
+                    <button class="style-btn" id="resetCurve" data-i18n="action.reset_channel">重置通道</button>
+                    <button class="style-btn" id="resetAllCurves" data-i18n="action.reset_all">重置全部</button>
                 </div>
                 <button class="panel-btn primary" id="applyCurve">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8l4 4 8-9"/></svg>
-                    <span>应用曲线</span>
+                    <span data-i18n="action.apply_curve">应用曲线</span>
                 </button>
             </div>
 
             <div class="panel-section" id="balancePropsSection" style="display:none">
-                <div class="panel-title">色彩平衡</div>
+                <div class="panel-title" data-i18n="balance.title">色彩平衡</div>
                 <div class="prop-group">
-                    <label>选区范围</label>
+                    <label data-i18n="balance.sel_range">选区范围</label>
                     <select id="balanceSelType">
-                        <option value="full">全图</option>
-                        <option value="rect">长方形</option>
-                        <option value="circle">圆形</option>
-                        <option value="ellipse">椭圆形</option>
-                        <option value="polygon">自定义多边形</option>
+                        <option value="full" data-i18n="balance.full_image">全图</option>
+                        <option value="rect" data-i18n="balance.sel_rect">长方形</option>
+                        <option value="circle" data-i18n="balance.sel_circle">圆形</option>
+                        <option value="ellipse" data-i18n="balance.sel_ellipse">椭圆形</option>
+                        <option value="polygon" data-i18n="balance.sel_polygon">自定义多边形</option>
                     </select>
                 </div>
                 <div class="prop-group-sub" id="balanceSelSizeSub" style="display:none">
-                    <div class="sub-header"><span>尺寸设置</span></div>
+                    <div class="sub-header"><span data-i18n="balance.size_settings">尺寸设置</span></div>
                     <div class="sub-content" id="balanceSelSizeContent"></div>
                 </div>
                 <button class="panel-btn" id="createBalanceSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
-                    <span>创建选区</span>
+                    <span data-i18n="balance.create_sel">创建选区</span>
                 </button>
                 <button class="panel-btn" id="clearBalanceSel" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3l10 10M13 3L3 13"/></svg>
-                    <span>清除多边形点</span>
+                    <span data-i18n="balance.clear_points">清除多边形点</span>
                 </button>
                 <div class="prop-group-sub">
-                    <div class="sub-header"><span>阴影 (暗部)</span></div>
+                    <div class="sub-header"><span data-i18n="balance.shadows">阴影 (暗部)</span></div>
                     <div class="sub-content">
                         <div class="prop-group">
-                            <label style="color:#ff6060;">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="shRCyanDisp">0</span>)</label>
+                            <label style="color:#ff6060;" data-i18n="balance.red_cyan">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="shRCyanDisp">0</span>)</label>
                             <input type="range" id="shRCyan" min="-100" max="100" value="0">
                         </div>
                         <div class="prop-group">
-                            <label style="color:#60ff60;">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="shGMagentaDisp">0</span>)</label>
+                            <label style="color:#60ff60;" data-i18n="balance.green_magenta">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="shGMagentaDisp">0</span>)</label>
                             <input type="range" id="shGMagenta" min="-100" max="100" value="0">
                         </div>
                         <div class="prop-group">
-                            <label style="color:#6080ff;">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="shBYellowDisp">0</span>)</label>
+                            <label style="color:#6080ff;" data-i18n="balance.blue_yellow">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="shBYellowDisp">0</span>)</label>
                             <input type="range" id="shBYellow" min="-100" max="100" value="0">
                         </div>
                     </div>
                 </div>
                 <div class="prop-group-sub">
-                    <div class="sub-header"><span>中间调</span></div>
+                    <div class="sub-header"><span data-i18n="balance.midtones">中间调</span></div>
                     <div class="sub-content">
                         <div class="prop-group">
-                            <label style="color:#ff6060;">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="miRCyanDisp">0</span>)</label>
+                            <label style="color:#ff6060;" data-i18n="balance.red_cyan">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="miRCyanDisp">0</span>)</label>
                             <input type="range" id="miRCyan" min="-100" max="100" value="0">
                         </div>
                         <div class="prop-group">
-                            <label style="color:#60ff60;">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="miGMagentaDisp">0</span>)</label>
+                            <label style="color:#60ff60;" data-i18n="balance.green_magenta">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="miGMagentaDisp">0</span>)</label>
                             <input type="range" id="miGMagenta" min="-100" max="100" value="0">
                         </div>
                         <div class="prop-group">
-                            <label style="color:#6080ff;">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="miBYellowDisp">0</span>)</label>
+                            <label style="color:#6080ff;" data-i18n="balance.blue_yellow">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="miBYellowDisp">0</span>)</label>
                             <input type="range" id="miBYellow" min="-100" max="100" value="0">
                         </div>
                     </div>
                 </div>
                 <div class="prop-group-sub">
-                    <div class="sub-header"><span>高光 (亮部)</span></div>
+                    <div class="sub-header"><span data-i18n="balance.highlights">高光 (亮部)</span></div>
                     <div class="sub-content">
                         <div class="prop-group">
-                            <label style="color:#ff6060;">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="hiRCyanDisp">0</span>)</label>
+                            <label style="color:#ff6060;" data-i18n="balance.red_cyan">红 &nbsp;↔&nbsp; <span style="color:#60ffff;">青</span> (<span id="hiRCyanDisp">0</span>)</label>
                             <input type="range" id="hiRCyan" min="-100" max="100" value="0">
                         </div>
                         <div class="prop-group">
-                            <label style="color:#60ff60;">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="hiGMagentaDisp">0</span>)</label>
+                            <label style="color:#60ff60;" data-i18n="balance.green_magenta">绿 &nbsp;↔&nbsp; <span style="color:#ff60ff;">品红</span> (<span id="hiGMagentaDisp">0</span>)</label>
                             <input type="range" id="hiGMagenta" min="-100" max="100" value="0">
                         </div>
                         <div class="prop-group">
-                            <label style="color:#6080ff;">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="hiBYellowDisp">0</span>)</label>
+                            <label style="color:#6080ff;" data-i18n="balance.blue_yellow">蓝 &nbsp;↔&nbsp; <span style="color:#ffff60;">黄</span> (<span id="hiBYellowDisp">0</span>)</label>
                             <input type="range" id="hiBYellow" min="-100" max="100" value="0">
                         </div>
                     </div>
                 </div>
                 <div class="prop-group" style="flex-direction:row;justify-content:flex-start;gap:8px;">
                     <label class="toggle"><input type="checkbox" id="balanceLuminosity" checked><span></span></label>
-                    <label for="balanceLuminosity" style="margin:0;flex:none;cursor:pointer;">保持亮度</label>
+                    <label for="balanceLuminosity" style="margin:0;flex:none;cursor:pointer;" data-i18n="balance.preserve_luminosity">保持亮度</label>
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="resetBalance">重置</button>
+                    <button class="style-btn" id="resetBalance" data-i18n="action.reset">重置</button>
                 </div>
                 <button class="panel-btn primary" id="applyBalance">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8l4 4 8-9"/></svg>
-                    <span>应用色彩平衡</span>
+                    <span data-i18n="action.apply_balance">应用色彩平衡</span>
                 </button>
             </div>
 
             <div class="panel-section" id="localZoomPropsSection" style="display:none">
-                <div class="panel-title">局部放大</div>
+                <div class="panel-title" data-i18n="localzoom.title">局部放大</div>
                 <div class="prop-group">
-                    <label>选区形状</label>
+                    <label data-i18n="localzoom.shape">选区形状</label>
                     <select id="lzShape">
-                        <option value="rect">长方形</option>
-                        <option value="ellipse">椭圆形</option>
+                        <option value="rect" data-i18n="localzoom.rect">长方形</option>
+                        <option value="ellipse" data-i18n="localzoom.ellipse">椭圆形</option>
                     </select>
                 </div>
                 <button class="panel-btn" id="createLzSel">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/></svg>
-                    <span>创建选区</span>
+                    <span data-i18n="localzoom.create_sel">创建选区</span>
                 </button>
                 <div class="prop-group two-col">
                     <div>
-                        <label>边框颜色</label>
+                        <label data-i18n="localzoom.border_color">边框颜色</label>
                         <div class="color-row">
                             <input type="color" id="lzBorderColor" value="#ff0000">
                         </div>
                     </div>
                     <div>
-                        <label>边框宽度</label>
+                        <label data-i18n="localzoom.border_width">边框宽度</label>
                         <input type="number" id="lzBorderWidth" min="0" max="20" value="2" step="1">
                     </div>
                 </div>
                 <div class="prop-group">
-                    <label>边框样式</label>
+                    <label data-i18n="localzoom.border_style">边框样式</label>
                     <select id="lzBorderStyle">
-                        <option value="solid">实线 Solid</option>
-                        <option value="dashed">虚线 Dashed</option>
-                        <option value="dotted">点线 Dotted</option>
-                        <option value="double">双线 Double</option>
-                        <option value="none">无</option>
+                        <option value="solid" data-i18n="localzoom.solid">实线 Solid</option>
+                        <option value="dashed" data-i18n="localzoom.dashed">虚线 Dashed</option>
+                        <option value="dotted" data-i18n="localzoom.dotted">点线 Dotted</option>
+                        <option value="double" data-i18n="localzoom.double">双线 Double</option>
+                        <option value="none" data-i18n="localzoom.none">无</option>
                     </select>
                 </div>
                 <div class="prop-group">
-                    <label>放大倍数 (<span id="lzZoomDisp">2.00</span>×)</label>
+                    <label data-i18n="localzoom.zoom_level">放大倍数 (<span id="lzZoomDisp">2.00</span>×)</label>
                     <input type="range" id="lzZoom" min="1.5" max="5" step="0.1" value="2">
                 </div>
-                <div class="panel-tip">调整好后双击选区创建放大图层，放大图层可拖动</div>
+                <div class="panel-tip" data-i18n="localzoom.tip">调整好后双击选区创建放大图层，放大图层可拖动</div>
             </div>
 
             <div class="panel-section" id="pencilPropsSection" style="display:none">
-                <div class="panel-title">铅笔工具</div>
+                <div class="panel-title" data-i18n="pencil.title">铅笔工具</div>
                 <div class="prop-group two-col">
                     <div>
-                        <label>颜色</label>
+                        <label data-i18n="pencil.color">颜色</label>
                         <div class="color-row">
                             <input type="color" id="pencilColor" value="#000000">
                             <input type="text" id="pencilColorText" value="#000000" maxlength="7">
                         </div>
                     </div>
                     <div>
-                        <label>粗细 (px)</label>
+                        <label data-i18n="pencil.thickness">粗细 (px)</label>
                         <input type="number" id="pencilWidth" min="1" max="100" value="2" step="1">
                     </div>
                 </div>
                 <div class="prop-group">
-                    <label>透明度 (<span id="pencilOpacityDisp">100</span>%)</label>
+                    <label data-i18n="pencil.opacity">透明度 (<span id="pencilOpacityDisp">100</span>%)</label>
                     <input type="range" id="pencilOpacity" min="1" max="100" value="100">
                 </div>
                 <div class="prop-group">
-                    <label>线端/拐角</label>
+                    <label data-i18n="pencil.cap_join">线端/拐角</label>
                     <select id="pencilCap">
-                        <option value="round">圆角 Round</option>
-                        <option value="butt">平头 Butt</option>
-                        <option value="square">方头 Square</option>
+                        <option value="round" data-i18n="pencil.round">圆角 Round</option>
+                        <option value="butt" data-i18n="pencil.butt">平头 Butt</option>
+                        <option value="square" data-i18n="pencil.square">方头 Square</option>
                     </select>
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="clearPencilLayer">清除铅笔层</button>
+                    <button class="style-btn" id="clearPencilLayer" data-i18n="pencil.clear_layer">清除铅笔层</button>
                 </div>
-                <div class="panel-tip">普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式</div>
+                <div class="panel-tip" data-i18n="pencil.tip">普通拖拽：自由绘制；按住 Shift：强制直线；按住 Ctrl：路径/曲线模式</div>
             </div>
 
             <div class="panel-section" id="selectionPropsSection" style="display:none">
-                <div class="panel-title">通用选择</div>
+                <div class="panel-title" data-i18n="selection.title">通用选择</div>
                 <div class="prop-group">
-                    <label>选择类型</label>
+                    <label data-i18n="selection.type">选择类型</label>
                     <select id="selectionType">
-                        <option value="rect">矩形</option>
-                        <option value="circle">圆形</option>
-                        <option value="ellipse">椭圆</option>
-                        <option value="polygon">多边形</option>
-                        <option value="magic">魔棒（取色）</option>
+                        <option value="rect" data-i18n="selection.rect">矩形</option>
+                        <option value="circle" data-i18n="selection.circle">圆形</option>
+                        <option value="ellipse" data-i18n="selection.ellipse">椭圆</option>
+                        <option value="polygon" data-i18n="selection.polygon">多边形</option>
+                        <option value="magic" data-i18n="selection.magic">魔棒（取色）</option>
                     </select>
                 </div>
                 <div class="prop-group" id="magicWandToleranceGroup" style="display:none">
-                    <label>容差 (<span id="magicToleranceDisp">30</span>)</label>
+                    <label data-i18n="selection.tolerance">容差 (<span id="magicToleranceDisp">30</span>)</label>
                     <input type="range" id="magicTolerance" min="1" max="100" value="30">
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="invertSelection">反选</button>
-                    <button class="style-btn" id="clearSelection">清除选区</button>
+                    <button class="style-btn" id="invertSelection" data-i18n="selection.invert">反选</button>
+                    <button class="style-btn" id="clearSelection" data-i18n="selection.clear">清除选区</button>
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="deleteSelection">删除选区内容</button>
-                    <button class="style-btn" id="copySelection">复制到剪贴板</button>
+                    <button class="style-btn" id="deleteSelection" data-i18n="selection.delete">删除选区内容</button>
+                    <button class="style-btn" id="copySelection" data-i18n="selection.copy">复制到剪贴板</button>
                 </div>
                 <div class="prop-group">
-                    <label>填充颜色</label>
+                    <label data-i18n="selection.fill_color">填充颜色</label>
                     <div class="color-row">
                         <input type="color" id="selectionFillColor" value="#ffffff">
                         <input type="text" id="selectionFillColorText" value="#ffffff" maxlength="7">
                     </div>
                 </div>
                 <div class="prop-group btn-row">
-                    <button class="style-btn" id="fillSelection">填充选区</button>
+                    <button class="style-btn" id="fillSelection" data-i18n="selection.fill">填充选区</button>
                 </div>
-                <div class="panel-tip">Shift+拖拽：添加选区 | Ctrl+拖拽：减去选区 | 多边形：双击完成 | 魔棒：点击选择相似色</div>
+                <div class="panel-tip" data-i18n="selection.tip">Shift+拖拽：添加选区 | Ctrl+拖拽：减去选区 | 多边形：双击完成 | 魔棒：点击选择相似色</div>
+            </div>
+        </div>
+
+        <div class="panel-section batch-process-section" id="batchProcessSection" style="display:none">
+            <div class="panel-title" data-i18n="batch.title">批量处理</div>
+            <div class="batch-header">
+                <button class="panel-btn" id="batchAddFiles" data-i18n="batch.add_files">添加文件</button>
+                <button class="panel-btn" id="batchClearFiles" data-i18n="action.clear_list">清空列表</button>
+                <button class="panel-btn" id="batchAddFromEditor" data-i18n="batch.add_from_editor">从编辑器添加</button>
+                <span class="batch-file-count" id="batchFileCount" data-i18n="batch.file_count">共 0 张</span>
+            </div>
+            <div class="batch-file-list" id="batchFileList">
+                <div class="batch-empty" data-i18n="batch.empty">暂无文件，请添加图片</div>
+            </div>
+            <div class="batch-op-header">
+                <span data-i18n="batch.operation_list">操作列表</span>
+                <select id="batchAddOperation">
+                    <option value="" data-i18n="batch.add_operation">添加操作...</option>
+                    <optgroup label="基础操作" data-i18n="batch.basic_ops">
+                        <option value="resize" data-i18n="batch.resize">调整大小</option>
+                        <option value="format" data-i18n="batch.format">格式转换</option>
+                        <option value="rename" data-i18n="batch.rename">重命名</option>
+                        <option value="compress" data-i18n="batch.compress">压缩质量</option>
+                    </optgroup>
+                    <optgroup label="变换操作" data-i18n="batch.transform_ops">
+                        <option value="rotate" data-i18n="batch.rotate">旋转</option>
+                        <option value="flip" data-i18n="batch.flip">翻转</option>
+                        <option value="crop" data-i18n="batch.crop">裁剪</option>
+                    </optgroup>
+                    <optgroup label="色彩调整" data-i18n="batch.color_ops">
+                        <option value="brightness" data-i18n="batch.brightness">亮度调整</option>
+                        <option value="contrast" data-i18n="batch.contrast">对比度调整</option>
+                        <option value="saturation" data-i18n="batch.saturation">饱和度调整</option>
+                        <option value="hue" data-i18n="batch.hue">色调调整</option>
+                    </optgroup>
+                    <optgroup label="滤镜效果" data-i18n="batch.filter_ops">
+                        <option value="blur" data-i18n="batch.blur">模糊</option>
+                        <option value="sharpen" data-i18n="batch.sharpen">锐化</option>
+                        <option value="mosaic" data-i18n="batch.mosaic">马赛克</option>
+                        <option value="negative" data-i18n="batch.negative">反色</option>
+                    </optgroup>
+                    <optgroup label="水印" data-i18n="batch.watermark_ops">
+                        <option value="textWatermark" data-i18n="batch.text_watermark">文字水印</option>
+                        <option value="imageWatermark" data-i18n="batch.image_watermark">图片水印</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="batch-operation-list" id="batchOperationList">
+                <div class="batch-op-empty" data-i18n="batch.empty_ops">暂无操作，请添加操作</div>
+            </div>
+            <div class="batch-output-settings">
+                <div class="prop-group">
+                    <label data-i18n="batch.output_format">输出格式</label>
+                    <select id="batchOutputFormat">
+                        <option value="same" data-i18n="batch.keep_original">保持原格式</option>
+                        <option value="jpg">JPG</option>
+                        <option value="png">PNG</option>
+                        <option value="webp">WebP</option>
+                    </select>
+                </div>
+                <div class="prop-group">
+                    <label data-i18n="batch.output_quality">输出质量</label>
+                    <input type="range" id="batchOutputQuality" min="10" max="100" value="85">
+                    <span id="batchOutputQualityValue">85%</span>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="style-btn primary" id="batchStartProcess" data-i18n="batch.start_process">开始处理</button>
+            </div>
+        </div>
+
+        <div class="panel-section puzzle-section" id="puzzlePropsSection" style="display:none">
+            <div class="panel-title" data-i18n="puzzle.canvas_settings">画布设置</div>
+            <div class="puzzle-canvas-settings">
+                <div class="prop-row">
+                    <div class="prop-group">
+                        <label data-i18n="puzzle.width">宽度</label>
+                        <input type="number" id="puzzleCanvasWidth" value="1920" min="100" max="4000">
+                    </div>
+                    <div class="prop-group">
+                        <label data-i18n="puzzle.height">高度</label>
+                        <input type="number" id="puzzleCanvasHeight" value="1080" min="100" max="4000">
+                    </div>
+                </div>
+                <div class="prop-row">
+                    <button class="style-btn small" id="puzzleApplyCanvas" data-i18n="action.apply_canvas" style="width:100%">应用画布</button>
+                </div>
+            </div>
+            
+            <div class="panel-title" data-i18n="puzzle.template">拼图模板</div>
+            <div class="puzzle-template-list" id="puzzleTemplateList"></div>
+            
+            <div class="puzzle-custom-settings" id="puzzleCustomSettings" style="display:none">
+                <div class="panel-subtitle" data-i18n="puzzle.custom_grid">自定义行列</div>
+                <div class="prop-group">
+                    <label data-i18n="puzzle.cols">列数</label>
+                    <input type="number" id="puzzleCustomCols" value="2" min="1" max="10">
+                </div>
+                <div class="prop-group">
+                    <label data-i18n="puzzle.rows">行数</label>
+                    <input type="number" id="puzzleCustomRows" value="2" min="1" max="10">
+                </div>
+                <div class="prop-group">
+                    <label data-i18n="puzzle.aspect_ratio">宽高比</label>
+                    <select id="puzzleCellRatio">
+                        <option value="0.5" data-i18n="puzzle.ratio_1_2_v">1:2 (竖)</option>
+                        <option value="0.667" data-i18n="puzzle.ratio_2_3_v">2:3 (竖)</option>
+                        <option value="1" selected data-i18n="puzzle.ratio_1_1">1:1 (方)</option>
+                        <option value="1.5" data-i18n="puzzle.ratio_3_2_h">3:2 (横)</option>
+                        <option value="2" data-i18n="puzzle.ratio_2_1_h">2:1 (横)</option>
+                    </select>
+                </div>
+                <button class="style-btn small" id="puzzleApplyCustom" data-i18n="action.apply_custom" style="width:100%">应用自定义</button>
+            </div>
+            
+            <div class="puzzle-settings">
+                <div class="prop-group">
+                    <label data-i18n="puzzle.bg_image">底图</label>
+                    <button class="style-btn small" id="puzzleBgUpload" data-i18n="puzzle.upload_bg" style="width:100%">上传底图</button>
+                </div>
+                <div class="prop-group">
+                    <label data-i18n="puzzle.gap">格子间距</label>
+                    <input type="number" id="puzzleGap" value="4" min="0" max="50">
+                </div>
+                <div class="prop-group">
+                    <label data-i18n="puzzle.gap_color">间距颜色</label>
+                    <input type="color" id="puzzleGapColor" value="#ffffff">
+                </div>
+                <div class="prop-group">
+                    <label data-i18n="puzzle.border_radius">圆角大小</label>
+                    <input type="number" id="puzzleBorderRadius" value="0" min="0" max="50">
+                </div>
+                <div class="prop-group">
+                    <label><input type="checkbox" id="puzzleShadowEnabled"> <span data-i18n="puzzle.enable_shadow">启用阴影</span></label>
+                </div>
+                <div class="puzzle-shadow-settings" id="puzzleShadowSettings" style="display:none">
+                    <div class="prop-group">
+                        <label data-i18n="puzzle.shadow_color">阴影颜色</label>
+                        <input type="color" id="puzzleShadowColor" value="#333333">
+                    </div>
+                    <div class="prop-group">
+                        <label data-i18n="puzzle.shadow_blur">模糊半径</label>
+                        <input type="number" id="puzzleShadowBlur" value="10" min="0" max="50">
+                    </div>
+                </div>
+            </div>
+            <div class="btn-row btn-row-center">
+                <button class="style-btn primary" id="puzzleExport" data-i18n="puzzle.export_puzzle">导出拼图</button>
+                <button class="style-btn" id="puzzleExit" data-i18n="puzzle.exit">退出拼图</button>
             </div>
         </div>
 
@@ -691,95 +856,128 @@
             <div class="canvas-container" id="canvasContainer">
                 <div class="canvas-scroll-content" id="canvasScrollContent">
                     <div class="upload-hint" id="uploadHint">
-                        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="48" height="48" rx="4"/><path d="M20 40l8-10 6 6 10-14"/><circle cx="22" cy="22" r="4"/></svg>
-                        <p>拖拽图片到此处</p>
-                        <p class="sub">或点击选择本地图片</p>
-                    </div>
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="48" height="48" rx="4"/><path d="M20 40l8-10 6 6 10-14"/><circle cx="22" cy="22" r="4"/></svg>
+                    <p data-i18n="upload.drag_hint">拖拽图片到此处</p>
+                    <p class="sub" data-i18n="upload.click_hint">或点击选择本地图片</p>
+                </div>
                     <div class="canvas-wrapper" id="canvasWrapper" style="display:none">
                         <canvas id="mainCanvas"></canvas>
                         <div class="object-layer" id="objectLayer"></div>
                         <div class="selection-rect" id="selectionRect" style="display:none"></div>
                         <div class="img-operation-layer" id="imgOperationLayer"></div>
                         <div class="rotate-center-handle" id="rotateCenterHandle" style="display:none"></div>
+                        <div class="puzzle-layer" id="puzzleLayer" style="display:none"></div>
                     </div>
                     <div class="live-histogram" id="liveHistogram" style="display:none">
-                        <div class="lh-title">实时直方图</div>
+                        <div class="lh-title" data-i18n="histogram.live_title">实时直方图</div>
                         <div class="lh-item">
-                            <div class="lh-label" style="color:#ddd">亮度 (Y)</div>
+                            <div class="lh-label" style="color:#ddd" data-i18n="histogram.luminance">亮度 (Y)</div>
                             <canvas id="lhLum" width="220" height="80"></canvas>
                         </div>
                         <div class="lh-item">
-                            <div class="lh-label" style="color:#ff6060">红通道 (R)</div>
+                            <div class="lh-label" style="color:#ff6060" data-i18n="histogram.red_channel">红通道 (R)</div>
                             <canvas id="lhR" width="220" height="80"></canvas>
                         </div>
                         <div class="lh-item">
-                            <div class="lh-label" style="color:#60ff60">绿通道 (G)</div>
+                            <div class="lh-label" style="color:#60ff60" data-i18n="histogram.green_channel">绿通道 (G)</div>
                             <canvas id="lhG" width="220" height="80"></canvas>
                         </div>
                         <div class="lh-item">
-                            <div class="lh-label" style="color:#6080ff">蓝通道 (B)</div>
+                            <div class="lh-label" style="color:#6080ff" data-i18n="histogram.blue_channel">蓝通道 (B)</div>
                             <canvas id="lhB" width="220" height="80"></canvas>
                         </div>
                         <div class="lh-item">
-                            <div class="lh-label" style="color:#fff">RGB 叠加</div>
+                            <div class="lh-label" style="color:#fff" data-i18n="histogram.rgb_overlay">RGB 叠加</div>
                             <canvas id="lhOverlay" width="220" height="80"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="zoom-bar" id="zoomBar" style="display:none">
-                <button class="zoom-btn" id="infoBtn" data-tip="图片信息|查看图片分辨率、格式、大小等详细元数据">
+                <button class="zoom-btn" id="zoomInfoBtn" data-tip="图片信息|查看图片分辨率、格式、大小等详细元数据" data-i18n-tip="tip.zoom_info">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v.01M7.5 7.5h.5v4h.5"/></svg>
                 </button>
-                <button class="zoom-btn" id="histogramBtn" data-tip="直方图|查看图片亮度和RGB颜色通道分布统计">
+                <button class="zoom-btn" id="histogramBtn" data-tip="直方图|查看图片亮度和RGB颜色通道分布统计" data-i18n-tip="tip.histogram">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V8M5 14V5M8 14V2M11 14V6M14 14V4"/></svg>
                 </button>
                 <div class="zoom-sep"></div>
-                <button class="zoom-btn" id="zoomOutBtn" data-tip="缩小|将画面显示比例缩小10%，快捷键：Ctrl + 滚轮">−</button>
+                <button class="zoom-btn" id="zoomOutBtn" data-tip="缩小|将画面显示比例缩小10%，快捷键：Ctrl + 滚轮" data-i18n-tip="tip.zoom_out">−</button>
                 <div class="zoom-slider-wrap">
-                    <input type="range" id="zoomSlider" min="5" max="500" value="100" step="1" data-tip="缩放滑块|拖动调整画面显示比例（5%-500%）">
+                    <input type="range" id="zoomSlider" min="5" max="500" value="100" step="1" data-tip="缩放滑块|拖动调整画面显示比例（5%-500%）" data-i18n-tip="tip.zoom_slider">
                 </div>
-                <button class="zoom-btn" id="zoomInBtn" data-tip="放大|将画面显示比例放大10%，快捷键：Ctrl + 滚轮">+</button>
+                <button class="zoom-btn" id="zoomInBtn" data-tip="放大|将画面显示比例放大10%，快捷键：Ctrl + 滚轮" data-i18n-tip="tip.zoom_in">+</button>
                 <span class="zoom-display" id="zoomDisplay">100%</span>
-                <button class="zoom-btn" id="zoomFitBtn" data-tip="适应窗口|自动调整缩放使图片完整显示在画布区域">⊡</button>
+                <button class="zoom-btn" id="zoomFitBtn" data-tip="适应窗口|自动调整缩放使图片完整显示在画布区域" data-i18n-tip="tip.zoom_fit">⊡</button>
             </div>
         </div>
 
         <div class="right-panel">
-            <div class="panel-title right-panel-title">对象</div>
+            <div class="panel-title right-panel-title" data-i18n="right.object">对象</div>
             <div class="object-list" id="objectList"></div>
 
             <div class="panel-title right-panel-title history-title-bar">
-                <span>操作步骤</span>
-                <button class="history-clear" id="historyClearBtn" title="清除历史记录">清空</button>
+                <span data-i18n="right.history">操作步骤</span>
+                <button class="history-clear" id="historyClearBtn" data-i18n-title="right.clear_history" title="清除历史记录" data-i18n="right.clear_history">清空</button>
             </div>
             <div class="history-list" id="historyList"></div>
+
+            <div class="help-section">
+                <button class="help-btn" id="helpBtn" data-tip="帮助|查看快捷键和功能说明" data-i18n-tip="tip.help">
+                    ❓️
+                </button>
+                <button class="help-btn" id="langSwitchBtn" title="Switch Language">
+                    EN
+                </button>
+                <a href="https://github.com/deathxlent/" target="_blank" class="author-link">By xlent</a>
+            </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="infoModal" style="display:none">
         <div class="modal-box">
             <div class="modal-header">
-                <span>图片信息</span>
+                <span data-i18n="file.info">图片信息</span>
                 <button class="modal-close" id="infoModalClose">&times;</button>
             </div>
             <div class="modal-body" id="infoModalBody"></div>
         </div>
     </div>
 
+    <div class="modal-overlay" id="puzzleImageModal" style="display:none">
+        <div class="modal-box" style="width:600px;">
+            <div class="modal-header">
+                <span data-i18n="puzzle.adjust_image">调整图片</span>
+                <button class="modal-close" id="puzzleImageModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="puzzle-image-editor" id="puzzleImageEditor">
+                    <div class="puzzle-editor-frame" id="puzzleEditorFrame"></div>
+                    <div class="puzzle-editor-crop" id="puzzleEditorCrop"></div>
+                </div>
+                <div class="puzzle-editor-toolbar">
+                    <button class="editor-btn" id="puzzleImgRotate" data-i18n-title="puzzle.rotate" title="旋转">↻</button>
+                    <button class="editor-btn" id="puzzleImgFlipV" data-i18n-title="puzzle.flip_v" title="上下镜像">⇅</button>
+                    <button class="editor-btn" id="puzzleImgFlipH" data-i18n-title="puzzle.flip_h" title="左右镜像">⇄</button>
+                    <button class="editor-btn" id="puzzleImgReplace" data-i18n-title="puzzle.replace" title="替换图片">🔄</button>
+                    <button class="editor-btn primary" id="puzzleImgSave" data-i18n-title="puzzle.save" title="保存">✓</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="histogramModal" style="display:none">
         <div class="modal-box modal-wide">
             <div class="modal-header">
-                <span>颜色直方图</span>
+                <span data-i18n="histogram.title">颜色直方图</span>
                 <button class="modal-close" id="histogramModalClose">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="histogram-tabs">
-                    <button class="hist-tab active" data-channel="luma">亮度</button>
-                    <button class="hist-tab" data-channel="r">红色</button>
-                    <button class="hist-tab" data-channel="g">绿色</button>
-                    <button class="hist-tab" data-channel="b">蓝色</button>
-                    <button class="hist-tab" data-channel="rgb">RGB 叠加</button>
+                    <button class="hist-tab active" data-channel="luma" data-i18n="histogram.luminance_tab">亮度</button>
+                    <button class="hist-tab" data-channel="r" data-i18n="histogram.red_tab">红色</button>
+                    <button class="hist-tab" data-channel="g" data-i18n="histogram.green_tab">绿色</button>
+                    <button class="hist-tab" data-channel="b" data-i18n="histogram.blue_tab">蓝色</button>
+                    <button class="hist-tab" data-channel="rgb" data-i18n="histogram.rgb_tab">RGB 叠加</button>
                 </div>
                 <div class="histogram-wrap">
                     <canvas id="histogramCanvas"></canvas>
@@ -789,10 +987,32 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="batchProgressOverlay" style="display:none">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span data-i18n="batch.progress_title">批量处理进度</span>
+                <button class="modal-close" id="batchProgressClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="batch-progress-info" id="batchCurrentFile"></div>
+                <div class="batch-progress-bar-wrap">
+                    <div class="batch-progress-bar" id="batchProgressBar" style="width:0%"></div>
+                </div>
+                <div class="batch-progress-text" id="batchProgressText" data-i18n="batch.processing_text">处理中: 0 / 0</div>
+                <div class="batch-progress-buttons">
+                    <button class="style-btn" id="batchPauseBtn" data-i18n="batch.pause">暂停</button>
+                    <button class="style-btn" id="batchCancelBtn" data-i18n="batch.cancel">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
     <input type="file" id="watermarkInput" accept="image/*" style="display:none">
 
     <script src="js/core.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/images.js"></script>
     <script src="js/images.js"></script>
     <script src="js/history.js"></script>
     <script src="js/text-tool.js"></script>
@@ -800,6 +1020,8 @@
     <script src="js/watermark.js"></script>
     <script src="js/objects.js"></script>
     <script src="js/export.js"></script>
+    <script src="js/info.js"></script>
+    <script src="js/help.js"></script>
     <script src="js/image-resize.js"></script>
     <script src="js/image-crop.js"></script>
     <script src="js/image-mask.js"></script>
@@ -810,6 +1032,8 @@
     <script src="js/local-zoom.js"></script>
     <script src="js/pencil.js"></script>
     <script src="js/selection.js"></script>
+    <script src="js/batch-process.js"></script>
+    <script src="js/puzzle.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

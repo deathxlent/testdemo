@@ -2,7 +2,7 @@
 
     function activateRotate() {
         var imgObj = App.getActiveImage();
-        if (!imgObj) { alert('请先打开一张图片'); return false; }
+        if (!imgObj) { alert(App.i18n.t('dialog.open_image_first')); return false; }
         App.state.activeImgTool = 'rotate';
         App.Text.deselectAll();
         App.els().rotatePropsSection.style.display = 'block';
@@ -144,11 +144,11 @@
         if (angle < 0) angle += 360;
 
         if (angle === 0) {
-            alert('未设置旋转角度');
+            alert(App.i18n.t('dialog.no_rotation'));
             return;
         }
 
-        if (App.History) App.History.push('旋转 ' + angle + '°');
+        if (App.History) App.History.push(App.i18n.t('history.rotate') + ' ' + angle + '°');
         var cx = App.state.rotateCenterX;
         var cy = App.state.rotateCenterY;
         var rad = angle * Math.PI / 180;
@@ -267,7 +267,7 @@
     function mirrorHorizontal() {
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
-        if (App.History) App.History.push('水平翻转');
+        if (App.History) App.History.push(App.i18n.t('history.flip_h'));
         var canvas = document.createElement('canvas');
         canvas.width = imgObj.width;
         canvas.height = imgObj.height;
@@ -293,7 +293,7 @@
     function mirrorVertical() {
         var imgObj = App.getActiveImage();
         if (!imgObj) return;
-        if (App.History) App.History.push('垂直翻转');
+        if (App.History) App.History.push(App.i18n.t('history.flip_v'));
         var canvas = document.createElement('canvas');
         canvas.width = imgObj.width;
         canvas.height = imgObj.height;

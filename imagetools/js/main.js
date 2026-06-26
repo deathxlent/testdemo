@@ -73,6 +73,13 @@
         } else if (tool === 'pencil') {
             App.Pencil.activate();
             els.pencilTool.classList.add('active');
+        } else if (tool === 'batch') {
+            App.BatchProcess.activate();
+            els.batchTool.classList.add('active');
+        } else if (tool === 'puzzle') {
+            if (App.Puzzle.activate()) {
+                els.puzzleTool.classList.add('active');
+            }
         }
         updateRightPanel();
     }
@@ -131,6 +138,10 @@
         if (App.state.activeImgTool === 'pencil') {
         } else {
             els.pencilPropsSection.style.display = 'none';
+        }
+        if (App.state.activeImgTool === 'puzzle') {
+        } else {
+            els.puzzlePropsSection.style.display = 'none';
         }
 
         if (obj && obj.type === 'text') {
@@ -196,11 +207,11 @@
     function setupMirrorEvents() {
         var els = App.els();
         els.mirrorHBtn.addEventListener('click', function () {
-            if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
+            if (!App.getActiveImage()) { App.showToast(App.i18n.t('toast.open_image_first')); return; }
             if (App.ImageTransform) App.ImageTransform.mirrorHorizontal();
         });
         els.mirrorVBtn.addEventListener('click', function () {
-            if (!App.getActiveImage()) { App.showToast('请先打开一张图片'); return; }
+            if (!App.getActiveImage()) { App.showToast(App.i18n.t('toast.open_image_first')); return; }
             if (App.ImageTransform) App.ImageTransform.mirrorVertical();
         });
     }
@@ -456,9 +467,7 @@
 
         if (els.deleteSelection) {
             els.deleteSelection.addEventListener('click', function () {
-                if (confirm('确定要删除选区内容吗？')) {
-                    App.Selection.delete();
-                }
+                App.Selection.delete();
             });
         }
 
@@ -493,6 +502,251 @@
         }
     }
 
+    function setupBatchProcessEvents() {
+        var els = App.els();
+        if (!els.batchTool) return;
+
+        els.batchTool.addEventListener('click', function () {
+            activateImgTool('batch');
+        });
+
+        if (els.batchAddFiles) {
+            els.batchAddFiles.addEventListener('click', function () {
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.multiple = true;
+                input.onchange = function (e) {
+                    App.BatchProcess.addFiles(e.target.files);
+                };
+                input.click();
+            });
+        }
+
+        if (els.batchClearFiles) {
+            els.batchClearFiles.addEventListener('click', function () {
+                App.BatchProcess.clearFiles();
+            });
+        }
+
+        if (els.batchAddFromEditor) {
+            els.batchAddFromEditor.addEventListener('click', function () {
+                var imgs = App.state.images;
+                if (imgs.length === 0) {
+                    App.showToast(App.i18n.t('toast.no_image_in_editor'));
+                    return;
+                }
+                var urls = imgs.map(function (img) {
+                    return {
+                        name: img.name || 'image.png',
+                        dataUrl: img.canvas.toDataURL('image/png')
+                    };
+                });
+                App.BatchProcess.addFilesFromUrls(urls);
+                App.showToast(App.i18n.t('toast.images_added').replace('{count}', imgs.length));
+            });
+        }
+
+        if (els.batchAddOperation) {
+            els.batchAddOperation.addEventListener('change', function () {
+                var type = this.value;
+                if (type) {
+                    App.BatchProcess.addOperation(type);
+                    this.value = '';
+                }
+            });
+        }
+
+        if (els.batchOutputFormat) {
+            els.batchOutputFormat.addEventListener('change', function () {
+                App.BatchProcess.setOutputFormat(this.value);
+            });
+        }
+
+        if (els.batchOutputQuality) {
+            els.batchOutputQuality.addEventListener('input', function () {
+                App.BatchProcess.setOutputQuality(parseInt(this.value));
+                if (els.batchOutputQualityValue) {
+                    els.batchOutputQualityValue.textContent = this.value + '%';
+                }
+            });
+        }
+
+        if (els.batchStartProcess) {
+            els.batchStartProcess.addEventListener('click', function () {
+                App.BatchProcess.startProcessing();
+            });
+        }
+
+        if (els.batchPauseBtn) {
+            els.batchPauseBtn.addEventListener('click', function () {
+                if (App.BatchProcess.isPaused) {
+                    App.BatchProcess.resumeProcessing();
+                    this.textContent = App.i18n.t('batch.pause');
+                } else {
+                    App.BatchProcess.pauseProcessing();
+                    this.textContent = App.i18n.t('batch.resume');
+                }
+            });
+        }
+
+        if (els.batchCancelBtn) {
+            els.batchCancelBtn.addEventListener('click', function () {
+                if (confirm(App.i18n.t('dialog.cancel_batch'))) {
+                    App.BatchProcess.cancelProcessing();
+                }
+            });
+        }
+
+        if (els.batchProgressClose) {
+            els.batchProgressClose.addEventListener('click', function () {
+                if (confirm(App.i18n.t('dialog.close_confirm'))) {
+                    App.BatchProcess.cancelProcessing();
+                }
+            });
+        }
+    }
+
+    function setupPuzzleEvents() {
+        var els = App.els();
+        if (!els.puzzleTool) return;
+
+        els.puzzleTool.addEventListener('click', function () {
+            activateImgTool('puzzle');
+        });
+
+        if (els.puzzleGap) {
+            els.puzzleGap.addEventListener('input', function () {
+                App.Puzzle.setGap(parseInt(this.value) || 0);
+            });
+        }
+
+        if (els.puzzleGapColor) {
+            els.puzzleGapColor.addEventListener('input', function () {
+                App.Puzzle.setGapColor(this.value);
+            });
+        }
+
+        if (els.puzzleExport) {
+            els.puzzleExport.addEventListener('click', function () {
+                App.Puzzle.exportPuzzle();
+            });
+        }
+
+        if (els.puzzleApplyCanvas) {
+            els.puzzleApplyCanvas.addEventListener('click', function () {
+                var width = parseInt(els.puzzleCanvasWidth.value) || 1920;
+                var height = parseInt(els.puzzleCanvasHeight.value) || 1080;
+                App.Puzzle.setCanvasSize(width, height);
+            });
+        }
+
+        if (els.puzzleExit) {
+            els.puzzleExit.addEventListener('click', function () {
+                if (confirm(App.i18n.t('dialog.exit_puzzle'))) {
+                    App.Puzzle.deactivate();
+                    App.deactivateAllImgTools();
+                    updateRightPanel();
+                }
+            });
+        }
+
+        if (els.puzzleBorderRadius) {
+            els.puzzleBorderRadius.addEventListener('input', function () {
+                App.Puzzle.setBorderRadius(parseInt(this.value) || 0);
+            });
+        }
+
+        if (els.puzzleShadowEnabled) {
+            els.puzzleShadowEnabled.addEventListener('change', function () {
+                App.Puzzle.setShadowEnabled(this.checked);
+                if (els.puzzleShadowSettings) {
+                    els.puzzleShadowSettings.style.display = this.checked ? 'block' : 'none';
+                }
+            });
+        }
+
+        if (els.puzzleShadowColor) {
+            els.puzzleShadowColor.addEventListener('input', function () {
+                App.Puzzle.setShadowColor(this.value);
+            });
+        }
+
+        if (els.puzzleShadowBlur) {
+            els.puzzleShadowBlur.addEventListener('input', function () {
+                App.Puzzle.setShadowBlur(parseInt(this.value) || 0);
+            });
+        }
+
+        if (els.puzzleCustomCols) {
+            els.puzzleCustomCols.addEventListener('change', function () {
+                App.Puzzle.setCustomCols(parseInt(this.value) || 2);
+            });
+        }
+
+        if (els.puzzleCustomRows) {
+            els.puzzleCustomRows.addEventListener('change', function () {
+                App.Puzzle.setCustomRows(parseInt(this.value) || 2);
+            });
+        }
+
+        if (els.puzzleCellRatio) {
+            els.puzzleCellRatio.addEventListener('change', function () {
+                App.Puzzle.setCellRatio(parseFloat(this.value) || 1);
+            });
+        }
+
+        if (els.puzzleApplyCustom) {
+            els.puzzleApplyCustom.addEventListener('click', function () {
+                var customTmpl = { id: 'custom', name: App.i18n.t('batch.custom'), cols: 2, rows: 2, isCustom: true };
+                App.Puzzle.selectTemplate(customTmpl);
+                els.puzzleCustomSettings.style.display = 'none';
+            });
+        }
+
+        if (els.puzzleBgUpload) {
+            els.puzzleBgUpload.addEventListener('click', function () {
+                App.Puzzle.uploadBgImage();
+            });
+        }
+
+        if (els.puzzleImageModalClose) {
+            els.puzzleImageModalClose.addEventListener('click', function () {
+                App.Puzzle.hideImageEditor();
+            });
+        }
+
+        if (els.puzzleImgRotate) {
+            els.puzzleImgRotate.addEventListener('click', function () {
+                App.Puzzle.rotateImage();
+            });
+        }
+
+        if (els.puzzleImgFlipV) {
+            els.puzzleImgFlipV.addEventListener('click', function () {
+                App.Puzzle.flipImageV();
+            });
+        }
+
+        if (els.puzzleImgFlipH) {
+            els.puzzleImgFlipH.addEventListener('click', function () {
+                App.Puzzle.flipImageH();
+            });
+        }
+
+        if (els.puzzleImgReplace) {
+            els.puzzleImgReplace.addEventListener('click', function () {
+                App.Puzzle.replaceImage();
+            });
+        }
+
+        if (els.puzzleImgSave) {
+            els.puzzleImgSave.addEventListener('click', function () {
+                App.Puzzle.saveImageEdit();
+            });
+        }
+    }
+
     function setupPencilEvents() {
         var els = App.els();
         if (!els.pencilColor) return;
@@ -516,7 +770,7 @@
         }
         if (els.clearPencilLayer) {
             els.clearPencilLayer.addEventListener('click', function () {
-                if (confirm('确定要清除所有铅笔绘制吗？')) {
+                if (confirm(App.i18n.t('dialog.clear_pencil'))) {
                     App.Pencil.clearPencilLayer();
                 }
             });
@@ -550,15 +804,77 @@
 
         document.addEventListener('keydown', function (e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) return;
-            if (e.key === 'v' || e.key === 'V') { setTool('select'); }
+
+            if ((e.ctrlKey || e.metaKey)) {
+                if (e.key === 'z' || e.key === 'Z') {
+                    if (e.shiftKey) {
+                        App.History.redo();
+                    } else {
+                        App.History.undo();
+                    }
+                    return;
+                }
+                if (e.key === 's' || e.key === 'S') {
+                    e.preventDefault();
+                    App.Export.showExportDialog();
+                    return;
+                }
+                if (e.key === 'o' || e.key === 'O') {
+                    e.preventDefault();
+                    App.els().fileInput.click();
+                    return;
+                }
+                if (e.key === 'i' || e.key === 'I') {
+                    if (App.state.activeImgTool === 'selection' && App.Selection) {
+                        App.Selection.invert();
+                        e.preventDefault();
+                        return;
+                    }
+                    e.preventDefault();
+                    App.Info.showImageInfo();
+                    return;
+                }
+                if ((e.key === 'c' || e.key === 'C') && App.state.activeImgTool === 'selection' && App.Selection) {
+                    e.preventDefault();
+                    App.Selection.copy();
+                    return;
+                }
+                if ((e.key === 'v' || e.key === 'V') && App.state.activeImgTool === 'selection' && App.Selection) {
+                    e.preventDefault();
+                    App.Selection.paste();
+                    return;
+                }
+            }
+
+            if (e.key === 'v' || e.key === 'V') { if (!e.ctrlKey && !e.metaKey) setTool('select'); }
             else if (e.key === 't' || e.key === 'T') { setTool('text'); }
+            else if (e.key === 'w' || e.key === 'W') {
+                setTool('watermark');
+                App.els().watermarkInput.click();
+            }
+            else if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.shiftKey) { activateImgTool('resize'); }
+            else if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey) { activateImgTool('crop'); }
+            else if (e.key === 'm' || e.key === 'M') { activateImgTool('mask'); }
+            else if (e.key === 'g' || e.key === 'G') { activateImgTool('rotate'); }
+            else if (e.key === 'h' || e.key === 'H') { activateImgTool('sharpen'); }
+            else if (e.key === 'b' || e.key === 'B') { activateImgTool('blur'); }
+            else if (e.key === 'n' || e.key === 'N') { activateImgTool('negative'); }
+            else if (e.key === 'p' || e.key === 'P') { activateImgTool('pencil'); }
+            else if (e.key === 'e' || e.key === 'E') { App.Filters.autoEnhance(); }
             else if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (App.state.selectedObjId) App.Text.deleteObject(App.state.selectedObjId);
+                if (App.state.activeImgTool === 'selection' && App.Selection && App.Selection.hasSelection()) {
+                    App.Selection.deleteSelection();
+                } else if (App.state.selectedObjId) {
+                    App.Text.deleteObject(App.state.selectedObjId);
+                }
             } else if (e.key === 'Escape') {
-                App.deactivateAllImgTools();
-                App.Text.deselectAll();
-                updateRightPanel();
+                if (App.state.activeImgTool === 'selection' && App.Selection) {
+                    App.Selection.clearSelection();
+                } else {
+                    App.deactivateAllImgTools();
+                    App.Text.deselectAll();
+                    updateRightPanel();
+                }
             } else if (e.key === 'Enter') {
                 if (App.state.activeImgTool === 'pencil' && App.Pencil) {
                     if (App.state.pencilCurveAnchors && App.state.pencilCurveAnchors.length >= 2) {
@@ -991,7 +1307,7 @@
             var lastMod = f.lastModified ? new Date(f.lastModified) : null;
 
             meta.file = {
-                fileName: f.name || '（已修改，未保存）',
+                fileName: f.name || App.i18n.t('file.modified_unsaved'),
                 fileType: f.type || 'image/' + ext.toLowerCase(),
                 fileFormat: ext,
                 fileSize: f.size ? formatBytes(f.size) : '—',
@@ -1000,7 +1316,7 @@
             };
         } else {
             meta.file = {
-                fileName: '（新文件，未保存）',
+                fileName: App.i18n.t('file.new_unsaved'),
                 fileType: '—',
                 fileFormat: '—',
                 fileSize: '—',
@@ -1016,9 +1332,9 @@
         meta.display = {
             zoomLevel: zoom + '%',
             displaySize: dispW + ' × ' + dispH + ' px',
-            fitMode: '自适应窗口',
-            colorDepth: '24-bit RGB (每通道8位)',
-            colorChannels: 'R · G · B (Alpha: ' + (img.hasTransparency ? '是' : '否') + ')'
+            fitMode: App.i18n.t('file.fit_mode'),
+            colorDepth: App.i18n.t('file.color_depth'),
+            colorChannels: 'R · G · B (Alpha: ' + (img.hasTransparency ? App.i18n.t('file.alpha_yes') : App.i18n.t('file.alpha_no')) + ')'
         };
 
         var canvas = App.els().mainCanvas;
@@ -1042,7 +1358,7 @@
                     if (data[i + 3] > 0) opaque++;
                 }
                 meta.pixels = {
-                    sampledPixels: total.toLocaleString() + ' (采样)',
+                    sampledPixels: total.toLocaleString() + ' (' + App.i18n.t('file.sampled') + ')',
                     avgBrightness: Math.round((rSum + gSum + bSum) / (3 * total)),
                     avgR: Math.round(rSum / total),
                     avgG: Math.round(gSum / total),
@@ -1052,7 +1368,7 @@
                 };
             } catch (err) {
                 meta.pixels = {
-                    sampledPixels: '（无法读取）',
+                    sampledPixels: App.i18n.t('file.unreadable'),
                     avgBrightness: '—',
                     avgR: '—',
                     avgG: '—',
@@ -1078,44 +1394,44 @@
         }
 
         var html = '';
-        html += section('基础信息');
+        html += section(App.i18n.t('info.basic_info'));
         html += grid(
-            row('宽度', meta.basic.width) +
-            row('高度', meta.basic.height) +
-            row('分辨率', meta.basic.resolution) +
-            row('宽高比', meta.basic.aspectRatio) +
-            row('总像素', meta.basic.totalPixels) +
-            row('百万像素', meta.basic.megapixels)
+            row(App.i18n.t('info.width'), meta.basic.width) +
+            row(App.i18n.t('info.height'), meta.basic.height) +
+            row(App.i18n.t('info.resolution'), meta.basic.resolution) +
+            row(App.i18n.t('info.aspect_ratio'), meta.basic.aspectRatio) +
+            row(App.i18n.t('info.total_pixels'), meta.basic.totalPixels) +
+            row(App.i18n.t('info.megapixels'), meta.basic.megapixels)
         );
 
-        html += section('文件信息');
+        html += section(App.i18n.t('info.file_info'));
         html += grid(
-            row('文件名', meta.file.fileName) +
-            row('格式', meta.file.fileFormat) +
-            row('MIME类型', meta.file.fileType) +
-            row('文件大小', meta.file.fileSize) +
-            row('原始大小', meta.file.rawSize) +
-            row('修改时间', meta.file.lastModified)
+            row(App.i18n.t('info.file_name'), meta.file.fileName) +
+            row(App.i18n.t('info.format'), meta.file.fileFormat) +
+            row(App.i18n.t('info.mime_type'), meta.file.fileType) +
+            row(App.i18n.t('info.file_size'), meta.file.fileSize) +
+            row(App.i18n.t('info.raw_size'), meta.file.rawSize) +
+            row(App.i18n.t('info.modified_time'), meta.file.lastModified)
         );
 
-        html += section('显示信息');
+        html += section(App.i18n.t('info.display_info'));
         html += grid(
-            row('缩放比例', meta.display.zoomLevel) +
-            row('显示尺寸', meta.display.displaySize) +
-            row('适配模式', meta.display.fitMode) +
-            row('色彩深度', meta.display.colorDepth) +
-            row('颜色通道', meta.display.colorChannels)
+            row(App.i18n.t('info.zoom_level'), meta.display.zoomLevel) +
+            row(App.i18n.t('info.display_size'), meta.display.displaySize) +
+            row(App.i18n.t('info.fit_mode'), meta.display.fitMode) +
+            row(App.i18n.t('info.color_depth'), meta.display.colorDepth) +
+            row(App.i18n.t('info.color_channels'), meta.display.colorChannels)
         );
 
-        html += section('像素统计');
+        html += section(App.i18n.t('info.pixel_stats'));
         html += grid(
-            row('采样像素', meta.pixels.sampledPixels) +
-            row('平均亮度', meta.pixels.avgBrightness + ' / 255') +
-            row('平均 R', meta.pixels.avgR) +
-            row('平均 G', meta.pixels.avgG) +
-            row('平均 B', meta.pixels.avgB) +
-            row('平均色', meta.pixels.avgColor) +
-            row('不透明率', meta.pixels.opaqueRatio)
+            row(App.i18n.t('info.sampled_pixels'), meta.pixels.sampledPixels) +
+            row(App.i18n.t('info.avg_brightness'), meta.pixels.avgBrightness + ' / 255') +
+            row(App.i18n.t('info.avg_r'), meta.pixels.avgR) +
+            row(App.i18n.t('info.avg_g'), meta.pixels.avgG) +
+            row(App.i18n.t('info.avg_b'), meta.pixels.avgB) +
+            row(App.i18n.t('info.avg_color'), meta.pixels.avgColor) +
+            row(App.i18n.t('info.opaque_ratio'), meta.pixels.opaqueRatio)
         );
 
         return html;
@@ -1127,7 +1443,7 @@
 
         function openInfo() {
             var img = App.getActiveImage();
-            if (!img) { App.showToast('请先打开一张图片'); return; }
+            if (!img) { App.showToast(App.i18n.t('toast.open_image_first')); return; }
 
             var meta = getImageMetadata();
             if (!meta) return;
@@ -1141,6 +1457,9 @@
         }
 
         els.infoBtn.addEventListener('click', openInfo);
+        if (els.zoomInfoBtn) {
+            els.zoomInfoBtn.addEventListener('click', openInfo);
+        }
         els.infoModal.addEventListener('click', function (e) {
             if (e.target === els.infoModal || e.target.classList.contains('modal-close')) {
                 closeInfo();
@@ -1324,16 +1643,16 @@
         if (stats) {
             stats.innerHTML =
                 '<div class="stats-row">' +
-                '<div class="stat-item"><div class="stat-label">最小值</div><div class="stat-value">' + data.min + '</div></div>' +
-                '<div class="stat-item"><div class="stat-label">最大值</div><div class="stat-value">' + data.maxV + '</div></div>' +
-                '<div class="stat-item"><div class="stat-label">均值</div><div class="stat-value">' + data.mean.toFixed(1) + '</div></div>' +
-                '<div class="stat-item"><div class="stat-label">中位数</div><div class="stat-value">' + data.median + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.min') + '</div><div class="stat-value">' + data.min + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.max') + '</div><div class="stat-value">' + data.maxV + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.mean') + '</div><div class="stat-value">' + data.mean.toFixed(1) + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.median') + '</div><div class="stat-value">' + data.median + '</div></div>' +
                 '</div>' +
                 '<div class="stats-row" style="margin-top:10px;">' +
-                '<div class="stat-item"><div class="stat-label">标准差</div><div class="stat-value">' + data.std.toFixed(1) + '</div></div>' +
-                '<div class="stat-item"><div class="stat-label">25%分位</div><div class="stat-value">' + data.p25 + '</div></div>' +
-                '<div class="stat-item"><div class="stat-label">75%分位</div><div class="stat-value">' + data.p75 + '</div></div>' +
-                '<div class="stat-item"><div class="stat-label">像素总数</div><div class="stat-value">' + data.total.toLocaleString() + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.std') + '</div><div class="stat-value">' + data.std.toFixed(1) + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.p25') + '</div><div class="stat-value">' + data.p25 + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.p75') + '</div><div class="stat-value">' + data.p75 + '</div></div>' +
+                '<div class="stat-item"><div class="stat-label">' + App.i18n.t('stats.total_pixels') + '</div><div class="stat-value">' + data.total.toLocaleString() + '</div></div>' +
                 '</div>';
         }
     }
@@ -1355,7 +1674,7 @@
 
         function openHist() {
             var img = App.getActiveImage();
-            if (!img) { App.showToast('请先打开一张图片'); return; }
+            if (!img) { App.showToast(App.i18n.t('toast.open_image_first')); return; }
             els.histogramModal.style.display = 'flex';
             setActiveTab(currentChannel);
         }
@@ -1399,6 +1718,8 @@
         setupFilterEvents();
         setupLocalZoomEvents();
         setupSelectionEvents();
+        setupBatchProcessEvents();
+        setupPuzzleEvents();
         setupPencilEvents();
         setupCanvasEvents();
         setupGlobalListeners();
@@ -1409,6 +1730,8 @@
         App.TextStyle.setupEvents();
         App.Watermark.setupEvents();
         App.Export.setupEvents();
+        App.Info.setupEvents();
+        App.Help.setupEvents();
         App.ImageResize.setupEvents();
         App.ImageCrop.setupEvents();
         App.ImageMask.setupEvents();

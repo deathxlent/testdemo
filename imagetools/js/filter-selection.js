@@ -26,19 +26,19 @@
             sizeContent.innerHTML =
                 '<div class="prop-group two-col"><div><label>X</label><input type="number" id="'+kind+'rectx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.2)+'"></div>' +
                 '<div><label>Y</label><input type="number" id="'+kind+'recty" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.2)+'"></div></div>' +
-                '<div class="prop-group two-col"><div><label>宽</label><input type="number" id="'+kind+'rectw" min="10" max="'+W+'" value="'+Math.round(W*0.6)+'"></div>' +
-                '<div><label>高</label><input type="number" id="'+kind+'recth" min="10" max="'+H+'" value="'+Math.round(H*0.6)+'"></div></div>';
+                '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.width') + '</label><input type="number" id="'+kind+'rectw" min="10" max="'+W+'" value="'+Math.round(W*0.6)+'"></div>' +
+                '<div><label>' + App.i18n.t('filter.height') + '</label><input type="number" id="'+kind+'recth" min="10" max="'+H+'" value="'+Math.round(H*0.6)+'"></div></div>';
         } else if (type === 'circle') {
             sizeContent.innerHTML =
-                '<div class="prop-group two-col"><div><label>中心X</label><input type="number" id="'+kind+'ccx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.5)+'"></div>' +
-                '<div><label>中心Y</label><input type="number" id="'+kind+'ccy" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.5)+'"></div></div>' +
-                '<div class="prop-group"><label>半径</label><input type="number" id="'+kind+'cr" min="5" value="'+Math.round(Math.min(W,H)*0.25)+'"></div>';
+                '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.center_x') + '</label><input type="number" id="'+kind+'ccx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.5)+'"></div>' +
+                '<div><label>' + App.i18n.t('filter.center_y') + '</label><input type="number" id="'+kind+'ccy" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.5)+'"></div></div>' +
+                '<div class="prop-group"><label>' + App.i18n.t('filter.radius') + '</label><input type="number" id="'+kind+'cr" min="5" value="'+Math.round(Math.min(W,H)*0.25)+'"></div>';
         } else if (type === 'ellipse') {
             sizeContent.innerHTML =
-                '<div class="prop-group two-col"><div><label>中心X</label><input type="number" id="'+kind+'ecx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.5)+'"></div>' +
-                '<div><label>中心Y</label><input type="number" id="'+kind+'ecy" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.5)+'"></div></div>' +
-                '<div class="prop-group two-col"><div><label>X半轴</label><input type="number" id="'+kind+'erx" min="5" value="'+Math.round(W*0.3)+'"></div>' +
-                '<div><label>Y半轴</label><input type="number" id="'+kind+'ery" min="5" value="'+Math.round(H*0.3)+'"></div></div>';
+                '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.center_x') + '</label><input type="number" id="'+kind+'ecx" min="0" max="'+(W-1)+'" value="'+Math.round(W*0.5)+'"></div>' +
+                '<div><label>' + App.i18n.t('filter.center_y') + '</label><input type="number" id="'+kind+'ecy" min="0" max="'+(H-1)+'" value="'+Math.round(H*0.5)+'"></div></div>' +
+                '<div class="prop-group two-col"><div><label>' + App.i18n.t('filter.x_radius') + '</label><input type="number" id="'+kind+'erx" min="5" value="'+Math.round(W*0.3)+'"></div>' +
+                '<div><label>' + App.i18n.t('filter.y_radius') + '</label><input type="number" id="'+kind+'ery" min="5" value="'+Math.round(H*0.3)+'"></div></div>';
         }
     }
 
@@ -69,7 +69,7 @@
             else if (type === 'ellipse') sel = { type: type, cx: +document.getElementById(kind+'ecx').value, cy: +document.getElementById(kind+'ecy').value,
                 rx: +document.getElementById(kind+'erx').value, ry: +document.getElementById(kind+'ery').value };
             else if (type === 'polygon') sel = { type: type, points: [] };
-        } catch(e) { App.showToast('请输入正确的数值'); return; }
+        } catch(e) { App.showToast(App.i18n.t('filter.invalid_value')); return; }
         sel.w = Math.max(10, Math.min(imgObj.width - sel.x, sel.w | 0));
         sel.h = Math.max(10, Math.min(imgObj.height - sel.y, sel.h | 0));
         App.state[stateSelKey] = sel;
@@ -210,7 +210,7 @@
             });
             d.addEventListener('contextmenu', function(e){
                 e.preventDefault();
-                if (App.state[polyKey].length <= 3) { App.showToast('至少保留3个点'); return; }
+                if (App.state[polyKey].length <= 3) { App.showToast(App.i18n.t('filter.min_points')); return; }
                 App.state[polyKey].splice(d._ptIdx, 1);
                 if (renderFn) renderFn();
                 var Fn = App.Filters;

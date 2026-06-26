@@ -1,11 +1,20 @@
 (function () {
-    function doExport() {
+    var exportFormats = [
+        { id: 'png', name: 'PNG', mimeType: 'image/png', ext: '.png' },
+        { id: 'jpg', name: 'JPG', mimeType: 'image/jpeg', ext: '.jpg' },
+        { id: 'webp', name: 'WebP', mimeType: 'image/webp', ext: '.webp' },
+        { id: 'avif', name: 'AVIF', mimeType: 'image/avif', ext: '.avif' }
+    ];
+
+    function doExport(formatId, quality) {
         var imgObj = App.getActiveImage();
         if (!imgObj) {
-            alert('请先打开一张图片');
+            App.showToast(App.i18n.t('dialog.open_image_first'));
             return;
         }
 
+        var format = exportFormats.find(function (f) { return f.id === formatId; }) || exportFormats[0];
+        
         var canvas = document.createElement('canvas');
         canvas.width = imgObj.width;
         canvas.height = imgObj.height;
@@ -27,16 +36,82 @@
             }
         });
 
+        var q = quality || 0.92;
+        
         canvas.toBlob(function (blob) {
+            if (!blob) {
+                App.showToast(App.i18n.t('export.failed'));
+                return;
+            }
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
-            a.download = 'edited_' + imgObj.name.replace(/\.[^.]+$/, '') + '.png';
+            a.download = 'edited_' + imgObj.name.replace(/\.[^.]+$/, '') + format.ext;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }, 'image/png');
+            App.showToast(App.i18n.t('export.success'));
+        }, format.mimeType, q);
+    }
+
+    function showExportDialog() {
+        var imgObj = App.getActiveImage();
+        if (!imgObj) {
+            App.showToast(App.i18n.t('dialog.open_image_first'));
+            return;
+        }
+
+        var dialog = document.createElement('div');
+        dialog.className = 'export-dialog';
+        dialog.innerHTML = `
+            <div class="dialog-overlay"></div>
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <span>` + App.i18n.t('export.title') + `</span>
+                    <button class="dialog-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <div class="form-group">
+                        <label>` + App.i18n.t('export.format') + `</label>
+                        <div class="format-grid">
+                            ${exportFormats.map(function (f) {
+                                return `<label class="format-option">
+                                    <input type="radio" name="exportFormat" value="${f.id}" ${f.id === 'png' ? 'checked' : ''}>
+                                    <span>${f.name}</span>
+                                </label>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>` + App.i18n.t('export.quality') + `: <span id="exportQualityVal">92%</span></label>
+                        <input type="range" id="exportQuality" min="10" max="100" value="92">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn-cancel" onclick="this.parentElement.parentElement.remove()">` + App.i18n.t('dialog.cancel') + `</button>
+                    <button class="btn-confirm" onclick="App.Export.executeExport()">` + App.i18n.t('export.export_btn') + `</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+
+        var qualitySlider = dialog.querySelector('#exportQuality');
+        var qualityVal = dialog.querySelector('#exportQualityVal');
+        qualitySlider.addEventListener('input', function () {
+            qualityVal.textContent = this.value + '%';
+        });
+    }
+
+    function executeExport() {
+        var dialog = document.querySelector('.export-dialog');
+        if (!dialog) return;
+        
+        var formatId = dialog.querySelector('input[name="exportFormat"]:checked').value;
+        var quality = parseInt(dialog.querySelector('#exportQuality').value) / 100;
+        
+        dialog.remove();
+        doExport(formatId, quality);
     }
 
     function renderWatermark(ctx, obj) {
@@ -135,11 +210,13 @@
     }
 
     function setupEvents() {
-        App.els().exportBtn.addEventListener('click', doExport);
+        App.els().exportBtn.addEventListener('click', showExportDialog);
     }
 
     App.Export = {
         doExport: doExport,
+        showExportDialog: showExportDialog,
+        executeExport: executeExport,
         renderWatermark: renderWatermark,
         renderText: renderText,
         setupEvents: setupEvents
